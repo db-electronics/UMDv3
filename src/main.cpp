@@ -2,6 +2,7 @@
 #include <SerialFlash.h>
 #include <SoftwareSerial.h>         
 #include <SerialCommand.h>                  // https://github.com/db-electronics/ArduinoSerialCommand
+#include <usbd_if.h>
 
 const int FlashChipSelect = PB0;            ///< Digital pin for flash chip CS pin
 SerialFlashFile flashFile;                  ///< Serial flash file object
@@ -10,21 +11,37 @@ uint32_t sfSize;                            ///< Serial flash file size
 
 SerialCommand SCmd;
 
+//#define USBD_ATTACH_PIN         PA12 //USB_OTG_FS_DP
+//#define USBD_ATTACH_LEVEL       HIGH
+
 void scmd_poke(void);
 
 void setup() {
     // put your setup code here, to run once:
-
-    pinMode(PB9, OUTPUT);
+    SerialUSB.begin();
+    SerialUSB.end();
+    //USBD_reenumerate();
+    pinMode(PA12, OUTPUT);
+    digitalWrite(PA12, LOW);
+    delay(10);
     SerialUSB.begin();
 
-    if (!SerialFlash.begin(FlashChipSelect)) {
-        //error("Unable to access SPI Flash chip");
-        SerialUSB.println("Unable to access SPI Flash chip");
-    }else{
-        SerialFlash.readID(sfID);
-        sfSize = SerialFlash.capacity(sfID);
-    }
+    pinMode(PA6, OUTPUT);
+    pinMode(PA7, OUTPUT);
+    digitalWrite(PA6, HIGH);
+    digitalWrite(PA7, HIGH);
+    digitalWrite(PA6, LOW);
+    digitalWrite(PA7, LOW);
+    digitalWrite(PA6, HIGH);
+    digitalWrite(PA7, HIGH);
+
+    // if (!SerialFlash.begin(FlashChipSelect)) {
+    //     //error("Unable to access SPI Flash chip");
+    //     SerialUSB.println("Unable to access SPI Flash chip");
+    // }else{
+    //     SerialFlash.readID(sfID);
+    //     sfSize = SerialFlash.capacity(sfID);
+    // }
     //register callbacks for SerialCommand related to the cartridge
     SCmd.addCommand("poke", scmd_poke);
 }
@@ -34,22 +51,13 @@ void loop() {
     // listen for commands
     SCmd.readSerial();
 
-    // put your main code here, to run repeatedly:
-    SerialUSB.println("digitalWrite()");
-    digitalWrite(PB9, HIGH);   // turn the LED on (HIGH is the voltage level)
-    digitalWrite(PB9, LOW);
-    digitalWrite(PB9, HIGH);
-    digitalWrite(PB9, LOW);
-    delay(500); 
-
-    // try to touch the GPIO port directly
-    SerialUSB.println("direct io manipulation");
-    GPIOB->ODR |= (1<<9);
-    GPIOB->ODR &= ~(1<<9);
-    GPIOB->ODR |= (1<<9);
-    GPIOB->ODR &= ~(1<<9);
-    delay(500);
-
+    digitalWrite(PA6, HIGH);
+    digitalWrite(PA6, LOW);
+    digitalWrite(PA6, HIGH);
+    GPIOA->ODR |= (1<<7);
+    GPIOA->ODR &= ~(1<<7);
+    GPIOA->ODR |= (1<<7);
+    delay(50);
 }
 
 void scmd_poke(void)
