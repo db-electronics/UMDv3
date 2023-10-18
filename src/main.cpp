@@ -1,64 +1,56 @@
 #include <Arduino.h>
-#include <SerialFlash.h>
 #include <SoftwareSerial.h>         
 #include <SerialCommand.h>                  // https://github.com/db-electronics/ArduinoSerialCommand
-#include <usbd_if.h>
-
-const int FlashChipSelect = PB0;            ///< Digital pin for flash chip CS pin
-SerialFlashFile flashFile;                  ///< Serial flash file object
-uint8_t sfID[5];                            ///< Serial flash file id
-uint32_t sfSize;                            ///< Serial flash file size
+#include <USBSerial.h>
 
 SerialCommand SCmd;
-
-//#define USBD_ATTACH_PIN         PA12 //USB_OTG_FS_DP
-//#define USBD_ATTACH_LEVEL       HIGH
 
 void scmd_poke(void);
 
 void setup() {
-    // put your setup code here, to run once:
-    SerialUSB.begin();
-    SerialUSB.end();
-    //USBD_reenumerate();
-    pinMode(PA12, OUTPUT);
-    digitalWrite(PA12, LOW);
-    delay(10);
-    SerialUSB.begin();
+  pinMode(PB0, OUTPUT);
+  pinMode(PB7, OUTPUT);
 
-    pinMode(PA6, OUTPUT);
-    pinMode(PA7, OUTPUT);
-    digitalWrite(PA6, HIGH);
-    digitalWrite(PA7, HIGH);
-    digitalWrite(PA6, LOW);
-    digitalWrite(PA7, LOW);
-    digitalWrite(PA6, HIGH);
-    digitalWrite(PA7, HIGH);
+  // https://primalcortex.wordpress.com/2020/10/11/stm32-blue-pill-board-arduino-core-and-usb-serial-output-on-platformio/
+  SerialUSB.begin(460800);  // no need for a parameter here maybe?
+  pinMode(PA10, OUTPUT);
+  digitalWrite(PA10, LOW);
+  delay(5);
+  digitalWrite(PA10, HIGH);
 
-    // if (!SerialFlash.begin(FlashChipSelect)) {
-    //     //error("Unable to access SPI Flash chip");
-    //     SerialUSB.println("Unable to access SPI Flash chip");
-    // }else{
-    //     SerialFlash.readID(sfID);
-    //     sfSize = SerialFlash.capacity(sfID);
-    // }
+  // set PB7 as output
+  // https://controllerstech.com/stm32-gpio-output-config-using-registers/
+  // GPIOB->MODER |= (1<<14); // output mode
+  // GPIOB->OTYPER &= ~(1<<7); // push pull mode
+  // GPIOB->OSPEEDR |= (1<<15); // fast speed
+  // GPIOB->PUPDR &= ~(3<<7); // no pull-up or pull-down
+  GPIOB->BSRR |= (1<<7); // set the bit
+  GPIOB->BSRR |= (1<<(7+16)); // reset the bit
+
+  SerialUSB.println(F("Hello, World!"));
+
     //register callbacks for SerialCommand related to the cartridge
     SCmd.addCommand("poke", scmd_poke);
+
 }
 
 void loop() {
 
-    // listen for commands
-    SCmd.readSerial();
+  delay(100);
+  digitalWrite(PB0, LOW);
 
-    digitalWrite(PA6, HIGH);
-    digitalWrite(PA6, LOW);
-    digitalWrite(PA6, HIGH);
-    GPIOA->ODR |= (1<<7);
-    GPIOA->ODR &= ~(1<<7);
-    GPIOA->ODR |= (1<<7);
-    delay(50);
+  delay(100);
+  digitalWrite(PB0, HIGH);
+  
+  // SerialUSB.println(F("boo-urns!"));
+  GPIOB->BSRR |= (1<<7);      // set the bit
+  GPIOB->BSRR |= (1<<(7+16)); // reset the bit
+  GPIOB->BSRR |= (1<<7);      // set the bit
+  GPIOB->BSRR |= (1<<(7+16)); // reset the bit
+  GPIOB->BSRR |= (1<<7);      // set the bit
+  GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 }
+
 
 void scmd_poke(void)
 {
@@ -66,9 +58,9 @@ void scmd_poke(void)
     uint32_t address, value;
     
     // this is the address to poke
-    arg = SCmd.next();
-    address = (uint32_t)strtoul(arg, (char**)0, 0);
+    // arg = SCmd.next();
+    // address = (uint32_t)strtoul(arg, (char**)0, 0);
 
-    value = *(__IO uint32_t *)(address);
-    SerialUSB.print(value, HEX);
+    // value = *(__IO uint32_t *)(address);
+    // SerialUSB.print(value, HEX);
 }
