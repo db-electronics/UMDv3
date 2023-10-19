@@ -7,6 +7,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
+#include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_gpio.h"
+
 SerialCommand SCmd;
 
 void scmd_poke(void);
