@@ -7,8 +7,10 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include "stm32f4xx_hal.h"
-#include "stm32f4xx_hal_gpio.h"
+#include <crc.h>
+#include <stm32f4xx_hal.h>
+#include <stm32f4xx_hal_gpio.h>
+#include <stm32f4xx_hal_crc.h>
 
 SerialCommand SCmd;
 
@@ -34,6 +36,8 @@ const PinMap PinMap_I2C_SCL[] = {
 // HAL Code in here? https://www.stm32duino.com/viewtopic.php?t=82
 
 void setup() {
+
+  MX_CRC_Init();
 
   // setup USB serial
   // https://primalcortex.wordpress.com/2020/10/11/stm32-blue-pill-board-arduino-core-and-usb-serial-output-on-platformio/
@@ -80,6 +84,13 @@ void setup() {
   // GPIOB->OTYPER &= ~(1<<7); // push pull mode
   // GPIOB->OSPEEDR |= (1<<15); // fast speed
   // GPIOB->PUPDR &= ~(3<<7); // no pull-up or pull-down
+
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
   GPIOB->BSRR |= (1<<7); // set the bit
   GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
@@ -153,4 +164,5 @@ void scmd_poke(void)
 
     // value = *(__IO uint32_t *)(address);
     // SerialUSB.print(value, HEX);
+    __HAL_CRC_DR_RESET(&hcrc1);
 }
