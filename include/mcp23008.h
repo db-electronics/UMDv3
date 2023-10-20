@@ -1,9 +1,10 @@
 #ifndef MCP23008_H
 #define MCP23008_H
 
+#include <Arduino.h>
+#include <Wire.h>
 
-
-#define MCP23008_ADDRESS    0x27 //!< MCP23008 serial address
+#define MCP23008_BASE_ADDRESS    0x20 //!< MCP23008 serial address
 // registers
 #define MCP23008_IODIR      0x00 //!< I/O direction register
 #define MCP23008_IPOL       0x01 //!< Input polarity register
@@ -16,5 +17,29 @@
 #define MCP23008_INTCAP     0x08 //!< Interrupt capture register
 #define MCP23008_GPIO       0x09 //!< Port register
 #define MCP23008_OLAT       0x0A //!< Output latch register
+
+#define MCP23008_GP0        0b00000001
+#define MCP23008_GP1        0b00000010
+#define MCP23008_GP2        0b00000100
+#define MCP23008_GP3        0b00001000
+#define MCP23008_GP4        0b00010000
+#define MCP23008_GP5        0b00100000
+#define MCP23008_GP6        0b01000000
+#define MCP23008_GP7        0b10000000
+
+class MCP23008
+{
+    public:
+        bool begin(uint8_t address = 0x20, TwoWire *wire = &Wire);
+        void writeRegister(uint8_t registerAddress, uint8_t val);
+        uint8_t readRegister(uint8_t registerAddress);
+        void pinMode(uint8_t pins, uint8_t mode);
+
+    private:
+        uint8_t _i2cAddress;
+        TwoWire *_wire;
+
+        bool _initAllInputs(void);
+};
 
 #endif
