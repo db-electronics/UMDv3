@@ -5,6 +5,7 @@
 #include <Wire.h>
 
 #define MCP23008_BASE_ADDRESS    0x20 //!< MCP23008 serial address
+
 // registers
 #define MCP23008_IODIR      0x00 //!< I/O direction register
 #define MCP23008_IPOL       0x01 //!< Input polarity register
@@ -17,6 +18,7 @@
 #define MCP23008_INTCAP     0x08 //!< Interrupt capture register
 #define MCP23008_GPIO       0x09 //!< Port register
 #define MCP23008_OLAT       0x0A //!< Output latch register
+#define MCP23008_NUM_OF_SHADOW_REGISTERS 9
 
 #define MCP23008_GP0        0b00000001
 #define MCP23008_GP1        0b00000010
@@ -31,15 +33,19 @@ class MCP23008
 {
     public:
         bool begin(uint8_t address = 0x20, TwoWire *wire = &Wire);
-        void writeRegister(uint8_t registerAddress, uint8_t val);
-        uint8_t readRegister(uint8_t registerAddress);
-        void pinMode(uint8_t pins, uint8_t mode);
+
+        bool pinMode(uint8_t pins, uint8_t mode);
+        bool digitalWrite(uint8_t pins, uint8_t value);
+        bool setPinPolarity(uint8_t pins, bool invert);
 
     private:
         uint8_t _i2cAddress;
         TwoWire *_wire;
+        uint8_t _registers[MCP23008_NUM_OF_SHADOW_REGISTERS];
 
-        bool _initAllInputs(void);
+        bool _initAllPOR(void);
+        bool _writeRegister(uint8_t registerAddress, uint8_t val);
+        uint8_t _readRegister(uint8_t registerAddress);
 };
 
 #endif

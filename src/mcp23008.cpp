@@ -10,30 +10,36 @@ bool MCP23008::begin(uint8_t address = 0x20, TwoWire *wire = &Wire)
         _i2cAddress = 0x27;
     }
 
-    return _initAllInputs();
+    return _initAllPOR();
 }
 
-bool MCP23008::_initAllInputs(void)
+bool MCP23008::_initAllPOR(void)
 {
     // these should be the POR values in the device
-    uint8_t buffer[] = {MCP23008_IODIR, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    _registers[MCP23008_IODIR] = 0xFF;
+    for(int i = 1; i < MCP23008_NUM_OF_SHADOW_REGISTERS; i++){
+        _registers[i] = 0;
+    }
 
     _wire->beginTransmission(_i2cAddress);
-    _wire->write(buffer, 10);
+    _wire->write(MCP23008_IODIR);
+    _wire->write(_registers, MCP23008_NUM_OF_SHADOW_REGISTERS);
     _wire->endTransmission();
 
     return true;
 }
 
-void MCP23008::writeRegister(uint8_t registerAddress, uint8_t val)
+bool MCP23008::_writeRegister(uint8_t registerAddress, uint8_t val)
 {
     _wire->beginTransmission(_i2cAddress);
     _wire->write(registerAddress);
     _wire->write(val);
     _wire->endTransmission();
+
+    return true;
 }
 
-uint8_t MCP23008::readRegister(uint8_t registerAddress)
+uint8_t MCP23008::_readRegister(uint8_t registerAddress)
 {
     uint8_t readValue;
 
@@ -44,23 +50,47 @@ uint8_t MCP23008::readRegister(uint8_t registerAddress)
     return readValue;
 }
 
-void MCP23008::pinMode(uint8_t pins, uint8_t mode)
+bool MCP23008::pinMode(uint8_t pins, uint8_t mode)
 {
-    // read the current value
-    uint8_t currentIoDir = readRegister(MCP23008_IODIR);
-
     // 1 = input in MCP23008
     if(mode == INPUT)
     {
-        currentIoDir |= mode;
+        _registers[MCP23008_IODIR] |= mode;
     }
     else
     {
-        currentIoDir &= ~mode;
+        _registers[MCP23008_IODIR] &= ~mode;
     }
 
-    _wire->beginTransmission(_i2cAddress);
-    _wire->write(MCP23008_IODIR);
-    _wire->write(currentIoDir);
-    _wire->endTransmission();
+    return _writeRegister(MCP23008_IODIR, _registers[MCP23008_IODIR]);
+}
+
+bool MCP23008::digitalWrite(uint8_t pins, uint8_t value)
+{
+    // 1 = input in MCP23008
+    if(value == LOW)
+    {
+        _registers[MCP23008_OLAT] &= ~pins;
+    }
+    else
+    {
+        _registers[MCP23008_OLAT] |= pins;
+    }
+
+    return _writeRegister(MCP23008_OLAT, _registers[MCP23008_OLAT]);
+}
+
+bool MCP23008::setPinPolarity(uint8_t pins, bool invert)
+{
+    // 1 = input in MCP23008
+    if(invert)
+    {
+        _registers[MCP23008_IPOL] |= pins;
+    }
+    else
+    {
+        _registers[MCP23008_IPOL] &= ~pins;
+    }
+
+    return _writeRegister(MCP23008_IPOL, _registers[MCP23008_IPOL]);
 }
