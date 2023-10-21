@@ -31,7 +31,7 @@ bool MCP23008::_initAllPOR(void)
     return false;
 }
 
-bool MCP23008::_writeRegister(uint8_t registerAddress, uint8_t val)
+bool MCP23008::_writeDeviceRegister(uint8_t registerAddress, uint8_t val)
 {
     _wire->beginTransmission(_deviceAddress);
     _wire->write(registerAddress);
@@ -43,7 +43,21 @@ bool MCP23008::_writeRegister(uint8_t registerAddress, uint8_t val)
     return false;
 }
 
-uint8_t MCP23008::_readRegister(uint8_t registerAddress)
+bool MCP23008::_updateRegister(uint8_t registerAddress, uint8_t bitMask, bool set)
+{
+    if(set)
+    {
+        _registers[registerAddress] |= bitMask;
+    }
+    else
+    {
+        _registers[registerAddress] &= ~bitMask;
+    }
+
+    return _writeDeviceRegister(registerAddress, _registers[registerAddress]);
+}
+
+uint8_t MCP23008::_readDeviceRegister(uint8_t registerAddress)
 {
     uint8_t readValue;
 
@@ -57,64 +71,44 @@ uint8_t MCP23008::_readRegister(uint8_t registerAddress)
 bool MCP23008::pinMode(uint8_t pins, uint8_t mode)
 {
     // 1 = input in MCP23008
-    if(mode == INPUT)
-    {
-        _registers[MCP23008_IODIR] |= mode;
-    }
-    else
-    {
-        _registers[MCP23008_IODIR] &= ~mode;
-    }
-
-    return _writeRegister(MCP23008_IODIR, _registers[MCP23008_IODIR]);
+    bool set = mode == INPUT ? false : true;
+    return _updateRegister(MCP23008_OLAT, pins, set);
 }
 
 bool MCP23008::digitalWrite(uint8_t pins, uint8_t value)
 {
-    if(value == LOW)
-    {
-        _registers[MCP23008_OLAT] &= ~pins;
-    }
-    else
-    {
-        _registers[MCP23008_OLAT] |= pins;
-    }
-
-    return _writeRegister(MCP23008_OLAT, _registers[MCP23008_OLAT]);
+    bool set = value == LOW ? false : true;
+    return _updateRegister(MCP23008_OLAT, pins, set);
 }
 
 bool MCP23008::tooglePins(uint8_t pins)
 {
-    _registers[MCP23008_OLAT] ^= pins;
-    return _writeRegister(MCP23008_OLAT, _registers[MCP23008_OLAT]);
+    // only toggle the output pins, so we don't create garbage data in the shadow registers
+    _registers[MCP23008_OLAT] ^= (pins & ~_registers[MCP23008_IODIR]);
+    return _writeDeviceRegister(MCP23008_OLAT, _registers[MCP23008_OLAT]);
 }
 
 bool MCP23008::setPinPolarity(uint8_t pins, bool invert)
 {
     // 1 = pin polarity is inverted
-    if(invert)
-    {
-        _registers[MCP23008_IPOL] |= pins;
-    }
-    else
-    {
-        _registers[MCP23008_IPOL] &= ~pins;
-    }
-
-    return _writeRegister(MCP23008_IPOL, _registers[MCP23008_IPOL]);
+    return _updateRegister(MCP23008_IPOL, pins, invert);
 }
 
 bool MCP23008::setInterruptOnChange(uint8_t pins, bool set)
 {
     // 1 = pin is configured for interrupt on change
-    if(set)
-    {
-        _registers[MCP23008_GPINTEN] |= pins;
-    }
-    else
-    {
-        _registers[MCP23008_GPINTEN] &= ~pins;
-    }
+    return _updateRegister(MCP23008_INTCON, pins, set);
+}
 
-    return _writeRegister(MCP23008_GPINTEN, _registers[MCP23008_GPINTEN]);
+bool MCP23008::setDefaultValue(uint8_t pins, bool set)
+{
+    // if the associated pin level is the opposite from the register bit, an interrupt occurs.
+    return _updateRegister(MCP23008_DEFVAL, pins, set);
+}
+
+bool MCP23008::setInterruptControl(uint8_t pins, INTCON_MODE mode)
+{
+    // if the associated pin level is the opposite from the register bit, an interrupt occurs.
+    bool set = mode == DEFVAL ? true : false;
+    return _updateRegister(MCP23008_INTCON, pins, set);
 }

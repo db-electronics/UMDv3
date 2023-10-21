@@ -55,12 +55,13 @@ void setup() {
   Wire.setClock(100000);
   Wire.begin();
   Wire.setClock(100000);
-  // Wire.beginTransmission(4);
-  // Wire.write(0x55);
-  // Wire.endTransmission();
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
-  mcp23008Io.begin(0x27);
+  if(!mcp23008Io.begin(0x27)){
+    SerialUSB.println(F("onboard MCP23008 error"));
+    for(;;); // Don't proceed, loop forever
+  }
+
   mcp23008Io.pinMode(MCP23008_GP6 | MCP23008_GP7, OUTPUT);
   mcp23008Io.digitalWrite(MCP23008_GP6 | MCP23008_GP7, LOW);
 
@@ -105,6 +106,8 @@ void setup() {
 }
 
 void loop() {
+
+  mcp23008Io.tooglePins(MCP23008_GP7 | MCP23008_GP6);
 
   // delay(100);
   // digitalWrite(PB0, LOW);

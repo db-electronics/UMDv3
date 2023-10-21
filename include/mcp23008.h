@@ -33,14 +33,17 @@
 class MCP23008
 {
     public:
+        uint8_t error;
+        enum INTCON_MODE {PREVIOUS = 0, DEFVAL = 1};
+
         bool begin(uint8_t address = MCP23008_BASE_ADDRESS, TwoWire *wire = &Wire);
         bool pinMode(uint8_t pins, uint8_t mode);
         bool digitalWrite(uint8_t pins, uint8_t value);
         bool tooglePins(uint8_t pins);
         bool setPinPolarity(uint8_t pins, bool invert);
         bool setInterruptOnChange(uint8_t pins, bool set);
-
-        uint8_t error;
+        bool setDefaultValue(uint8_t pins, bool set);
+        bool setInterruptControl(uint8_t pins, INTCON_MODE mode);
 
     private:
         uint8_t _deviceAddress;
@@ -48,8 +51,9 @@ class MCP23008
         uint8_t _registers[MCP23008_NUM_OF_SHADOW_REGISTERS];
 
         bool _initAllPOR(void);
-        bool _writeRegister(uint8_t registerAddress, uint8_t val);
-        uint8_t _readRegister(uint8_t registerAddress);
+        bool _updateRegister(uint8_t registerAddress, uint8_t bitMask, bool set);
+        bool _writeDeviceRegister(uint8_t registerAddress, uint8_t val);
+        uint8_t _readDeviceRegister(uint8_t registerAddress);
 };
 
 #endif
