@@ -5,6 +5,7 @@
 #include <Wire.h>
 
 #define MCP23008_BASE_ADDRESS    0x20 //!< MCP23008 serial address
+#define MCP23008_MAX_ADDRESS 0x27
 
 // registers
 #define MCP23008_IODIR      0x00 //!< I/O direction register
@@ -32,14 +33,17 @@
 class MCP23008
 {
     public:
-        bool begin(uint8_t address = 0x20, TwoWire *wire = &Wire);
-
+        bool begin(uint8_t address = MCP23008_BASE_ADDRESS, TwoWire *wire = &Wire);
         bool pinMode(uint8_t pins, uint8_t mode);
         bool digitalWrite(uint8_t pins, uint8_t value);
+        bool tooglePins(uint8_t pins);
         bool setPinPolarity(uint8_t pins, bool invert);
+        bool setInterruptOnChange(uint8_t pins, bool set);
+
+        uint8_t error;
 
     private:
-        uint8_t _i2cAddress;
+        uint8_t _deviceAddress;
         TwoWire *_wire;
         uint8_t _registers[MCP23008_NUM_OF_SHADOW_REGISTERS];
 

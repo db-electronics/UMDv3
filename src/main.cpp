@@ -7,14 +7,16 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#include <crc.h>
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
-#include <stm32f4xx_hal_crc.h>
+
+#include "i2cScanner.h"
+#include "mcp23008.h"
 
 SerialCommand SCmd;
+MCP23008 mcp23008Io;
 
-void scmd_poke(void);
+void scmdScanI2C(void);
 
 // I2C display
 // https://randomnerdtutorials.com/guide-for-oled-display-with-arduino/
@@ -37,8 +39,6 @@ const PinMap PinMap_I2C_SCL[] = {
 
 void setup() {
 
-  MX_CRC_Init();
-
   // setup USB serial
   // https://primalcortex.wordpress.com/2020/10/11/stm32-blue-pill-board-arduino-core-and-usb-serial-output-on-platformio/
   SerialUSB.begin(460800);  // no need for a parameter here maybe?
@@ -58,6 +58,11 @@ void setup() {
   // Wire.beginTransmission(4);
   // Wire.write(0x55);
   // Wire.endTransmission();
+
+  // setup onboard mcp23008, GP6 and GP7 LED outputs
+  mcp23008Io.begin(0x27);
+  mcp23008Io.pinMode(MCP23008_GP6 | MCP23008_GP7, OUTPUT);
+  mcp23008Io.digitalWrite(MCP23008_GP6 | MCP23008_GP7, LOW);
 
   // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
   pinMode(PB0, OUTPUT);
@@ -95,7 +100,7 @@ void setup() {
   GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
     //register callbacks for SerialCommand related to the cartridge
-    SCmd.addCommand("poke", scmd_poke);
+    SCmd.addCommand("scani2c", scmdScanI2C);
 
 }
 
@@ -115,48 +120,48 @@ void loop() {
   // GPIOB->BSRR |= (1<<7);      // set the bit
   // GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
-  byte error, address;
-  int nDevices;
-  SerialUSB.println("Scanning...");
-  nDevices = 0;
-  for(address = 1; address < 127; address++ ) {
-    Wire.beginTransmission(address);
-    error = Wire.endTransmission();
-    if (error == 0) {
-      display.setCursor(0,0); 
-      SerialUSB.print("I2C device found at address 0x");
-      display.print(F("I2C device found at address 0x"));
-      if (address<16) {
-        SerialUSB.print("0");
-        display.print("0");
-      }
-      SerialUSB.println(address,HEX);
-      display.println(address,HEX);
-      display.display();
-      nDevices++;
-    }
-    else if (error==4) {
-      SerialUSB.print("Unknow error at address 0x");
-      if (address<16) {
-        SerialUSB.print("0");
-      }
-      SerialUSB.println(address,HEX);
-    }    
-  }
-  if (nDevices == 0) {
-    SerialUSB.println("No I2C devices found\n");
-  }
-  else {
-    SerialUSB.println("done\n");
-  }
+  // byte error, address;
+  // int nDevices;
+  // SerialUSB.println("Scanning...");
+  // nDevices = 0;
+  // for(address = 1; address < 127; address++ ) {
+  //   Wire.beginTransmission(address);
+  //   error = Wire.endTransmission();
+  //   if (error == 0) {
+  //     display.setCursor(0,0); 
+  //     SerialUSB.print("I2C device found at address 0x");
+  //     display.print(F("I2C device found at address 0x"));
+  //     if (address<16) {
+  //       SerialUSB.print("0");
+  //       display.print("0");
+  //     }
+  //     SerialUSB.println(address,HEX);
+  //     display.println(address,HEX);
+  //     display.display();
+  //     nDevices++;
+  //   }
+  //   else if (error==4) {
+  //     SerialUSB.print("Unknow error at address 0x");
+  //     if (address<16) {
+  //       SerialUSB.print("0");
+  //     }
+  //     SerialUSB.println(address,HEX);
+  //   }    
+  // }
+  // if (nDevices == 0) {
+  //   SerialUSB.println("No I2C devices found\n");
+  // }
+  // else {
+  //   SerialUSB.println("done\n");
+  // }
   delay(5000); 
 }
 
 
-void scmd_poke(void)
+void scmdScanI2C(void)
 {
-    char *arg;
-    uint32_t address, value;
+    // char *arg;
+    // uint32_t address, value;
     
     // this is the address to poke
     // arg = SCmd.next();
@@ -164,5 +169,13 @@ void scmd_poke(void)
 
     // value = *(__IO uint32_t *)(address);
     // SerialUSB.print(value, HEX);
-    __HAL_CRC_DR_RESET(&hcrc1);
+    I2CScanner scanner;
+    std::vector<uint8_t> addresses;
+    addresses = scanner.findDevices(&Wire);
+
+    for (uint8_t address : addresses)
+    {
+      SerialUSB.println(address,HEX);
+    }
+
 }
