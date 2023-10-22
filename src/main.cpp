@@ -10,6 +10,7 @@
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
 
+#include "umdBoardDefinitions.h"
 #include "i2cScanner.h"
 #include "mcp23008.h"
 
@@ -55,13 +56,19 @@ void setup() {
   Wire.begin();
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
-  if(!mcp23008Io.begin(0x27)){
+  if(!mcp23008Io.begin(UMD_BOARD_MCP23008_ADDRESS)){
     SerialUSB.println(F("onboard MCP23008 error"));
     for(;;); // Don't proceed, loop forever
   }
 
-  mcp23008Io.pinMode(MCP23008_GP6 | MCP23008_GP7, OUTPUT);
-  mcp23008Io.digitalWrite(MCP23008_GP6 | MCP23008_GP7, LOW);
+  // interrupt line tied to PD1
+  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
+  mcp23008Io.pinMode(UMD_BOARD_LEDS, OUTPUT);
+  mcp23008Io.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
+  mcp23008Io.setDefaultValue(UMD_BOARD_PUSHBUTTONS, HIGH);
+  mcp23008Io.setInterruptControl(UMD_BOARD_PUSHBUTTONS, mcp23008Io.DEFVAL);
+  mcp23008Io.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
+  mcp23008Io.digitalWrite(UMD_BOARD_LEDS, LOW);
 
   // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
   pinMode(PB0, OUTPUT);

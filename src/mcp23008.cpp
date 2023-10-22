@@ -112,9 +112,10 @@ bool MCP23008::setInterruptOnChange(uint8_t pins, bool set)
     return _updateRegister(MCP23008_INTCON, pins, set);
 }
 
-bool MCP23008::setDefaultValue(uint8_t pins, bool set)
+bool MCP23008::setDefaultValue(uint8_t pins, uint8_t value)
 {
     // if the associated pin level is the opposite from the register bit, an interrupt occurs.
+    bool set = value == LOW ? false : true;
     return _updateRegister(MCP23008_DEFVAL, pins, set);
 }
 
@@ -123,4 +124,22 @@ bool MCP23008::setInterruptControl(uint8_t pins, INTCON_MODE mode)
     // if the associated pin level is the opposite from the register bit, an interrupt occurs.
     bool set = mode == DEFVAL ? true : false;
     return _updateRegister(MCP23008_INTCON, pins, set);
+}
+
+bool MCP23008::setPullUpResistors(uint8_t pins, bool set)
+{
+    // 1 = pullup is enabled
+    return _updateRegister(MCP23008_GPPU, pins, set);
+}
+
+uint8_t MCP23008::readInterruptFlags()
+{
+    // 1 = pin caused an interrupt
+    return _readDeviceRegister(MCP23008_INTF);
+}
+
+uint8_t MCP23008::readGPIO()
+{
+    // 1 = pin caused an interrupt
+    return _readDeviceRegister(MCP23008_GPIO);
 }
