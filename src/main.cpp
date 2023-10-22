@@ -15,7 +15,8 @@
 #include "mcp23008.h"
 
 SerialCommand SCmd;
-MCP23008 mcp23008Io;
+MCP23008 onboardMCP23008;
+MCP23008 adapterMCP23008;
 
 void scmdScanI2C(void);
 
@@ -55,25 +56,6 @@ void setup() {
   // Wire.setSDA(PB9);
   Wire.begin();
 
-  // setup onboard mcp23008, GP6 and GP7 LED outputs
-  if(!mcp23008Io.begin(UMD_BOARD_MCP23008_ADDRESS)){
-    SerialUSB.println(F("onboard MCP23008 error"));
-    for(;;); // Don't proceed, loop forever
-  }
-
-  // interrupt line tied to PD1
-  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
-  mcp23008Io.pinMode(UMD_BOARD_LEDS, OUTPUT);
-  mcp23008Io.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
-  mcp23008Io.setDefaultValue(UMD_BOARD_PUSHBUTTONS, HIGH);
-  mcp23008Io.setInterruptControl(UMD_BOARD_PUSHBUTTONS, mcp23008Io.DEFVAL);
-  mcp23008Io.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
-  mcp23008Io.digitalWrite(UMD_BOARD_LEDS, LOW);
-
-  // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
-  pinMode(PB0, OUTPUT);
-  pinMode(PB7, OUTPUT);
-
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
     SerialUSB.println(F("SSD1306 allocation failed"));
@@ -85,9 +67,50 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);             // Normal 1:1 pixel scale
   display.setTextColor(WHITE);        // Draw white text
-  display.setCursor(0,0);             // Start at top-left corner
-  display.println(F("Hello, world!"));
   display.display();
+
+  // setup onboard mcp23008, GP6 and GP7 LED outputs
+  if(!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS)){
+    SerialUSB.println(F("onboard MCP23008 error"));
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.println(F("onboard MCP23008 error"));
+    display.display();
+    for(;;); // Don't proceed, loop forever
+  }
+
+  // interrupt line tied to PD1
+  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
+  onboardMCP23008.pinMode(UMD_BOARD_LEDS, OUTPUT);
+  onboardMCP23008.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
+  onboardMCP23008.setDefaultValue(UMD_BOARD_PUSHBUTTONS, HIGH);
+  onboardMCP23008.setInterruptControl(UMD_BOARD_PUSHBUTTONS, onboardMCP23008.DEFVAL);
+  onboardMCP23008.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
+  onboardMCP23008.digitalWrite(UMD_BOARD_LEDS, LOW);
+
+  // setup adapter mcp23008, read adapter id
+  if(!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS)){
+    SerialUSB.println(F("adapter MCP23008 error"));
+    display.clearDisplay();
+    display.setCursor(0,0);
+    display.println(F("adapter MCP23008 error"));
+    display.display();
+    for(;;); // Don't proceed, loop forever
+  }
+
+  adapterMCP23008.pinMode(0xFF, INPUT);
+  uint8_t adapterId = adapterMCP23008.readGPIO();
+  display.setCursor(0,0);
+  display.print(F("adapter id = "));
+  display.println(adapterId);
+  display.display();
+  delay(2000);
+
+  // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
+  pinMode(PB0, OUTPUT);
+  pinMode(PB7, OUTPUT);
+
+
 
   // set PB7 as output
   // https://controllerstech.com/stm32-gpio-output-config-using-registers/
@@ -114,8 +137,13 @@ void setup() {
 
 void loop() {
 
-  mcp23008Io.tooglePins(MCP23008_GP7 | MCP23008_GP6);
-  delay(250);
+  //onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
+  uint8_t adapterId = adapterMCP23008.readGPIO();
+  display.setCursor(0,0);
+  display.print(F("adapter id = "));
+  display.println(adapterId);
+  display.display();
+  delay(500);
 
   // delay(100);
   // digitalWrite(PB0, LOW);

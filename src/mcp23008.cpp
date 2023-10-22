@@ -75,6 +75,8 @@ uint8_t MCP23008::_readDeviceRegister(uint8_t registerAddress)
 
     _wire->beginTransmission(_deviceAddress);
     _wire->write(registerAddress);
+    _wire->endTransmission(false);
+    _wire->requestFrom(_deviceAddress, 1, true);
     readValue = _wire->read();
     error = _wire->endTransmission();
     return readValue;
