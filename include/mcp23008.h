@@ -19,7 +19,7 @@
 #define MCP23008_INTCAP     0x08 //!< Interrupt capture register
 #define MCP23008_GPIO       0x09 //!< Port register
 #define MCP23008_OLAT       0x0A //!< Output latch register
-#define MCP23008_NUM_OF_SHADOW_REGISTERS 9
+#define MCP23008_NUM_OF_SHADOW_REGISTERS 11
 
 #define MCP23008_GP0        0b00000001
 #define MCP23008_GP1        0b00000010

@@ -52,9 +52,7 @@ void setup() {
   // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#i2c
   // Wire.setSCL(PB8);
   // Wire.setSDA(PB9);
-  Wire.setClock(100000);
   Wire.begin();
-  Wire.setClock(100000);
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
   if(!mcp23008Io.begin(0x27)){
@@ -100,14 +98,17 @@ void setup() {
   GPIOB->BSRR |= (1<<7); // set the bit
   GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
-    //register callbacks for SerialCommand related to the cartridge
-    SCmd.addCommand("scani2c", scmdScanI2C);
+
+
+  //register callbacks for SerialCommand related to the cartridge
+  SCmd.addCommand("scani2c", scmdScanI2C);
 
 }
 
 void loop() {
 
   mcp23008Io.tooglePins(MCP23008_GP7 | MCP23008_GP6);
+  delay(250);
 
   // delay(100);
   // digitalWrite(PB0, LOW);
@@ -157,7 +158,7 @@ void loop() {
   // else {
   //   SerialUSB.println("done\n");
   // }
-  delay(5000); 
+  // delay(5000); 
 }
 
 

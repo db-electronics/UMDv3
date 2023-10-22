@@ -2,12 +2,24 @@
 
 bool MCP23008::begin(uint8_t address, TwoWire *wire)
 {
+    // keep address in range
     if ((address >= MCP23008_BASE_ADDRESS) && (address <= MCP23008_MAX_ADDRESS)) {
         _deviceAddress = address;
     } else if (address <= 0x07) {
         _deviceAddress = MCP23008_BASE_ADDRESS + address;
     } else {
         _deviceAddress = MCP23008_MAX_ADDRESS;
+    }
+
+    _wire = wire;
+
+    // check if device is actually there
+    _wire->beginTransmission(_deviceAddress);
+    error = _wire->endTransmission();
+    
+    if(error != 0)
+    {
+        return false;
     }
 
     return _initAllPOR();
@@ -71,8 +83,8 @@ uint8_t MCP23008::_readDeviceRegister(uint8_t registerAddress)
 bool MCP23008::pinMode(uint8_t pins, uint8_t mode)
 {
     // 1 = input in MCP23008
-    bool set = mode == INPUT ? false : true;
-    return _updateRegister(MCP23008_OLAT, pins, set);
+    bool set = mode == OUTPUT ? false : true;
+    return _updateRegister(MCP23008_IODIR, pins, set);
 }
 
 bool MCP23008::digitalWrite(uint8_t pins, uint8_t value)
