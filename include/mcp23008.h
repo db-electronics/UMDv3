@@ -41,11 +41,13 @@ class MCP23008
         bool digitalWrite(uint8_t pins, uint8_t value);
         bool tooglePins(uint8_t pins);
         bool setPinPolarity(uint8_t pins, bool invert);
+        bool setInterruptEnable(uint8_t pins, bool set);
         bool setInterruptOnChange(uint8_t pins, bool set);
         bool setDefaultValue(uint8_t pins, uint8_t value);
         bool setInterruptControl(uint8_t pins, INTCON_MODE mode);
         bool setPullUpResistors(uint8_t pins, bool set);
         uint8_t readInterruptFlags();
+        uint8_t readInterruptCapture();
         uint8_t readGPIO();
 
     private:

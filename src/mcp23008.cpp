@@ -108,6 +108,12 @@ bool MCP23008::setPinPolarity(uint8_t pins, bool invert)
     return _updateRegister(MCP23008_IPOL, pins, invert);
 }
 
+bool MCP23008::setInterruptEnable(uint8_t pins, bool set)
+{
+    // 1 = Enable GPIO input pin for interrupt-on-change event
+    return _updateRegister(MCP23008_GPINTEN, pins, set);
+}
+
 bool MCP23008::setInterruptOnChange(uint8_t pins, bool set)
 {
     // 1 = pin is configured for interrupt on change
@@ -140,8 +146,13 @@ uint8_t MCP23008::readInterruptFlags()
     return _readDeviceRegister(MCP23008_INTF);
 }
 
+uint8_t MCP23008::readInterruptCapture()
+{
+    // state of pins when interrupt occured
+    return _readDeviceRegister(MCP23008_INTCAP);
+}
+
 uint8_t MCP23008::readGPIO()
 {
-    // 1 = pin caused an interrupt
     return _readDeviceRegister(MCP23008_GPIO);
 }

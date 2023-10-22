@@ -13,18 +13,20 @@
 #include "umdBoardDefinitions.h"
 #include "i2cScanner.h"
 #include "mcp23008.h"
+#include "umdDisplay.h"
 
 SerialCommand SCmd;
 MCP23008 onboardMCP23008;
 MCP23008 adapterMCP23008;
 
 void scmdScanI2C(void);
+void inputInterrupt(void);
+uint8_t inputs;
+bool newInputs;
 
 // I2C display
 // https://randomnerdtutorials.com/guide-for-oled-display-with-arduino/
-#define OLED_RESET -1 
-#define OLED_SCREEN_WIDTH 128
-#define OLED_SCREEN_HEIGHT 64
+
 Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#default-i2c-pins
@@ -48,7 +50,7 @@ void setup() {
   digitalWrite(PA10, LOW);
   delay(10);
   digitalWrite(PA10, HIGH);
-  SerialUSB.println(F("Hello, World!"));
+  SerialUSB.println(F("UMDv3"));
 
   // setup I2C
   // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#i2c
@@ -67,32 +69,36 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);             // Normal 1:1 pixel scale
   display.setTextColor(WHITE);        // Draw white text
+  display.setCursor(0, OLED_LINE_NUMBER(0));
+  display.println(F("UMDv3 initiliazing......"));
+  display.setCursor(0, OLED_LINE_NUMBER(1));
   display.display();
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
   if(!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS)){
     SerialUSB.println(F("onboard MCP23008 error"));
-    display.clearDisplay();
-    display.setCursor(0,0);
     display.println(F("onboard MCP23008 error"));
     display.display();
     for(;;); // Don't proceed, loop forever
   }
 
-  // interrupt line tied to PD1
-  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
+
   onboardMCP23008.pinMode(UMD_BOARD_LEDS, OUTPUT);
   onboardMCP23008.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
   onboardMCP23008.setDefaultValue(UMD_BOARD_PUSHBUTTONS, HIGH);
-  onboardMCP23008.setInterruptControl(UMD_BOARD_PUSHBUTTONS, onboardMCP23008.DEFVAL);
+  onboardMCP23008.setInterruptControl(UMD_BOARD_PUSHBUTTONS, onboardMCP23008.PREVIOUS);
   onboardMCP23008.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
+  onboardMCP23008.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
   onboardMCP23008.digitalWrite(UMD_BOARD_LEDS, LOW);
+  newInputs = false;
+  inputs = onboardMCP23008.readGPIO();
+  // interrupt line tied to PD1
+  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
+  attachInterrupt(digitalPinToInterrupt(UMD_MCP23008_INTERRUPT_PIN), inputInterrupt, FALLING);
 
   // setup adapter mcp23008, read adapter id
   if(!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS)){
     SerialUSB.println(F("adapter MCP23008 error"));
-    display.clearDisplay();
-    display.setCursor(0,0);
     display.println(F("adapter MCP23008 error"));
     display.display();
     for(;;); // Don't proceed, loop forever
@@ -100,7 +106,6 @@ void setup() {
 
   adapterMCP23008.pinMode(0xFF, INPUT);
   uint8_t adapterId = adapterMCP23008.readGPIO();
-  display.setCursor(0,0);
   display.print(F("adapter id = "));
   display.println(adapterId);
   display.display();
@@ -109,8 +114,6 @@ void setup() {
   // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
   pinMode(PB0, OUTPUT);
   pinMode(PB7, OUTPUT);
-
-
 
   // set PB7 as output
   // https://controllerstech.com/stm32-gpio-output-config-using-registers/
@@ -128,72 +131,25 @@ void setup() {
   GPIOB->BSRR |= (1<<7); // set the bit
   GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
-
-
   //register callbacks for SerialCommand related to the cartridge
   SCmd.addCommand("scani2c", scmdScanI2C);
-
 }
 
 void loop() {
 
-  //onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
-  uint8_t adapterId = adapterMCP23008.readGPIO();
-  display.setCursor(0,0);
-  display.print(F("adapter id = "));
-  display.println(adapterId);
+  onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
+
+  if(newInputs)
+  {
+    newInputs = false;
+    inputs = onboardMCP23008.readInterruptCapture();
+  }
+
+  display.setCursor(0, OLED_LINE_NUMBER(2));
+  display.print(F("inputs = 0x"));
+  display.println(inputs, HEX);
   display.display();
-  delay(500);
-
-  // delay(100);
-  // digitalWrite(PB0, LOW);
-
-  // delay(100);
-  // digitalWrite(PB0, HIGH);
-  
-  // // SerialUSB.println(F("boo-urns!"));
-  // GPIOB->BSRR |= (1<<7);      // set the bit
-  // GPIOB->BSRR |= (1<<(7+16)); // reset the bit
-  // GPIOB->BSRR |= (1<<7);      // set the bit
-  // GPIOB->BSRR |= (1<<(7+16)); // reset the bit
-  // GPIOB->BSRR |= (1<<7);      // set the bit
-  // GPIOB->BSRR |= (1<<(7+16)); // reset the bit
-
-  // byte error, address;
-  // int nDevices;
-  // SerialUSB.println("Scanning...");
-  // nDevices = 0;
-  // for(address = 1; address < 127; address++ ) {
-  //   Wire.beginTransmission(address);
-  //   error = Wire.endTransmission();
-  //   if (error == 0) {
-  //     display.setCursor(0,0); 
-  //     SerialUSB.print("I2C device found at address 0x");
-  //     display.print(F("I2C device found at address 0x"));
-  //     if (address<16) {
-  //       SerialUSB.print("0");
-  //       display.print("0");
-  //     }
-  //     SerialUSB.println(address,HEX);
-  //     display.println(address,HEX);
-  //     display.display();
-  //     nDevices++;
-  //   }
-  //   else if (error==4) {
-  //     SerialUSB.print("Unknow error at address 0x");
-  //     if (address<16) {
-  //       SerialUSB.print("0");
-  //     }
-  //     SerialUSB.println(address,HEX);
-  //   }    
-  // }
-  // if (nDevices == 0) {
-  //   SerialUSB.println("No I2C devices found\n");
-  // }
-  // else {
-  //   SerialUSB.println("done\n");
-  // }
-  // delay(5000); 
+  delay(250);
 }
 
 
@@ -217,4 +173,9 @@ void scmdScanI2C(void)
       SerialUSB.println(address,HEX);
     }
 
+}
+
+void inputInterrupt(void)
+{
+  newInputs = true;
 }
