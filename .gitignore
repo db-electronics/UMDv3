@@ -1,2 +1,9 @@
 /.pio
 /.vscode
+
+/cubemx/Core
+/cubemx/Drivers
+/cubemx/.cproject
+/cubemx/.mxproject
+/cubemx/.project
+/cubemx/*.ld
