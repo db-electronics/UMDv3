@@ -18,6 +18,7 @@
 SerialCommand SCmd;
 MCP23008 onboardMCP23008;
 MCP23008 adapterMCP23008;
+UMDDisplay umdDisplay;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
