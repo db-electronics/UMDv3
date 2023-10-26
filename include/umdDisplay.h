@@ -19,20 +19,24 @@
 #define UMD_DISPLAY_BUFFER_CHARS_PER_LINE   OLED_MAX_CHARS_PER_LINE*2
 #define UMD_DISPLAY_BUFFER_TOTAL_LINES      32
 
+
 class UMDDisplay
 {
     public:
-        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // starting character for each line
+        // scroll[lineIndex][charIndex]
 
         UMDDisplay();
-        bool begin(Adafruit_SSD1306 *display);
+        void begin(Adafruit_SSD1306 *display);
         void clear(void);
         void clearLine(int lineNumber);
-        void print(std::stringstream stringStream, int lineNumber, int pos = 0);
-        void refresh();
+        void print(const char characters[], int lineNumber, int pos = 0);
+        void redraw();
+        void scrollLine(int lineNumber, int delta);
 
     private:
         Adafruit_SSD1306 *_display;
+        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // starting character for each line
+
         char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 };
 

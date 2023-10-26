@@ -71,15 +71,23 @@ void setup() {
   display.setTextSize(1);             // Normal 1:1 pixel scale
   display.setTextColor(WHITE);        // Draw white text
   display.setCursor(0, OLED_LINE_NUMBER(0));
-  display.println(F("UMDv3 initiliazing......"));
+  display.println(F("UMDv3 initiliazing..."));
   display.setCursor(0, OLED_LINE_NUMBER(1));
   display.display();
 
+  delay(1000);
+  umdDisplay.begin(&display);
+  umdDisplay.clear();
+  umdDisplay.print("/UMDv3/", 0);
+  umdDisplay.redraw();
+
   // setup onboard mcp23008, GP6 and GP7 LED outputs
+  umdDisplay.print("init MCP23008", 1, 2);
+  umdDisplay.redraw();
+
   if(!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS)){
     SerialUSB.println(F("onboard MCP23008 error"));
-    display.println(F("onboard MCP23008 error"));
-    display.display();
+    //display.println(F("onboard MCP23008 error"));
     for(;;); // Don't proceed, loop forever
   }
 
@@ -100,16 +108,13 @@ void setup() {
   // setup adapter mcp23008, read adapter id
   if(!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS)){
     SerialUSB.println(F("adapter MCP23008 error"));
-    display.println(F("adapter MCP23008 error"));
-    display.display();
     for(;;); // Don't proceed, loop forever
   }
 
   adapterMCP23008.pinMode(0xFF, INPUT);
   uint8_t adapterId = adapterMCP23008.readGPIO();
-  display.print(F("adapter id = "));
-  display.println(adapterId);
-  display.display();
+  umdDisplay.print("adapter id = 1", 2, 2);
+  umdDisplay.print("a really long string for scrolling",3,0);
   delay(2000);
 
   // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
@@ -148,10 +153,9 @@ void loop() {
     SerialUSB.println(inputs, HEX);
   }
 
-  display.setCursor(0, OLED_LINE_NUMBER(2));
-  display.print(F("inputs = 0x"));
-  display.println(inputs, HEX);
-  display.display();
+  umdDisplay.scrollLine(2, 1);
+  umdDisplay.scrollLine(3, -1);
+  umdDisplay.redraw();
   delay(250);
 }
 
