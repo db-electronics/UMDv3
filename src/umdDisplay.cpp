@@ -33,19 +33,28 @@ void UMDDisplay::clearLine(int lineNumber)
         }
 }
 
-void UMDDisplay::print(const char characters[], int lineNumber,  int printPos)
+void UMDDisplay::print(const char characters[], int lineNumber, int printPos)
 {
-    int realPos = printPos;
     int i = 0;
+    bufferNextPos[lineNumber] = printPos;
+
+    if(bufferNextPos[lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
+        bufferNextPos[lineNumber] = 0;
+    }
 
     while(characters[i] != '\0'){
         // wrap around if required
         if(i >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
         {
-            realPos = 0;
+            bufferNextPos[lineNumber] = 0;
         }
-        this->buffer[lineNumber][realPos++] = characters[i++];
+        this->buffer[lineNumber][bufferNextPos[lineNumber]++] = characters[i++];
     }
+}
+
+void UMDDisplay::print(const char characters[], int lineNumber)
+{
+    this->print(characters, lineNumber, bufferNextPos[lineNumber]);
 }
 
 void UMDDisplay::redraw()
@@ -76,10 +85,14 @@ void UMDDisplay::redraw()
             }
             lineChars[pos] = buffer[linePos][bufferPos++];
         }
-        lineChars[OLED_MAX_CHARS_PER_LINE+1] = '\0'; // Ensure null-termination
+        lineChars[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
         _display->print(lineChars);
     }
+
     _display->display();
+    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++){
+        bufferNextPos[i] = 0;
+    }
 }
 
 void UMDDisplay::scrollLine(int lineNumber, int delta){

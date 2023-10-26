@@ -24,6 +24,7 @@ void scmdScanI2C(void);
 void inputInterrupt(void);
 uint8_t inputs;
 bool newInputs;
+unsigned long previousTicks;
 
 // I2C display
 // https://randomnerdtutorials.com/guide-for-oled-display-with-arduino/
@@ -113,9 +114,11 @@ void setup() {
 
   adapterMCP23008.pinMode(0xFF, INPUT);
   uint8_t adapterId = adapterMCP23008.readGPIO();
-  umdDisplay.print("adapter id = 1", 2, 2);
-  umdDisplay.print("a really long string for scrolling",3,0);
-  delay(2000);
+  umdDisplay.print("adapter id = 0x01", 2, 2);
+  umdDisplay.print("Hello", 3, 0);
+  umdDisplay.print(", World!", 3);
+  umdDisplay.print("'Sounds like they hired Jacob'", 4, 0);
+  umdDisplay.redraw();
 
   // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
   pinMode(PB0, OUTPUT);
@@ -139,9 +142,20 @@ void setup() {
 
   //register callbacks for SerialCommand related to the cartridge
   SCmd.addCommand("scani2c", scmdScanI2C);
+
+  previousTicks = HAL_GetTick();
+  // uint32_t currentTicks = HAL_GetTick();
+  // while(HAL_GetTick() < (currentTicks + 5000));
 }
 
 void loop() {
+
+  // Reminder: when debugging ticks isn't accurate at all
+  uint32_t currentTicks = HAL_GetTick();
+  if( (currentTicks - previousTicks) < 250){
+    return;
+  }
+  previousTicks = currentTicks;
 
   onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
 
@@ -153,10 +167,9 @@ void loop() {
     SerialUSB.println(inputs, HEX);
   }
 
-  umdDisplay.scrollLine(2, 1);
-  umdDisplay.scrollLine(3, -1);
+  umdDisplay.scrollLine(3, 2);
+  umdDisplay.scrollLine(4, -1);
   umdDisplay.redraw();
-  delay(250);
 }
 
 
