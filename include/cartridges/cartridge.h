@@ -7,7 +7,8 @@ class Cartridge : public umdPorts{
     public:
         Cartridge();
         virtual ~Cartridge();
-        virtual void begin(void);
+
+        virtual uint8_t readByte(uint16_t address);
 };
 
 #endif
