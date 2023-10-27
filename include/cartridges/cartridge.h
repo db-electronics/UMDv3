@@ -9,6 +9,8 @@ class Cartridge : public umdPorts{
         virtual ~Cartridge();
 
         virtual uint8_t readByte(uint16_t address);
+    protected:
+        uint16_t ticks;
 };
 
 #endif

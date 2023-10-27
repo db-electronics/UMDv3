@@ -25,7 +25,16 @@
 #define UMD_PORT_WR GPIOC
 #define UMD_PIN_WR  GPIO_PIN_15
 
-#define UMD_PORT_SWAP_BYTES(w) (w << 8) || (w >> 8)
+#define UMD_PORT_SWAP_BYTES(w)          (w << 8) || (w >> 8)
+
+#define UMD_PORT_TIMER_COUNT            (TIM7->CNT)
+#define UMD_PORT_TIMER_PERIOD_NS        (1000/168)
+#define UMD_PORT_TIMER_NS_TO_TICKS(ns)  (ns/UMD_PORT_TIMER_PERIOD_NS)
+#define UMD_PORT_WAIT_NS(ns) {\
+            TIM7->CNT = 0;\
+            ticks = ns/(1000/168);\
+            while(TIM7->CNT <= ticks);\
+        }
 
 class umdPorts{
 
