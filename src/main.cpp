@@ -44,16 +44,6 @@ void setup() {
   digitalWrite(PA10, HIGH);
   SerialUSB.println(F("UMDv3"));
 
-  // enable master clock output on MCo1 PA8
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF0_MCO;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-  HAL_RCC_MCOConfig(RCC_MCO1, RCC_MCO1SOURCE_HSE, RCC_MCODIV_4);
-
   // setup I2C
   // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#i2c
   // Wire.setSCL(PB8);
@@ -117,28 +107,8 @@ void setup() {
   umdDisplay.print("adapter id = 0x01", 2, 2);
   umdDisplay.print("Hello", 3, 0);
   umdDisplay.print(", World!", 3);
-  umdDisplay.print("'Sounds like they hired Jacob'", 4, 0);
+  umdDisplay.print("Je t'aime Mireille!", 4, 0);
   umdDisplay.redraw();
-
-  // C:\Users\rrichard\.platformio\packages\framework-arduinoststm32\variants\STM32F4xx\F407V(E-G)T_F417V(E-G)T\PeripheralPins.c
-  pinMode(PB0, OUTPUT);
-  pinMode(PB7, OUTPUT);
-
-  // set PB7 as output
-  // https://controllerstech.com/stm32-gpio-output-config-using-registers/
-  // GPIOB->MODER |= (1<<14); // output mode
-  // GPIOB->OTYPER &= ~(1<<7); // push pull mode
-  // GPIOB->OSPEEDR |= (1<<15); // fast speed
-  // GPIOB->PUPDR &= ~(3<<7); // no pull-up or pull-down
-
-
-  GPIO_InitStruct.Pin = GPIO_PIN_7;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  GPIOB->BSRR |= (1<<7); // set the bit
-  GPIOB->BSRR |= (1<<(7+16)); // reset the bit
 
   //register callbacks for SerialCommand related to the cartridge
   SCmd.addCommand("scani2c", scmdScanI2C);
