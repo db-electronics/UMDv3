@@ -1,7 +1,9 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
-class Cartridge{
+#include "umdPorts.h"
+
+class Cartridge : public umdPorts{
     public:
         Cartridge();
         virtual ~Cartridge();
