@@ -1,16 +1,25 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
-#include "umdPorts.h"
+#include "IUMDPorts.h"
+#include <string>
 
-class Cartridge : public umdPorts{
+class Cartridge {
     public:
-        Cartridge();
+        Cartridge(IUMDPorts *umdPorts);
         virtual ~Cartridge();
 
+        const String SystemName;
+
         virtual uint8_t readByte(uint16_t address);
+        virtual uint8_t readByte(uint32_t address);
+
     protected:
-        uint16_t ticks;
+        const uint16_t addressSetupTime = 100;
+        const uint16_t readHoldTime = 200;
+
+    private:
+        IUMDPorts *_umdPorts;
 };
 
 #endif

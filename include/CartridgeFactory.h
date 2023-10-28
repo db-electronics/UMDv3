@@ -1,14 +1,14 @@
-#ifndef UMD_H
-#define UMD_H
+#ifndef CARTRIDGEFACTORY_H
+#define CARTRIDGEFACTORY_H
 
 #include <Arduino.h>
 #include "cartridges/cartridge.h"
 
-class UMDCartridgeFactory
+class CartridgeFactory
 {
     public:
-        UMDCartridgeFactory();
-        ~UMDCartridgeFactory();
+        CartridgeFactory();
+        ~CartridgeFactory();
 
         #define SYSTEMS_LEN 2
         enum System : uint8_t{
@@ -19,7 +19,7 @@ class UMDCartridgeFactory
         Cartridge* getCart(System mode);
 
     private:
-        UMDCartridgeFactory(const UMDCartridgeFactory&) = delete;
+        CartridgeFactory(const CartridgeFactory&) = delete;
         Cartridge* carts[SYSTEMS_LEN-1];
 };
 

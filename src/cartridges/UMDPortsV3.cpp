@@ -1,13 +1,16 @@
-#include "umdPorts.h"
+#include "cartridges/UMDPortsV3.h"
 
 /////////////////////////////////////////////////
 // PUBLIC
 /////////////////////////////////////////////////
-umdPorts::umdPorts(){
-    this->setDefaults();
+
+inline void UMDPortsV3::waitNs(uint16_t nanoSeconds){
+    TIM7->CNT = 0;
+    ticks = nanoSeconds/(1000/168);
+    while(TIM7->CNT <= ticks);
 }
 
-void umdPorts::setDefaults(){
+void UMDPortsV3::setDefaults(){
 
     // setup timer 7 for IO timing
     TIM_HandleTypeDef htim7;
@@ -101,150 +104,150 @@ void umdPorts::setDefaults(){
 /////////////////////////////////////////////////
 // PROTECTED
 /////////////////////////////////////////////////
-void umdPorts::addressWrite(uint16_t address){
+void UMDPortsV3::addressWrite(uint16_t address){
     this->_portByteWriteLow(UMD_PORT_ADDR_LOW, (uint8_t)(0xFF & address));
     this->_portByteWriteLow(UMD_PORT_ADDR_MID, (uint8_t)(0xFF & address>>8));
 }
 
-void umdPorts::addressWrite(uint32_t address){
+void UMDPortsV3::addressWrite(uint32_t address){
     this->_portByteWriteLow(UMD_PORT_ADDR_LOW, (uint8_t)(0xFF & address));
     this->_portByteWriteLow(UMD_PORT_ADDR_MID, (uint8_t)(0xFF & address>>8));
     this->_portByteWriteHigh(UMD_PORT_ADDR_HIGH, (uint8_t)(0xFF & address>>16));
 }
 
-uint8_t umdPorts::dataReadLow(){
+uint8_t UMDPortsV3::dataReadLow(){
     return this->_portByteReadLow(UMD_PORT_DATA);
 }
 
-uint8_t umdPorts::dataReadHigh(){
+uint8_t UMDPortsV3::dataReadHigh(){
     return this->_portByteReadHigh(UMD_PORT_DATA);
 }
 
-uint16_t umdPorts::dataReadWord(){
+uint16_t UMDPortsV3::dataReadWord(){
     return this->_portWordRead(UMD_PORT_DATA);
 }
 
-uint16_t umdPorts::dataReadWordSwapped(){
+uint16_t UMDPortsV3::dataReadWordSwapped(){
     return UMD_PORT_SWAP_BYTES(this->_portWordRead(UMD_PORT_DATA));
 }
 
-void umdPorts::dataWrite(uint8_t value){
+void UMDPortsV3::dataWrite(uint8_t value){
     this->_portByteWriteLow(UMD_PORT_DATA, value);
 }
 
-void umdPorts::dataWriteLow(uint8_t value){
+void UMDPortsV3::dataWriteLow(uint8_t value){
     this->_portByteWriteLow(UMD_PORT_DATA, value);
 }
 
-void umdPorts::dataWriteHigh(uint8_t value){
+void UMDPortsV3::dataWriteHigh(uint8_t value){
     this->_portByteWriteHigh(UMD_PORT_DATA, value);
 }
 
-void umdPorts::dataWrite(uint16_t value){
+void UMDPortsV3::dataWrite(uint16_t value){
     this->_portWordWrite(UMD_PORT_DATA, value);
 }
 
-void umdPorts::dataWriteSwapped(uint16_t value){
+void UMDPortsV3::dataWriteSwapped(uint16_t value){
     this->_portWordWrite(UMD_PORT_DATA, UMD_PORT_SWAP_BYTES(value));
 }
 
-void umdPorts::dataSetToInputs(bool pullups){
+void UMDPortsV3::dataSetToInputs(bool pullups){
     this->_portSetToInput(UMD_PORT_DATA, pullups);
 }
-void umdPorts::dataSetToOutputs(){
+void UMDPortsV3::dataSetToOutputs(){
     this->_portSetToOutput(UMD_PORT_DATA);
 }
 
-void umdPorts::setCE0(){
+void UMDPortsV3::setCE0(){
     this->_portBitSet(UMD_PORT_CE0, UMD_PIN_CE0);
 }
 
-void umdPorts::setCE1(){
+void UMDPortsV3::setCE1(){
     this->_portBitSet(UMD_PORT_CE1, UMD_PIN_CE1);
 }
 
-void umdPorts::setCE2(){
+void UMDPortsV3::setCE2(){
     this->_portBitSet(UMD_PORT_CE2, UMD_PIN_CE2);
 }
 
-void umdPorts::setCE3(){
+void UMDPortsV3::setCE3(){
     this->_portBitSet(UMD_PORT_CE3, UMD_PIN_CE3);
 }
 
-void umdPorts::setRD(){
+void UMDPortsV3::setRD(){
     this->_portBitSet(UMD_PORT_RD, UMD_PIN_RD);
 }
 
-void umdPorts::setWR(){
+void UMDPortsV3::setWR(){
     this->_portBitSet(UMD_PORT_WR, UMD_PIN_WR);
 }
 
-void umdPorts::clearCE0(){
+void UMDPortsV3::clearCE0(){
     this->_portBitClear(UMD_PORT_CE0, UMD_PIN_CE0);
 }
 
-void umdPorts::clearCE1(){
+void UMDPortsV3::clearCE1(){
     this->_portBitClear(UMD_PORT_CE1, UMD_PIN_CE1);
 }
 
-void umdPorts::clearCE2(){
+void UMDPortsV3::clearCE2(){
     this->_portBitClear(UMD_PORT_CE2, UMD_PIN_CE2);
 }
 
-void umdPorts::clearCE3(){
+void UMDPortsV3::clearCE3(){
     this->_portBitClear(UMD_PORT_CE3, UMD_PIN_CE3);
 }
 
-void umdPorts::clearRD(){
+void UMDPortsV3::clearRD(){
     this->_portBitClear(UMD_PORT_RD, UMD_PIN_RD);
 }
 
-void umdPorts::clearWR(){
+void UMDPortsV3::clearWR(){
     this->_portBitClear(UMD_PORT_WR, UMD_PIN_WR);
 }
 
 /////////////////////////////////////////////////
 // PRIVATE
 /////////////////////////////////////////////////
-void umdPorts::_portBitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
+void UMDPortsV3::_portBitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
     GPIOx->BSRR = GPIO_Pin;
 }
 
-void umdPorts::_portBitClear(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
+void UMDPortsV3::_portBitClear(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
     GPIOx->BSRR = (uint32_t)GPIO_Pin << 16U;
 }
 
-void umdPorts::_portByteWriteLow(GPIO_TypeDef *GPIOx, uint8_t value){
+void UMDPortsV3::_portByteWriteLow(GPIO_TypeDef *GPIOx, uint8_t value){
     uint16_t portValue = GPIOx->IDR;
     portValue &= 0xFF00;
     portValue |= (uint16_t)(value);
     GPIOx->ODR = portValue;
 }
 
-uint8_t umdPorts::_portByteReadLow(GPIO_TypeDef *GPIOx){
+uint8_t UMDPortsV3::_portByteReadLow(GPIO_TypeDef *GPIOx){
     return (uint8_t)(GPIOx->IDR & 0xFF);
 }
 
-void umdPorts::_portByteWriteHigh(GPIO_TypeDef *GPIOx, uint8_t value){
+void UMDPortsV3::_portByteWriteHigh(GPIO_TypeDef *GPIOx, uint8_t value){
     uint16_t portValue = GPIOx->IDR;
     portValue &= 0x00FF;
     portValue |= (uint16_t)(value<<8);
     GPIOx->ODR = portValue;
 }
 
-uint8_t umdPorts::_portByteReadHigh(GPIO_TypeDef *GPIOx){
+uint8_t UMDPortsV3::_portByteReadHigh(GPIO_TypeDef *GPIOx){
     return (uint8_t)((GPIOx->IDR>>8) & 0xFF);
 }
 
-void umdPorts::_portWordWrite(GPIO_TypeDef *GPIOx, uint16_t value){
+void UMDPortsV3::_portWordWrite(GPIO_TypeDef *GPIOx, uint16_t value){
     GPIOx->ODR = value;
 }
 
-uint16_t umdPorts::_portWordRead(GPIO_TypeDef *GPIOx){
+uint16_t UMDPortsV3::_portWordRead(GPIO_TypeDef *GPIOx){
     return (uint16_t)GPIOx->IDR;
 }
 
-void umdPorts::_portSetToInput(GPIO_TypeDef *GPIOx, bool pullups){
+void UMDPortsV3::_portSetToInput(GPIO_TypeDef *GPIOx, bool pullups){
     //D0 to D15 on PE0 to PE15
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
@@ -259,7 +262,7 @@ void umdPorts::_portSetToInput(GPIO_TypeDef *GPIOx, bool pullups){
     HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
 
-void umdPorts::_portSetToOutput(GPIO_TypeDef *GPIOx){
+void UMDPortsV3::_portSetToOutput(GPIO_TypeDef *GPIOx){
     //D0 to D15 on PE0 to PE15
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
