@@ -19,24 +19,26 @@ void UMDDisplay::begin(Adafruit_SSD1306 *display)
 
 void UMDDisplay::clear(void)
 {
-    for(int lines = 0; lines < UMD_DISPLAY_BUFFER_TOTAL_LINES; lines++)
+    for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
     {
-        this->clearLine(lines);
+        this->clearLine(line);
     }
 }
 
 void UMDDisplay::clearLine(int lineNumber)
 {
-        for(int chars = 0; chars < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; chars++)
-        {
-            this->buffer[lineNumber][chars] = ' ';
-        }
+    lineNeedsRedraw[lineNumber] = true;
+    for(int chr = 0; chr < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; chr++)
+    {
+        this->buffer[lineNumber][chr] = ' ';
+    }
 }
 
 void UMDDisplay::print(const char characters[], int lineNumber, int printPos)
 {
     int i = 0;
     bufferNextPos[lineNumber] = printPos;
+    lineNeedsRedraw[lineNumber] = true;
 
     if(bufferNextPos[lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
         bufferNextPos[lineNumber] = 0;
@@ -59,22 +61,30 @@ void UMDDisplay::print(const char characters[], int lineNumber)
 
 void UMDDisplay::redraw()
 {
-    char lineChars[OLED_MAX_CHARS_PER_LINE+1];
-    int bufferPos, linePos;
+    char lineChars[OLED_MAX_CHARS_PER_LINE+1]; // +1 for terminator
+    int bufferPos, lineFromBuffer, previousLinePrinted;
 
     _display->clearDisplay();
 
-    for(int line = 0; line < OLED_MAX_LINES_PER_SCREEN; line++)
+    for(int lineOnDisplay = 0; lineOnDisplay < OLED_MAX_LINES_PER_SCREEN; lineOnDisplay++)
     {
-        if(line == 2){
-            SerialUSB.println("line2");
+        lineFromBuffer = scroll[lineOnDisplay][0];
+        previousLinePrinted = scroll[lineOnDisplay][2];
+
+        // do we really need to redraw this line?
+        if(lineFromBuffer == previousLinePrinted){
+            // we printed this line last time, did it change?
+            if(!lineNeedsRedraw[lineFromBuffer]){
+                continue;
+            }
         }
 
-        linePos = scroll[line][0];
-        bufferPos = scroll[line][1];
+        // don't print this line again unless it changes
+        scroll[lineOnDisplay][2] = lineFromBuffer;
+        lineNeedsRedraw[lineFromBuffer] = false;
 
-        _display->setCursor(0, OLED_LINE_NUMBER(line));
-
+        _display->setCursor(0, OLED_LINE_NUMBER(lineOnDisplay));
+        bufferPos = scroll[lineOnDisplay][1];
         // file the lineChars buffer
         for(int pos = 0; pos < OLED_MAX_CHARS_PER_LINE; pos++)
         {
@@ -83,7 +93,7 @@ void UMDDisplay::redraw()
             {
                 bufferPos = 0;
             }
-            lineChars[pos] = buffer[linePos][bufferPos++];
+            lineChars[pos] = buffer[lineFromBuffer][bufferPos++];
         }
         lineChars[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
         _display->print(lineChars);
@@ -95,8 +105,13 @@ void UMDDisplay::redraw()
     }
 }
 
-void UMDDisplay::scrollLine(int lineNumber, int delta){
+void UMDDisplay::scrollLineX(int lineNumber, int delta){
+    if(delta > UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
+        return;
+    }
+
     scroll[lineNumber][1] += delta;
+    lineNeedsRedraw[lineNumber] = true;
     if(scroll[lineNumber][1] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
     {
         scroll[lineNumber][1] -= UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
@@ -104,5 +119,26 @@ void UMDDisplay::scrollLine(int lineNumber, int delta){
     else if(scroll[lineNumber][1] < 0)
     {
         scroll[lineNumber][1] += UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+    }
+}
+
+void UMDDisplay::scrollRotateDown(int delta){
+    this->scrollRotateDown(delta, 0);
+}
+
+void UMDDisplay::scrollRotateDown(int delta, int startIndex){
+    if(delta > UMD_DISPLAY_BUFFER_TOTAL_LINES){
+        return;
+    }
+
+    for(int lineNumber = 0; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++){
+        scroll[lineNumber][0] += delta;
+        if(scroll[lineNumber][0] >= OLED_MAX_LINES_PER_SCREEN){
+            scroll[lineNumber][0] -= OLED_MAX_LINES_PER_SCREEN;
+        }
+        else if(scroll[lineNumber][0] < 0)
+        {
+            scroll[lineNumber][0] += OLED_MAX_LINES_PER_SCREEN;
+        }
     }
 }

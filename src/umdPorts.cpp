@@ -12,6 +12,7 @@ void umdPorts::setDefaults(){
     // setup timer 7 for IO timing
     TIM_HandleTypeDef htim7;
     TIM_MasterConfigTypeDef sMasterConfig = {0};
+    __HAL_RCC_TIM7_CLK_ENABLE();
     htim7.Instance = TIM7;
     htim7.Init.Prescaler = 1;
     htim7.Init.CounterMode = TIM_COUNTERMODE_UP;

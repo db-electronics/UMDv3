@@ -137,8 +137,8 @@ void loop() {
     SerialUSB.println(inputs, HEX);
   }
 
-  umdDisplay.scrollLine(3, 2);
-  umdDisplay.scrollLine(4, -1);
+  umdDisplay.scrollLineX(3, 2);
+  umdDisplay.scrollLineX(4, -1);
   umdDisplay.redraw();
 }
 
