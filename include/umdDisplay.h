@@ -31,6 +31,7 @@ class UMDDisplay
         void clearLine(int lineNumber);
         void print(const char characters[], int lineNumber, int pos);
         void print(const char characters[], int lineNumber);
+        void print(int number, int lineNumber);
         void redraw();
         void scrollLineX(int lineNumber, int delta); // scroll line by delta chars
         void scrollRotateDown(int delta); // increment all line numbers by delta
@@ -39,8 +40,7 @@ class UMDDisplay
     private:
         Adafruit_SSD1306 *_display;
 
-        int scroll[OLED_MAX_LINES_PER_SCREEN][3]; // { line index, char index, previous line index }
-        int lineNeedsRedraw[UMD_DISPLAY_BUFFER_TOTAL_LINES];
+        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
 
         int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
         char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];

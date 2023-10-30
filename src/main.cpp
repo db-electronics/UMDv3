@@ -6,6 +6,7 @@
 #include <SPI.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <STM32SD.h>
 
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
@@ -15,6 +16,11 @@
 #include "mcp23008.h"
 #include "umdDisplay.h"
 
+#ifndef SD_DETECT_PIN
+#define SD_DETECT_PIN PD0
+#endif  
+
+SdFatFs fatFs;
 SerialCommand SCmd;
 MCP23008 onboardMCP23008;
 MCP23008 adapterMCP23008;
@@ -22,9 +28,13 @@ UMDDisplay umdDisplay;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
+
 uint8_t inputs;
 bool newInputs;
+
 unsigned long previousTicks;
+unsigned long umdTicks = 0;
+int displayYOffset = 1;
 
 // I2C display
 // https://randomnerdtutorials.com/guide-for-oled-display-with-arduino/
@@ -61,10 +71,6 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);             // Normal 1:1 pixel scale
   display.setTextColor(WHITE);        // Draw white text
-  display.setCursor(0, OLED_LINE_NUMBER(0));
-  display.println(F("UMDv3 initiliazing..."));
-  display.setCursor(0, OLED_LINE_NUMBER(1));
-  display.display();
 
   delay(1000);
   umdDisplay.begin(&display);
@@ -72,8 +78,19 @@ void setup() {
   umdDisplay.print("/UMDv3/", 0);
   umdDisplay.redraw();
 
+  // sd card
+  umdDisplay.print("init SD card", 1, 2);
+  umdDisplay.redraw();
+  SD.setDx(PC8, PC9, PC10, PC11);
+  SD.setCMD(PD2);
+  SD.setCK(PC12);
+  if(!SD.begin(SD_DETECT_PIN)){
+    umdDisplay.print(" failed", 1);
+    while(1);
+  }
+
   // setup onboard mcp23008, GP6 and GP7 LED outputs
-  umdDisplay.print("init MCP23008", 1, 2);
+  umdDisplay.print("init MCP23008", 2, 2);
   umdDisplay.redraw();
 
   if(!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS)){
@@ -81,7 +98,6 @@ void setup() {
     //display.println(F("onboard MCP23008 error"));
     for(;;); // Don't proceed, loop forever
   }
-
 
   onboardMCP23008.pinMode(UMD_BOARD_LEDS, OUTPUT);
   onboardMCP23008.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
@@ -104,10 +120,7 @@ void setup() {
 
   adapterMCP23008.pinMode(0xFF, INPUT);
   uint8_t adapterId = adapterMCP23008.readGPIO();
-  umdDisplay.print("adapter id = 0x01", 2, 2);
-  umdDisplay.print("Hello", 3, 0);
-  umdDisplay.print(", World!", 3);
-  umdDisplay.print("Je t'aime Mireille!", 4, 0);
+  umdDisplay.print("adapter id = 0x01", 3, 2);
   umdDisplay.redraw();
 
   //register callbacks for SerialCommand related to the cartridge
@@ -116,6 +129,12 @@ void setup() {
   previousTicks = HAL_GetTick();
   // uint32_t currentTicks = HAL_GetTick();
   // while(HAL_GetTick() < (currentTicks + 5000));
+
+  // fill display buffer for scroll test
+  for(int i = 4; i<32; i++){
+    umdDisplay.print("line ", i);
+    umdDisplay.print(i, i);
+  }
 }
 
 void loop() {
@@ -126,8 +145,15 @@ void loop() {
     return;
   }
   previousTicks = currentTicks;
+  umdTicks++;
 
-  onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
+  if(umdTicks & 0x01){
+    onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
+    umdDisplay.scrollRotateDown(1, 1);
+    //displayYOffset = -displayYOffset;
+  }else{
+    onboardMCP23008.tooglePins(MCP23008_GP7);
+  }
 
   if(newInputs)
   {
@@ -137,8 +163,6 @@ void loop() {
     SerialUSB.println(inputs, HEX);
   }
 
-  umdDisplay.scrollLineX(3, 2);
-  umdDisplay.scrollLineX(4, -1);
   umdDisplay.redraw();
 }
 

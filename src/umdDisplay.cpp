@@ -27,7 +27,6 @@ void UMDDisplay::clear(void)
 
 void UMDDisplay::clearLine(int lineNumber)
 {
-    lineNeedsRedraw[lineNumber] = true;
     for(int chr = 0; chr < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; chr++)
     {
         this->buffer[lineNumber][chr] = ' ';
@@ -38,7 +37,6 @@ void UMDDisplay::print(const char characters[], int lineNumber, int printPos)
 {
     int i = 0;
     bufferNextPos[lineNumber] = printPos;
-    lineNeedsRedraw[lineNumber] = true;
 
     if(bufferNextPos[lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
         bufferNextPos[lineNumber] = 0;
@@ -59,29 +57,22 @@ void UMDDisplay::print(const char characters[], int lineNumber)
     this->print(characters, lineNumber, bufferNextPos[lineNumber]);
 }
 
+void UMDDisplay::print(int number, int lineNumber){
+    std::string tmp = std::to_string(number);
+    const char *num_char = tmp.c_str();
+    this->print(num_char, lineNumber);
+}
+
 void UMDDisplay::redraw()
 {
     char lineChars[OLED_MAX_CHARS_PER_LINE+1]; // +1 for terminator
-    int bufferPos, lineFromBuffer, previousLinePrinted;
+    int bufferPos, lineFromBuffer;
 
     _display->clearDisplay();
 
     for(int lineOnDisplay = 0; lineOnDisplay < OLED_MAX_LINES_PER_SCREEN; lineOnDisplay++)
     {
         lineFromBuffer = scroll[lineOnDisplay][0];
-        previousLinePrinted = scroll[lineOnDisplay][2];
-
-        // do we really need to redraw this line?
-        if(lineFromBuffer == previousLinePrinted){
-            // we printed this line last time, did it change?
-            if(!lineNeedsRedraw[lineFromBuffer]){
-                continue;
-            }
-        }
-
-        // don't print this line again unless it changes
-        scroll[lineOnDisplay][2] = lineFromBuffer;
-        lineNeedsRedraw[lineFromBuffer] = false;
 
         _display->setCursor(0, OLED_LINE_NUMBER(lineOnDisplay));
         bufferPos = scroll[lineOnDisplay][1];
@@ -111,7 +102,6 @@ void UMDDisplay::scrollLineX(int lineNumber, int delta){
     }
 
     scroll[lineNumber][1] += delta;
-    lineNeedsRedraw[lineNumber] = true;
     if(scroll[lineNumber][1] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
     {
         scroll[lineNumber][1] -= UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
@@ -131,14 +121,14 @@ void UMDDisplay::scrollRotateDown(int delta, int startIndex){
         return;
     }
 
-    for(int lineNumber = 0; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++){
+    for(int lineNumber = startIndex; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++){
         scroll[lineNumber][0] += delta;
-        if(scroll[lineNumber][0] >= OLED_MAX_LINES_PER_SCREEN){
-            scroll[lineNumber][0] -= OLED_MAX_LINES_PER_SCREEN;
+        if(scroll[lineNumber][0] >= UMD_DISPLAY_BUFFER_TOTAL_LINES){
+            scroll[lineNumber][0] = startIndex;
         }
-        else if(scroll[lineNumber][0] < 0)
+        else if(scroll[lineNumber][0] <= startIndex)
         {
-            scroll[lineNumber][0] += OLED_MAX_LINES_PER_SCREEN;
+            scroll[lineNumber][0] = UMD_DISPLAY_BUFFER_TOTAL_LINES-1;
         }
     }
 }
