@@ -33,6 +33,7 @@ class IUMDPorts{
         void setCE3();
         void setWR();
         void setRD();
+        void setIO(uint8_t io);
 
         void clearCE0();
         void clearCE1();
@@ -40,6 +41,12 @@ class IUMDPorts{
         void clearCE3();
         void clearRD();
         void clearWR();
+        void clearIO(uint8_t io);
+
+        uint8_t ioRead(uint8_t io);
+
+        void ioSetToOutput(uint16_t io, bool pushpull);
+        void ioSetToInput(uint16_t io, bool pullup);
 };
 
 #endif
