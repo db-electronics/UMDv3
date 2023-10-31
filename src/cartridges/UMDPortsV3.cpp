@@ -1,10 +1,10 @@
 #include "cartridges/UMDPortsV3.h"
 
-inline void UMDPortsV3::waitNs(uint16_t nanoSeconds){
-    TIM7->CNT = 0;
-    ticks = nanoSeconds/(1000/168);
-    while(TIM7->CNT <= ticks);
-}
+// void UMDPortsV3::waitNs(uint16_t nanoSeconds){
+//     TIM7->CNT = 0;
+//     ticks = nanoSeconds/(1000/168);
+//     while(TIM7->CNT <= ticks);
+// }
 
 void UMDPortsV3::setDefaults(){
 

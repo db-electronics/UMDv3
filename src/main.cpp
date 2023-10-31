@@ -106,7 +106,7 @@ void setup() {
   uint8_t adapterId = adapterMCP23008.readGPIO();
   cartridge = cartFactory.getCart(adapterId);
   umdDisplay.printf(line++, "adapter id = %d", adapterId);
-  umdDisplay.printf(line++, "system = %s", cartridge->SystemName);
+  umdDisplay.printf(line++, "system = %s", cartridge->getSystemName());
   umdDisplay.redraw();
 
   //register callbacks for SerialCommand related to the cartridge

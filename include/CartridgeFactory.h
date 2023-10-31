@@ -14,21 +14,12 @@ class CartridgeFactory
         CartridgeFactory(){};
 
         // these to match with the ids returned by the cartridge adapters
-        enum System : uint8_t{
+        enum UMDAdapterType : uint8_t{
             UNDEFINED = 0x00,
             GENESIS   = 0x01
         };
 
-        Cartridge* getCart(uint8_t system){
-
-            switch(system){
-                case GENESIS:
-                    return new Genesis();
-                default:
-                    return nullptr;
-            }
-            return nullptr;
-        }
+        Cartridge* getCart(uint8_t adapterId);
 };
 
 //IUMDPorts* CartridgeFactory::_ports = new UMDPortsV3();

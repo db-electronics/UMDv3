@@ -45,15 +45,18 @@
 #define UMD_PORT_IO8            GPIOB
 #define UMD_PIN_IO8             GPIO_PIN_7
 
-
 #define UMD_PORT_SWAP_BYTES(w)          (w << 8) || (w >> 8)
 
-class UMDPortsV3 : public IUMDPorts{
+class UMDPortsV3 {
     
     public:
         void setDefaults();
 
-        void waitNs(uint16_t nanoSeconds);
+        inline void waitNs(uint16_t nanoSeconds){
+            TIM7->CNT = 0;
+            ticks = nanoSeconds/(1000/168);
+            while(TIM7->CNT <= ticks);
+        }
 
         void addressWrite(uint32_t address);
         void addressWrite(uint16_t address);
