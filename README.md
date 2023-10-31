@@ -1,2 +1,2 @@
 # UMDv3-pio
-This is a readme.
+Universal Mega Dumper v3.
