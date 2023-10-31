@@ -74,7 +74,7 @@ void setup() {
   }
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
-  umdDisplay.printf(line++, F("init MCP23008"));
+  umdDisplay.printf(line++, F("init umd MCP23008"));
   umdDisplay.redraw();
 
   if(!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS)){
@@ -96,17 +96,25 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(UMD_MCP23008_INTERRUPT_PIN), inputInterrupt, FALLING);
 
   // setup adapter mcp23008, read adapter id
+  umdDisplay.printf(line++, F("init cart MCP23008"));
+  umdDisplay.redraw();
   if(!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS)){
-    umdDisplay.printf(line, F("  failed"));
+    umdDisplay.printf(line, F(" -no adapter found"));
     umdDisplay.redraw();
     while(1);
   }
 
   adapterMCP23008.pinMode(0xFF, INPUT);
-  uint8_t adapterId = adapterMCP23008.readGPIO();
+  uint8_t adapterId = adapterMCP23008.readGPIO();  
   cartridge = cartFactory.getCart(adapterId);
-  umdDisplay.printf(line++, "adapter id = %d", adapterId);
-  umdDisplay.printf(line++, "system = %s", cartridge->getSystemName());
+  if(cartridge == nullptr){
+    umdDisplay.printf(line++, F(" -unknown adapter"));
+    umdDisplay.redraw();
+    while(1);
+  }
+
+  umdDisplay.printf(line++, F(" -adapter id = %d"), adapterId);
+  umdDisplay.printf(line++, F(" -%s"), cartridge->getSystemName());
   umdDisplay.redraw();
 
   //register callbacks for SerialCommand related to the cartridge
@@ -119,7 +127,7 @@ void setup() {
   delay(2000);
 
   umdDisplay.clear();
-  umdDisplay.printf(0, F("UMDv3/Megadrive")); // todo change with cartridge name
+  umdDisplay.printf(0, F("UMDv3/%s"), cartridge->getSystemName()); // todo change with cartridge name
   umdDisplay.setCursorPosition(cursorX, cursorY);
   umdDisplay.redraw();
 }
