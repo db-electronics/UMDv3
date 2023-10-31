@@ -7,14 +7,52 @@ UMDDisplay::UMDDisplay()
     this->clear();
 }
 
-void UMDDisplay::begin(Adafruit_SSD1306 *display)
+bool UMDDisplay::begin(Adafruit_SSD1306 *display)
 {
+    // I don't like being tied to Adafruit_SSD1306 like this
     _display = display;
+    _cursorChar = '*';
+    //place cursor offscreen;
+    _cursorPosition.x = -1;
+    _cursorPosition.y = -1;
+
+    if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
+        return false;
+    }
 
     for(int i = 0; i < OLED_MAX_LINES_PER_SCREEN; i++){
         scroll[i][0] = i;
         scroll[i][1] = 0;
     }
+
+    _display->display();
+    delay(2000); // Pause for 2 seconds
+    _display->clearDisplay();
+    _display->setTextSize(1);             // Normal 1:1 pixel scale
+    _display->setTextColor(WHITE);        // Draw white text
+    _display->display();
+    _needsRedraw = false;
+    return true;
+}
+
+void UMDDisplay::setCursorChar(char c){
+    _cursorChar = c;
+    this->_needsRedraw = true;
+}
+
+void UMDDisplay::setCursorPosition(int x, int y){
+    if(x < OLED_MAX_CHARS_PER_LINE){
+        this->_cursorPosition.x = x * OLED_FONT_WIDTH;
+    }else{
+        this->_cursorPosition.x = -1;
+    }
+    
+    if(y < OLED_MAX_LINES_PER_SCREEN){
+        this->_cursorPosition.y = y * OLED_FONT_HEIGHT;
+    }else{
+        this->_cursorPosition.y = -1;
+    }
+    this->_needsRedraw = true;
 }
 
 void UMDDisplay::clear(void)
@@ -23,6 +61,7 @@ void UMDDisplay::clear(void)
     {
         this->clearLine(line);
     }
+    _needsRedraw = true;
 }
 
 void UMDDisplay::clearLine(int lineNumber)
@@ -31,6 +70,23 @@ void UMDDisplay::clearLine(int lineNumber)
     {
         this->buffer[lineNumber][chr] = ' ';
     }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::printf(int lineNumber, const char *format, ...){
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer[lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
+    va_end(args);
+    _needsRedraw = true;
+}
+
+void UMDDisplay::printf(int lineNumber, const __FlashStringHelper *format, ...){
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer[lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
+    va_end(args);
+    _needsRedraw = true;
 }
 
 void UMDDisplay::print(const char characters[], int lineNumber, int printPos)
@@ -65,6 +121,10 @@ void UMDDisplay::print(int number, int lineNumber){
 
 void UMDDisplay::redraw()
 {
+    if(!_needsRedraw){
+        return;
+    }
+    
     char lineChars[OLED_MAX_CHARS_PER_LINE+1]; // +1 for terminator
     int bufferPos, lineFromBuffer;
 
@@ -90,13 +150,19 @@ void UMDDisplay::redraw()
         _display->print(lineChars);
     }
 
+    if(this->_cursorPosition.x >= 0 && this->_cursorPosition.y >= 0){
+        _display->setCursor(this->_cursorPosition.x, this->_cursorPosition.y);
+        _display->print(this->_cursorChar);
+    }
+
     _display->display();
     for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++){
         bufferNextPos[i] = 0;
     }
+    _needsRedraw = false;
 }
 
-void UMDDisplay::scrollLineX(int lineNumber, int delta){
+void UMDDisplay::scrollX(int lineNumber, int delta){
     if(delta > UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
         return;
     }
@@ -110,13 +176,15 @@ void UMDDisplay::scrollLineX(int lineNumber, int delta){
     {
         scroll[lineNumber][1] += UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
     }
+    _needsRedraw = true;
 }
 
-void UMDDisplay::scrollRotateDown(int delta){
-    this->scrollRotateDown(delta, 0);
+void UMDDisplay::scrollY(int delta){
+    this->scrollY(delta, 0);
+    _needsRedraw = true;
 }
 
-void UMDDisplay::scrollRotateDown(int delta, int startIndex){
+void UMDDisplay::scrollY(int delta, int startIndex){
     if(delta > UMD_DISPLAY_BUFFER_TOTAL_LINES){
         return;
     }
@@ -131,4 +199,5 @@ void UMDDisplay::scrollRotateDown(int delta, int startIndex){
             scroll[lineNumber][0] = UMD_DISPLAY_BUFFER_TOTAL_LINES-1;
         }
     }
+    _needsRedraw = true;
 }

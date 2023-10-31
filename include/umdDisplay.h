@@ -1,7 +1,6 @@
 #ifndef UMD_DISPLAY_H
 #define UMD_DISPLAY_H
 
-#include <sstream>
 #include <Adafruit_SSD1306.h>
 
 #define OLED_RESET -1 
@@ -26,19 +25,29 @@ class UMDDisplay
         // scroll[lineIndex][charIndex]
 
         UMDDisplay();
-        void begin(Adafruit_SSD1306 *display);
+        bool begin(Adafruit_SSD1306 *display);
+        void setCursorChar(char c);
+        void setCursorPosition(int x, int y);
         void clear(void);
         void clearLine(int lineNumber);
+        void printf(int lineNumber, const char *format, ...);
+        void printf(int lineNumber, const __FlashStringHelper *format, ...);
         void print(const char characters[], int lineNumber, int pos);
         void print(const char characters[], int lineNumber);
         void print(int number, int lineNumber);
         void redraw();
-        void scrollLineX(int lineNumber, int delta); // scroll line by delta chars
-        void scrollRotateDown(int delta); // increment all line numbers by delta
-        void scrollRotateDown(int delta, int startIndex); // increment all line numbers by delta
+        void scrollX(int lineNumber, int delta); // scroll line by delta chars
+        void scrollY(int delta); // increment all line numbers by delta
+        void scrollY(int delta, int startIndex); // increment all line numbers by delta
 
     private:
         Adafruit_SSD1306 *_display;
+        bool _needsRedraw;
+        char _cursorChar;
+        struct CursorPosition{
+            int x;
+            int y;
+        }_cursorPosition;
 
         int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
 
