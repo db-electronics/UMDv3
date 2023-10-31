@@ -4,8 +4,6 @@
 #include <USBSerial.h>
 #include <Wire.h>
 #include <SPI.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
 #include <STM32SD.h>
 
 #include <stm32f4xx_hal.h>
@@ -15,6 +13,7 @@
 #include "i2cScanner.h"
 #include "mcp23008.h"
 #include "umdDisplay.h"
+#include "CartridgeFactory.h"
 
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
@@ -24,8 +23,10 @@ SdFatFs fatFs;
 SerialCommand SCmd;
 MCP23008 onboardMCP23008;
 MCP23008 adapterMCP23008;
-Adafruit_SSD1306 display(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 UMDDisplay umdDisplay;
+
+CartridgeFactory cartFactory;
+Cartridge* cartridge;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
@@ -37,9 +38,6 @@ unsigned long previousTicks;
 unsigned long umdTicks = 0;
 int displayYOffset = 1;
 int cursorX = 0, cursorY = 1;
-
-
-// HAL Code in here? https://www.stm32duino.com/viewtopic.php?t=82
 
 void setup() {
   int line = 0;
@@ -58,7 +56,7 @@ void setup() {
   // Wire.setSDA(PB9);
   Wire.begin();
 
-  if(!umdDisplay.begin(&display)){
+  if(!umdDisplay.begin()){
     SerialUSB.println(F("display init failure"));
     while(1);
   }
@@ -72,7 +70,7 @@ void setup() {
   if(!SD.begin(SD_DETECT_PIN)){
     umdDisplay.printf(line, F("  failed"));
     umdDisplay.redraw();
-    while(1);
+    while(1); 
   }
 
   // setup onboard mcp23008, GP6 and GP7 LED outputs
@@ -106,7 +104,9 @@ void setup() {
 
   adapterMCP23008.pinMode(0xFF, INPUT);
   uint8_t adapterId = adapterMCP23008.readGPIO();
+  cartridge = cartFactory.getCart(adapterId);
   umdDisplay.printf(line++, "adapter id = %d", adapterId);
+  umdDisplay.printf(line++, "system = %s", cartridge->SystemName);
   umdDisplay.redraw();
 
   //register callbacks for SerialCommand related to the cartridge

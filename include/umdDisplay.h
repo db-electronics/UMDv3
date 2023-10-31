@@ -26,7 +26,7 @@ class UMDDisplay
         // scroll[lineIndex][charIndex]
 
         UMDDisplay();
-        bool begin(Adafruit_SSD1306 *display);
+        bool begin();
         void setCursorChar(char c);
         void setCursorPosition(int x, int y);
         void clear(void);
@@ -42,7 +42,7 @@ class UMDDisplay
         void scrollY(int delta, int startIndex); // increment all line numbers by delta
 
     private:
-        Adafruit_SSD1306 *_display;
+        static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
         char _cursorChar;
         struct CursorPosition{

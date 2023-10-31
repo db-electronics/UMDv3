@@ -1,16 +1,18 @@
 
 #include "umdDisplay.h"
 
+Adafruit_SSD1306* UMDDisplay::_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 UMDDisplay::UMDDisplay()
 {
     this->clear();
 }
 
-bool UMDDisplay::begin(Adafruit_SSD1306 *display)
+bool UMDDisplay::begin()
 {
     // I don't like being tied to Adafruit_SSD1306 like this
-    _display = display;
+    //_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
+
     _cursorChar = '*';
     //place cursor offscreen;
     _cursorPosition.x = -1;

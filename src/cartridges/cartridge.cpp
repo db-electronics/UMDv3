@@ -1,7 +1,8 @@
 #include "cartridges/cartridge.h"
 
-Cartridge::Cartridge(IUMDPorts *umdPorts){
-    _umdPorts = umdPorts;
+IUMDPorts *_umdPorts = new UMDPortsV3();
+
+Cartridge::Cartridge(){
     _umdPorts->setDefaults();
 }
 
