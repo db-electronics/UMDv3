@@ -152,6 +152,12 @@ void loop() {
     }else if(inputs & UMD_UP_PUSHBUTTON){
       cursorY--;
       umdDisplay.setCursorPosition(cursorX, cursorY);
+    }else if(inputs & UMD_RIGHT_PUSHBUTTON){
+      cursorX++;
+      umdDisplay.setCursorPosition(cursorX, cursorY);
+    }else if(inputs & UMD_LEFT_PUSHBUTTON){
+      cursorX--;
+      umdDisplay.setCursorPosition(cursorX, cursorY);
     }
   }
 

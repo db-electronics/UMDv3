@@ -1,6 +1,7 @@
 #ifndef UMD_DISPLAY_H
 #define UMD_DISPLAY_H
 
+#include <string>
 #include <Adafruit_SSD1306.h>
 
 #define OLED_RESET -1 
