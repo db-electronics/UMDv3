@@ -2,7 +2,6 @@
 #define CARTRIDGE_H
 
 #include "UMDPortsV3.h"
-#include <string>
 
 class Cartridge : public UMDPortsV3 {
     public:
@@ -11,7 +10,6 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
 
         virtual const char* getSystemName() = 0;
-
         virtual uint8_t readByte(uint16_t address);
         virtual uint8_t readByte(uint32_t address);
 

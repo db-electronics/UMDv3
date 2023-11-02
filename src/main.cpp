@@ -9,11 +9,13 @@
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
 
+#include "pinRemap.h"
 #include "umdBoardDefinitions.h"
 #include "i2cScanner.h"
 #include "mcp23008.h"
 #include "umdDisplay.h"
 #include "CartridgeFactory.h"
+#include "Controls.h"
 
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
@@ -26,16 +28,13 @@ MCP23008 adapterMCP23008;
 UMDDisplay umdDisplay;
 
 CartridgeFactory cartFactory;
-Cartridge* cartridge;
+std::unique_ptr<Cartridge> cartridge;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
 
-uint8_t inputs;
 bool newInputs;
 
-unsigned long previousTicks;
-unsigned long umdTicks = 0;
 int displayYOffset = 1;
 int cursorX = 0, cursorY = 1;
 
@@ -90,10 +89,10 @@ void setup() {
   onboardMCP23008.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
   onboardMCP23008.digitalWrite(UMD_BOARD_LEDS, LOW);
   newInputs = false;
-  inputs = onboardMCP23008.readGPIO();
+
   // interrupt line tied to PD1
-  pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(UMD_MCP23008_INTERRUPT_PIN), inputInterrupt, FALLING);
+  // pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
+  // attachInterrupt(digitalPinToInterrupt(UMD_MCP23008_INTERRUPT_PIN), inputInterrupt, FALLING);
 
   // setup adapter mcp23008, read adapter id
   umdDisplay.printf(line++, F("init cart MCP23008"));
@@ -120,15 +119,11 @@ void setup() {
   //register callbacks for SerialCommand related to the cartridge
   SCmd.addCommand("scani2c", scmdScanI2C);
 
-  previousTicks = HAL_GetTick();
-  // uint32_t currentTicks = HAL_GetTick();
-  // while(HAL_GetTick() < (currentTicks + 5000));
-
   delay(2000);
 
   umdDisplay.clear();
   umdDisplay.printf(0, F("UMDv3/%s"), cartridge->getSystemName()); // todo change with cartridge name
-  umdDisplay.setCursorPosition(cursorX, cursorY);
+  umdDisplay.setCursorPosition(-1, -1);
   umdDisplay.redraw();
 }
 
@@ -136,40 +131,12 @@ void loop() {
 
   // Reminder: when debugging ticks isn't accurate at all
   uint32_t currentTicks = HAL_GetTick();
-  if( (currentTicks - previousTicks) < 250){
-    return;
-  }
-  previousTicks = currentTicks;
-  umdTicks++;
+  static Controls userInput;
 
-  // if(umdTicks & 0x01){
-  //   onboardMCP23008.tooglePins(MCP23008_GP7 | MCP23008_GP6);
-  //   umdDisplay.scrollY(1, 1);
-  //   //displayYOffset = -displayYOffset;
-  // }else{
-  //   onboardMCP23008.tooglePins(MCP23008_GP7);
-  // }
-
-  if(newInputs){
-    newInputs = false;
-    inputs = ~onboardMCP23008.readInterruptCapture();
-    umdDisplay.printf(2, F(" inputs = 0x%X"), inputs);
-    if(inputs & UMD_DOWN_PUSHBUTTON){
-      cursorY++;
-      umdDisplay.setCursorPosition(cursorX, cursorY);
-    }else if(inputs & UMD_UP_PUSHBUTTON){
-      cursorY--;
-      umdDisplay.setCursorPosition(cursorX, cursorY);
-    }else if(inputs & UMD_RIGHT_PUSHBUTTON){
-      cursorX++;
-      umdDisplay.setCursorPosition(cursorX, cursorY);
-    }else if(inputs & UMD_LEFT_PUSHBUTTON){
-      cursorX--;
-      umdDisplay.setCursorPosition(cursorX, cursorY);
-    }
-  }
-
+  uint8_t inputs = onboardMCP23008.readGPIO();
+  userInput.process(inputs, currentTicks);
   umdDisplay.redraw();
+  delay(100);
 }
 
 

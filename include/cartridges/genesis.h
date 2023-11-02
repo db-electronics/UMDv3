@@ -11,6 +11,7 @@ class Genesis : public Cartridge {
         Genesis();
         virtual ~Genesis();
 
+
         virtual const char* getSystemName();
 
         virtual uint8_t readByte(uint32_t address);

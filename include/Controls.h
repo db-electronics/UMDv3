@@ -1,4 +1,8 @@
+#ifndef CONTROLS_H
+#define CONTROLS_H
+
 #include <Arduino.h>
+#include "umdBoardDefinitions.h"
 
 class Controls{
     public:
@@ -18,21 +22,22 @@ class Controls{
         ButtonState Ok;
         ButtonState Back;
 
-        void process(uint8_t inputs, uint32_t ticks);
+        void process(uint8_t inputs, uint32_t currentTicks);
     
     private:
-        void _setButtonState(ButtonState *btn, uint32_t *ticks, bool isPressed);
 
-        uint32_t _ticks;
-        uint32_t _upTicks;
-        uint32_t _downTicks;
-        uint32_t _leftTicks;
-        uint32_t _rightTicks;
-        uint32_t _okTicks;
-        uint32_t _backTicks;
+        struct BtnState {
+            BtnState(ButtonState *state, uint8_t mask) : state(state), pinMask(mask){}
+            uint32_t previousTicks;
+            ButtonState *state;
+            uint8_t pinMask;
+        };
+
+        void _setButtonState(uint8_t inputs, uint32_t currentTicks, BtnState *btnState);
+        std::vector<BtnState> _btnStates;
 
         const uint32_t _pressedToHeldTicks = 500;
         const uint32_t _releasedToOffTicks = 200;
-
-
 };
+
+#endif
