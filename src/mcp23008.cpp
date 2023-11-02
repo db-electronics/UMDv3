@@ -3,11 +3,16 @@
 bool MCP23008::begin(uint8_t address, TwoWire *wire)
 {
     // keep address in range
-    if ((address >= MCP23008_BASE_ADDRESS) && (address <= MCP23008_MAX_ADDRESS)) {
+    if ((address >= MCP23008_BASE_ADDRESS) && (address <= MCP23008_MAX_ADDRESS))
+    {
         _deviceAddress = address;
-    } else if (address <= 0x07) {
+    }
+    else if (address <= 0x07)
+    {
         _deviceAddress = MCP23008_BASE_ADDRESS + address;
-    } else {
+    }
+    else
+    {
         _deviceAddress = MCP23008_MAX_ADDRESS;
     }
 
@@ -16,8 +21,8 @@ bool MCP23008::begin(uint8_t address, TwoWire *wire)
     // check if device is actually there
     _wire->beginTransmission(_deviceAddress);
     error = _wire->endTransmission();
-    
-    if(error != 0)
+
+    if (error != 0)
     {
         return false;
     }
@@ -29,7 +34,8 @@ bool MCP23008::_initAllPOR(void)
 {
     // these should be the POR values in the device
     _registers[MCP23008_IODIR] = 0xFF;
-    for(int i = 1; i < MCP23008_NUM_OF_SHADOW_REGISTERS; i++){
+    for (int i = 1; i < MCP23008_NUM_OF_SHADOW_REGISTERS; i++)
+    {
         _registers[i] = 0;
     }
 
@@ -37,8 +43,9 @@ bool MCP23008::_initAllPOR(void)
     _wire->write(MCP23008_IODIR);
     _wire->write(_registers, MCP23008_NUM_OF_SHADOW_REGISTERS);
     error = _wire->endTransmission();
-    if(error == 0){
-        return true;    
+    if (error == 0)
+    {
+        return true;
     }
     return false;
 }
@@ -49,15 +56,16 @@ bool MCP23008::_writeDeviceRegister(uint8_t registerAddress, uint8_t val)
     _wire->write(registerAddress);
     _wire->write(val);
     error = _wire->endTransmission();
-    if(error == 0){
-        return true;    
+    if (error == 0)
+    {
+        return true;
     }
     return false;
 }
 
 bool MCP23008::_updateRegister(uint8_t registerAddress, uint8_t bitMask, bool set)
 {
-    if(set)
+    if (set)
     {
         _registers[registerAddress] |= bitMask;
     }

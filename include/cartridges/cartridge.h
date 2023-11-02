@@ -9,6 +9,8 @@ class Cartridge : public UMDPortsV3 {
         Cartridge();
         virtual ~Cartridge();
 
+        void testWait(void);
+
         virtual const char* getSystemName() = 0;
         virtual uint8_t readByte(uint16_t address);
         virtual uint8_t readByte(uint32_t address);

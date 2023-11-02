@@ -7,29 +7,41 @@ Cartridge::Cartridge(){
 Cartridge::~Cartridge(){
 }
 
+void Cartridge::testWait(void){
+    clearCE0();
+    wait100ns();
+    setCE0();
+    clearCE0();
+    wait150ns();
+    setCE0();
+    clearCE0();
+    wait200ns();
+    setCE0();
+    clearCE0();
+    wait250ns();
+    setCE0();
+}
+
 uint8_t Cartridge::readByte(uint16_t address){
 
     uint8_t result;
     this->addressWrite(address);
-    this->waitNs(addressSetupTime);
     this->clearCE0();
     this->clearRD();
-    this->waitNs(readHoldTime);
+    wait250ns();
     result = this->dataReadLow();
     this->setRD();
     this->setCE0();
-    return  
-    result;
+    return result;
 }
 
 uint8_t Cartridge::readByte(uint32_t address){
 
     uint8_t result;
     this->addressWrite(address);
-    this->waitNs(addressSetupTime);
     this->clearCE0();
     this->clearRD();
-    this->waitNs(readHoldTime);
+    wait250ns();
     result = this->dataReadLow();
     this->setRD();
     this->setCE0();
@@ -38,12 +50,11 @@ uint8_t Cartridge::readByte(uint32_t address){
 
 void Cartridge::writeByte(uint16_t address, uint8_t data){
     this->addressWrite(address);
-    this->waitNs(addressSetupTime);
     this->dataSetToOutputs();
     this->dataWriteLow(data);
     this->clearCE0();
     this->clearWR();
-    this->waitNs(writeHoldTime);
+    wait250ns();
     this->setCE0();
     this->setWR();
 
@@ -55,10 +66,9 @@ uint16_t Cartridge::readWord(uint32_t address){
 
     uint16_t result;
     this->addressWrite(address);
-    this->waitNs(addressSetupTime);
     this->clearCE0();
     this->clearRD();
-    this->waitNs(readHoldTime);
+    wait250ns();
     result = this->dataReadWord();
     this->setRD();
     this->setCE0();

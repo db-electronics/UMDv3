@@ -1,0 +1,8 @@
+Language: Cpp
+BasedOnStyle: Microsoft
+IndentWidth: 4
+IndentAccessModifiers: true
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: true
+  AcrossComments: true
