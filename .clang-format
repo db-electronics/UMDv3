@@ -1,3 +1,4 @@
+
 Language: Cpp
 BasedOnStyle: Microsoft
 IndentWidth: 4
@@ -6,3 +7,11 @@ AlignConsecutiveMacros:
   Enabled: true
   AcrossEmptyLines: true
   AcrossComments: true
+
+AllowShortBlocksOnASingleLine: Always
+AllowShortLoopsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortEnumsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortLoopsOnASingleLine: true
+BreakBeforeBinaryOperators: None

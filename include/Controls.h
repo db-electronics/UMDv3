@@ -2,6 +2,7 @@
 #define CONTROLS_H
 
 #include <Arduino.h>
+#include <vector>
 #include "umdBoardDefinitions.h"
 
 class Controls{

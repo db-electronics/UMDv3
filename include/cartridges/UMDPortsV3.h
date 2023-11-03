@@ -65,30 +65,15 @@ class UMDPortsV3
     protected:
         void setDefaults();
 
-        __attribute__((always_inline)) void wait50ns()
-        {
-            asm volatile(M_REPEAT_8("nop\n\r"));
-        }
+        __attribute__((always_inline)) void wait50ns() { asm volatile(M_REPEAT_8("nop\n\r")); }
 
-        __attribute__((always_inline)) void wait100ns()
-        {
-            asm volatile(M_REPEAT_16("nop\n\r"));
-        }
+        __attribute__((always_inline)) void wait100ns() { asm volatile(M_REPEAT_16("nop\n\r")); }
 
-        __attribute__((always_inline)) void wait150ns()
-        {
-            asm volatile(M_REPEAT_24("nop\n\r"));
-        }
+        __attribute__((always_inline)) void wait150ns() { asm volatile(M_REPEAT_24("nop\n\r")); }
 
-        __attribute__((always_inline)) void wait200ns()
-        {
-            asm volatile(M_REPEAT_33("nop\n\r"));
-        }
+        __attribute__((always_inline)) void wait200ns() { asm volatile(M_REPEAT_33("nop\n\r")); }
 
-        __attribute__((always_inline)) void wait250ns()
-        {
-            asm volatile(M_REPEAT_41("nop\n\r"));
-        }
+        __attribute__((always_inline)) void wait250ns() { asm volatile(M_REPEAT_41("nop\n\r")); }
 
         /// @brief write a 16 bit address to the address bus
         /// @param address 16 bit address
@@ -109,24 +94,15 @@ class UMDPortsV3
 
         /// @brief read the lower 8 bits of the data bus
         /// @return data
-        __attribute__((always_inline)) uint8_t dataReadLow()
-        {
-            return _portByteReadLow(UMD_PORT_DATABUS);
-        }
+        __attribute__((always_inline)) uint8_t dataReadLow() { return _portByteReadLow(UMD_PORT_DATABUS); }
 
         /// @brief read the upper 8 bits of the data bus
         /// @return data
-        __attribute__((always_inline)) uint8_t dataReadHigh()
-        {
-            return _portByteReadHigh(UMD_PORT_DATABUS);
-        }
+        __attribute__((always_inline)) uint8_t dataReadHigh() { return _portByteReadHigh(UMD_PORT_DATABUS); }
 
         /// @brief read a little endian word from the data bus
         /// @return little endian word
-        __attribute__((always_inline)) uint16_t dataReadWord()
-        {
-            return _portWordRead(UMD_PORT_DATABUS);
-        }
+        __attribute__((always_inline)) uint16_t dataReadWord() { return _portWordRead(UMD_PORT_DATABUS); }
 
         /// @brief read a big endian word from the data bus
         /// @return big endian word
@@ -137,17 +113,11 @@ class UMDPortsV3
 
         /// @brief write a byte to the data bus
         /// @param value
-        __attribute__((always_inline)) void dataWrite(uint8_t value)
-        {
-            _portByteWriteLow(UMD_PORT_DATABUS, value);
-        }
+        __attribute__((always_inline)) void dataWrite(uint8_t value) { _portByteWriteLow(UMD_PORT_DATABUS, value); }
 
         /// @brief write a byte to the lower 8 bits of the data bus
         /// @param value
-        __attribute__((always_inline)) void dataWriteLow(uint8_t value)
-        {
-            _portByteWriteLow(UMD_PORT_DATABUS, value);
-        }
+        __attribute__((always_inline)) void dataWriteLow(uint8_t value) { _portByteWriteLow(UMD_PORT_DATABUS, value); }
 
         /// @brief write a byte to the upper 8 bits of the data bus
         /// @param value
@@ -178,82 +148,43 @@ class UMDPortsV3
         }
 
         /// @brief set the data bus to outputs
-        __attribute__((always_inline)) void dataSetToOutputs()
-        {
-            _portSetToOutput(UMD_PORT_DATABUS);
-        }
+        __attribute__((always_inline)) void dataSetToOutputs() { _portSetToOutput(UMD_PORT_DATABUS); }
 
         /// @brief set the CE0 pin
-        __attribute__((always_inline)) void setCE0()
-        {
-            _bitSet(UMD_PORT_CE0, UMD_PIN_CE0);
-        }
+        __attribute__((always_inline)) void setCE0() { _bitSet(UMD_PORT_CE0, UMD_PIN_CE0); }
 
         /// @brief set the CE1 pin
-        __attribute__((always_inline)) void setCE1()
-        {
-            _bitSet(UMD_PORT_CE1, UMD_PIN_CE1);
-        }
+        __attribute__((always_inline)) void setCE1() { _bitSet(UMD_PORT_CE1, UMD_PIN_CE1); }
 
         /// @brief set the CE2 pin
-        __attribute__((always_inline)) void setCE2()
-        {
-            _bitSet(UMD_PORT_CE2, UMD_PIN_CE2);
-        }
+        __attribute__((always_inline)) void setCE2() { _bitSet(UMD_PORT_CE2, UMD_PIN_CE2); }
 
         /// @brief set the CE3 pin
-        __attribute__((always_inline)) void setCE3()
-        {
-            _bitSet(UMD_PORT_CE3, UMD_PIN_CE3);
-        }
+        __attribute__((always_inline)) void setCE3() { _bitSet(UMD_PORT_CE3, UMD_PIN_CE3); }
 
         /// @brief set the WR pin
-        __attribute__((always_inline)) void setWR()
-        {
-            _bitSet(UMD_PORT_RD, UMD_PIN_RD);
-        }
+        __attribute__((always_inline)) void setWR() { _bitSet(UMD_PORT_RD, UMD_PIN_RD); }
 
         /// @brief set the RD pin
-        __attribute__((always_inline)) void setRD()
-        {
-            _bitSet(UMD_PORT_RD, UMD_PIN_RD);
-        }
+        __attribute__((always_inline)) void setRD() { _bitSet(UMD_PORT_RD, UMD_PIN_RD); }
 
         /// @brief clear the CE0 pin
-        __attribute__((always_inline)) void clearCE0()
-        {
-            _bitClear(UMD_PORT_CE0, UMD_PIN_CE0);
-        }
+        __attribute__((always_inline)) void clearCE0() { _bitClear(UMD_PORT_CE0, UMD_PIN_CE0); }
 
         /// @brief clear the CE1 pin
-        __attribute__((always_inline)) void clearCE1()
-        {
-            _bitClear(UMD_PORT_CE1, UMD_PIN_CE1);
-        }
+        __attribute__((always_inline)) void clearCE1() { _bitClear(UMD_PORT_CE1, UMD_PIN_CE1); }
 
         /// @brief clear the CE2 pin
-        __attribute__((always_inline)) void clearCE2()
-        {
-            _bitClear(UMD_PORT_CE2, UMD_PIN_CE2);
-        }
+        __attribute__((always_inline)) void clearCE2() { _bitClear(UMD_PORT_CE2, UMD_PIN_CE2); }
 
         /// @brief clear the CE3 pin
-        __attribute__((always_inline)) void clearCE3()
-        {
-            _bitClear(UMD_PORT_CE3, UMD_PIN_CE3);
-        }
+        __attribute__((always_inline)) void clearCE3() { _bitClear(UMD_PORT_CE3, UMD_PIN_CE3); }
 
         /// @brief clear the RD pin
-        __attribute__((always_inline)) void clearRD()
-        {
-            _bitClear(UMD_PORT_RD, UMD_PIN_RD);
-        }
+        __attribute__((always_inline)) void clearRD() { _bitClear(UMD_PORT_RD, UMD_PIN_RD); }
 
         /// @brief clear the WR pin
-        __attribute__((always_inline)) void clearWR()
-        {
-            _bitClear(UMD_PORT_WR, UMD_PIN_WR);
-        }
+        __attribute__((always_inline)) void clearWR() { _bitClear(UMD_PORT_WR, UMD_PIN_WR); }
 
         /// @brief set an IO pin
         /// @param io IO pin number
@@ -261,35 +192,16 @@ class UMDPortsV3
         {
             switch (io)
             {
-            case 0:
-                _bitSet(UMD_PORT_IO0, UMD_PIN_IO0);
-                break;
-            case 1:
-                _bitSet(UMD_PORT_IO1, UMD_PIN_IO1);
-                break;
-            case 2:
-                _bitSet(UMD_PORT_IO2, UMD_PIN_IO2);
-                break;
-            case 3:
-                _bitSet(UMD_PORT_IO3, UMD_PIN_IO3);
-                break;
-            case 4:
-                _bitSet(UMD_PORT_IO4, UMD_PIN_IO4);
-                break;
-            case 5:
-                _bitSet(UMD_PORT_IO5, UMD_PIN_IO5);
-                break;
-            case 6:
-                _bitSet(UMD_PORT_IO6, UMD_PIN_IO6);
-                break;
-            case 7:
-                _bitSet(UMD_PORT_IO7, UMD_PIN_IO7);
-                break;
-            case 8:
-                _bitSet(UMD_PORT_IO8, UMD_PIN_IO8);
-                break;
-            default:
-                break;
+            case 0: _bitSet(UMD_PORT_IO0, UMD_PIN_IO0); break;
+            case 1: _bitSet(UMD_PORT_IO1, UMD_PIN_IO1); break;
+            case 2: _bitSet(UMD_PORT_IO2, UMD_PIN_IO2); break;
+            case 3: _bitSet(UMD_PORT_IO3, UMD_PIN_IO3); break;
+            case 4: _bitSet(UMD_PORT_IO4, UMD_PIN_IO4); break;
+            case 5: _bitSet(UMD_PORT_IO5, UMD_PIN_IO5); break;
+            case 6: _bitSet(UMD_PORT_IO6, UMD_PIN_IO6); break;
+            case 7: _bitSet(UMD_PORT_IO7, UMD_PIN_IO7); break;
+            case 8: _bitSet(UMD_PORT_IO8, UMD_PIN_IO8); break;
+            default: break;
             }
         }
 
@@ -299,35 +211,16 @@ class UMDPortsV3
         {
             switch (io)
             {
-            case 0:
-                this->_bitClear(UMD_PORT_IO0, UMD_PIN_IO0);
-                break;
-            case 1:
-                this->_bitClear(UMD_PORT_IO1, UMD_PIN_IO1);
-                break;
-            case 2:
-                this->_bitClear(UMD_PORT_IO2, UMD_PIN_IO2);
-                break;
-            case 3:
-                this->_bitClear(UMD_PORT_IO3, UMD_PIN_IO3);
-                break;
-            case 4:
-                this->_bitClear(UMD_PORT_IO4, UMD_PIN_IO4);
-                break;
-            case 5:
-                this->_bitClear(UMD_PORT_IO5, UMD_PIN_IO5);
-                break;
-            case 6:
-                this->_bitClear(UMD_PORT_IO6, UMD_PIN_IO6);
-                break;
-            case 7:
-                this->_bitClear(UMD_PORT_IO7, UMD_PIN_IO7);
-                break;
-            case 8:
-                this->_bitClear(UMD_PORT_IO8, UMD_PIN_IO8);
-                break;
-            default:
-                break;
+            case 0: this->_bitClear(UMD_PORT_IO0, UMD_PIN_IO0); break;
+            case 1: this->_bitClear(UMD_PORT_IO1, UMD_PIN_IO1); break;
+            case 2: this->_bitClear(UMD_PORT_IO2, UMD_PIN_IO2); break;
+            case 3: this->_bitClear(UMD_PORT_IO3, UMD_PIN_IO3); break;
+            case 4: this->_bitClear(UMD_PORT_IO4, UMD_PIN_IO4); break;
+            case 5: this->_bitClear(UMD_PORT_IO5, UMD_PIN_IO5); break;
+            case 6: this->_bitClear(UMD_PORT_IO6, UMD_PIN_IO6); break;
+            case 7: this->_bitClear(UMD_PORT_IO7, UMD_PIN_IO7); break;
+            case 8: this->_bitClear(UMD_PORT_IO8, UMD_PIN_IO8); break;
+            default: break;
             }
         }
 
@@ -338,10 +231,7 @@ class UMDPortsV3
 
     private:
         uint16_t ticks;
-        __attribute__((always_inline)) void _bitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
-        {
-            GPIOx->BSRR = GPIO_Pin;
-        }
+        __attribute__((always_inline)) void _bitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) { GPIOx->BSRR = GPIO_Pin; }
         __attribute__((always_inline)) void _bitClear(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
         {
             GPIOx->BSRR = (uint32_t)GPIO_Pin << 16U;
@@ -378,15 +268,9 @@ class UMDPortsV3
             return (uint8_t)((GPIOx->IDR >> 8) & 0xFF);
         }
 
-        __attribute__((always_inline)) void _portWordWrite(GPIO_TypeDef *GPIOx, uint16_t value)
-        {
-            GPIOx->ODR = value;
-        }
+        __attribute__((always_inline)) void _portWordWrite(GPIO_TypeDef *GPIOx, uint16_t value) { GPIOx->ODR = value; }
 
-        __attribute__((always_inline)) uint16_t _portWordRead(GPIO_TypeDef *GPIOx)
-        {
-            return (uint16_t)GPIOx->IDR;
-        }
+        __attribute__((always_inline)) uint16_t _portWordRead(GPIO_TypeDef *GPIOx) { return (uint16_t)GPIOx->IDR; }
 
         __attribute__((always_inline)) void _portSetToInput(GPIO_TypeDef *GPIOx, bool pullups)
         {

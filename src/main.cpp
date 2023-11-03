@@ -119,7 +119,8 @@ void setup()
     {
         umdDisplay.printf(line++, F(" -unknown adapter"));
         umdDisplay.redraw();
-        while (1);
+        while (1)
+            ;
     }
 
     umdDisplay.printf(line++, F(" -adapter id = %d"), adapterId);
@@ -132,8 +133,7 @@ void setup()
     delay(2000);
 
     umdDisplay.clear();
-    umdDisplay.printf(0, F("UMDv3/%s"),
-                      cartridge->getSystemName());
+    umdDisplay.printf(0, F("UMDv3/%s"), cartridge->getSystemName());
     umdDisplay.setCursorPosition(-1, -1);
     umdDisplay.redraw();
 }
@@ -146,9 +146,9 @@ void loop()
 
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
-    
+
     cartridge->testWait();
-    //cartridge->testWaitNs();
+    // cartridge->testWaitNs();
 
     umdDisplay.redraw();
     delay(100);
@@ -169,10 +169,7 @@ void scmdScanI2C(void)
     std::vector<uint8_t> addresses;
     addresses = scanner.findDevices(&Wire);
 
-    for (uint8_t address : addresses)
-    {
-        SerialUSB.println(address, HEX);
-    }
+    for (uint8_t address : addresses) { SerialUSB.println(address, HEX); }
 }
 
 void inputInterrupt(void)
