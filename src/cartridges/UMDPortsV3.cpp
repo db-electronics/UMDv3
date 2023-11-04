@@ -274,100 +274,103 @@ void UMDPortsV3::setDefaults(){
 //     }
 // }
 
+
+// I don't think this method needs to be fast, no inline for you
 void UMDPortsV3::ioSetToOutput(uint16_t io, bool pushpull = true){
     switch(io){
         case 0:
-            this->_bitSetToOutput(UMD_PORT_IO0, UMD_PIN_IO0, pushpull);
+            _bitSetToOutput(UMD_PORT_IO0, UMD_PIN_IO0, pushpull);
             break;
         case 1:
-            this->_bitSetToOutput(UMD_PORT_IO1, UMD_PIN_IO1, pushpull);
+            _bitSetToOutput(UMD_PORT_IO1, UMD_PIN_IO1, pushpull);
             break;
         case 2:
-            this->_bitSetToOutput(UMD_PORT_IO2, UMD_PIN_IO2, pushpull);
+            _bitSetToOutput(UMD_PORT_IO2, UMD_PIN_IO2, pushpull);
             break;
         case 3:
-            this->_bitSetToOutput(UMD_PORT_IO3, UMD_PIN_IO3, pushpull);
+            _bitSetToOutput(UMD_PORT_IO3, UMD_PIN_IO3, pushpull);
             break;
         case 4:
-            this->_bitSetToOutput(UMD_PORT_IO4, UMD_PIN_IO4, pushpull);
+            _bitSetToOutput(UMD_PORT_IO4, UMD_PIN_IO4, pushpull);
             break;
         case 5:
-            this->_bitSetToOutput(UMD_PORT_IO5, UMD_PIN_IO5, pushpull);
+            _bitSetToOutput(UMD_PORT_IO5, UMD_PIN_IO5, pushpull);
             break;
         case 6:
-            this->_bitSetToOutput(UMD_PORT_IO6, UMD_PIN_IO6, pushpull);
+            _bitSetToOutput(UMD_PORT_IO6, UMD_PIN_IO6, pushpull);
             break;
         case 7:
-            this->_bitSetToOutput(UMD_PORT_IO7, UMD_PIN_IO7, pushpull);
+            _bitSetToOutput(UMD_PORT_IO7, UMD_PIN_IO7, pushpull);
             break;
         case 8:
-            this->_bitSetToOutput(UMD_PORT_IO8, UMD_PIN_IO8, pushpull);
+            _bitSetToOutput(UMD_PORT_IO8, UMD_PIN_IO8, pushpull);
             break;
         default:
             break;
     }
 }
 
+// I don't think this method needs to be fast, no inline for you
 void UMDPortsV3::ioSetToInput(uint16_t io, bool pullup = false){
     switch(io){
         case 0:
-            this->_bitSetToInput(UMD_PORT_IO0, UMD_PIN_IO0, pullup);
+            _bitSetToInput(UMD_PORT_IO0, UMD_PIN_IO0, pullup);
             break;
         case 1:
-            this->_bitSetToInput(UMD_PORT_IO1, UMD_PIN_IO1, pullup);
+            _bitSetToInput(UMD_PORT_IO1, UMD_PIN_IO1, pullup);
             break;
         case 2:
-            this->_bitSetToInput(UMD_PORT_IO2, UMD_PIN_IO2, pullup);
+            _bitSetToInput(UMD_PORT_IO2, UMD_PIN_IO2, pullup);
             break;
         case 3:
-            this->_bitSetToInput(UMD_PORT_IO3, UMD_PIN_IO3, pullup);
+            _bitSetToInput(UMD_PORT_IO3, UMD_PIN_IO3, pullup);
             break;
         case 4:
-            this->_bitSetToInput(UMD_PORT_IO4, UMD_PIN_IO4, pullup);
+            _bitSetToInput(UMD_PORT_IO4, UMD_PIN_IO4, pullup);
             break;
         case 5:
-            this->_bitSetToInput(UMD_PORT_IO5, UMD_PIN_IO5, pullup);
+            _bitSetToInput(UMD_PORT_IO5, UMD_PIN_IO5, pullup);
             break;
         case 6:
-            this->_bitSetToInput(UMD_PORT_IO6, UMD_PIN_IO6, pullup);
+            _bitSetToInput(UMD_PORT_IO6, UMD_PIN_IO6, pullup);
             break;
         case 7:
-            this->_bitSetToInput(UMD_PORT_IO7, UMD_PIN_IO7, pullup);
+            _bitSetToInput(UMD_PORT_IO7, UMD_PIN_IO7, pullup);
             break;
         case 8:
-            this->_bitSetToInput(UMD_PORT_IO8, UMD_PIN_IO8, pullup);
+            _bitSetToInput(UMD_PORT_IO8, UMD_PIN_IO8, pullup);
             break;
         default:
             break;
     }
 }
 
-uint8_t UMDPortsV3::ioRead(uint8_t io){
-    switch(io){
-        case 0:
-            return this->_bitRead(UMD_PORT_IO0, UMD_PIN_IO0);
-        case 1:
-            return this->_bitRead(UMD_PORT_IO1, UMD_PIN_IO1);
-        case 2:
-            return this->_bitRead(UMD_PORT_IO2, UMD_PIN_IO2);
-        case 3:
-            return this->_bitRead(UMD_PORT_IO3, UMD_PIN_IO3);
-        case 4:
-            return this->_bitRead(UMD_PORT_IO4, UMD_PIN_IO4);
-        case 5:
-            return this->_bitRead(UMD_PORT_IO5, UMD_PIN_IO5);
-        case 6:
-            return this->_bitRead(UMD_PORT_IO6, UMD_PIN_IO6);
-        case 7:
-            return this->_bitRead(UMD_PORT_IO7, UMD_PIN_IO7);
-        case 8:
-            return this->_bitRead(UMD_PORT_IO8, UMD_PIN_IO8);
-        default:
-            return 0;
-            break;
-    }
-    return 0;
-}
+// uint8_t UMDPortsV3::ioRead(uint8_t io){
+//     switch(io){
+//         case 0:
+//             return this->_bitRead(UMD_PORT_IO0, UMD_PIN_IO0);
+//         case 1:
+//             return this->_bitRead(UMD_PORT_IO1, UMD_PIN_IO1);
+//         case 2:
+//             return this->_bitRead(UMD_PORT_IO2, UMD_PIN_IO2);
+//         case 3:
+//             return this->_bitRead(UMD_PORT_IO3, UMD_PIN_IO3);
+//         case 4:
+//             return this->_bitRead(UMD_PORT_IO4, UMD_PIN_IO4);
+//         case 5:
+//             return this->_bitRead(UMD_PORT_IO5, UMD_PIN_IO5);
+//         case 6:
+//             return this->_bitRead(UMD_PORT_IO6, UMD_PIN_IO6);
+//         case 7:
+//             return this->_bitRead(UMD_PORT_IO7, UMD_PIN_IO7);
+//         case 8:
+//             return this->_bitRead(UMD_PORT_IO8, UMD_PIN_IO8);
+//         default:
+//             return 0;
+//             break;
+//     }
+//     return 0;
+// }
 
 // PRIVATE
 // void UMDPortsV3::_bitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
@@ -402,9 +405,9 @@ void UMDPortsV3::_bitSetToInput(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, bool pul
     HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
 }
 
-uint8_t UMDPortsV3::_bitRead(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
-    return HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == GPIO_PIN_SET ? 1 : 0;
-}
+// uint8_t UMDPortsV3::_bitRead(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin){
+//     return HAL_GPIO_ReadPin(GPIOx, GPIO_Pin) == GPIO_PIN_SET ? 1 : 0;
+// }
 
 // void UMDPortsV3::_portByteWriteLow(GPIO_TypeDef *GPIOx, uint8_t value){
 //     uint16_t portValue = GPIOx->IDR;

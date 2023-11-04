@@ -60,19 +60,26 @@
 #define M_REPEAT_33(X)         M_REPEAT_30(X) X X X
 #define M_REPEAT_41(X)         M_REPEAT_40(X) X
 
+/// @brief UMDPorts defines protected methods which abstract the hardware interface to the cartridge 
 class UMDPortsV3
 {
     protected:
+        /// @brief configure the default state of catridge IO
         void setDefaults();
 
+        /// @brief nop sequence to wait approximately 50ns
         __attribute__((always_inline)) void wait50ns() { asm volatile(M_REPEAT_8("nop\n\r")); }
 
+        /// @brief nop sequence to wait approximately 100ns
         __attribute__((always_inline)) void wait100ns() { asm volatile(M_REPEAT_16("nop\n\r")); }
 
+        /// @brief nop sequence to wait approximately 150ns
         __attribute__((always_inline)) void wait150ns() { asm volatile(M_REPEAT_24("nop\n\r")); }
 
+        /// @brief nop sequence to wait approximately 200ns
         __attribute__((always_inline)) void wait200ns() { asm volatile(M_REPEAT_33("nop\n\r")); }
 
+        /// @brief nop sequence to wait approximately 250ns
         __attribute__((always_inline)) void wait250ns() { asm volatile(M_REPEAT_41("nop\n\r")); }
 
         /// @brief write a 16 bit address to the address bus
@@ -187,8 +194,8 @@ class UMDPortsV3
         __attribute__((always_inline)) void clearWR() { _bitClear(UMD_PORT_WR, UMD_PIN_WR); }
 
         /// @brief set an IO pin
-        /// @param io IO pin number
-        __attribute__((always_inline)) void setIO(uint8_t io)
+        /// @param io IO pin number 0-8
+        __attribute__((always_inline)) void setIO(const uint8_t io)
         {
             switch (io)
             {
@@ -206,72 +213,142 @@ class UMDPortsV3
         }
 
         /// @brief clean an IO pin
-        /// @param io IO pin number
-        __attribute__((always_inline)) void clearIO(uint8_t io)
+        /// @param io IO pin number 0-8
+        __attribute__((always_inline)) void clearIO(const uint8_t io)
         {
             switch (io)
             {
-            case 0: this->_bitClear(UMD_PORT_IO0, UMD_PIN_IO0); break;
-            case 1: this->_bitClear(UMD_PORT_IO1, UMD_PIN_IO1); break;
-            case 2: this->_bitClear(UMD_PORT_IO2, UMD_PIN_IO2); break;
-            case 3: this->_bitClear(UMD_PORT_IO3, UMD_PIN_IO3); break;
-            case 4: this->_bitClear(UMD_PORT_IO4, UMD_PIN_IO4); break;
-            case 5: this->_bitClear(UMD_PORT_IO5, UMD_PIN_IO5); break;
-            case 6: this->_bitClear(UMD_PORT_IO6, UMD_PIN_IO6); break;
-            case 7: this->_bitClear(UMD_PORT_IO7, UMD_PIN_IO7); break;
-            case 8: this->_bitClear(UMD_PORT_IO8, UMD_PIN_IO8); break;
+            case 0: _bitClear(UMD_PORT_IO0, UMD_PIN_IO0); break;
+            case 1: _bitClear(UMD_PORT_IO1, UMD_PIN_IO1); break;
+            case 2: _bitClear(UMD_PORT_IO2, UMD_PIN_IO2); break;
+            case 3: _bitClear(UMD_PORT_IO3, UMD_PIN_IO3); break;
+            case 4: _bitClear(UMD_PORT_IO4, UMD_PIN_IO4); break;
+            case 5: _bitClear(UMD_PORT_IO5, UMD_PIN_IO5); break;
+            case 6: _bitClear(UMD_PORT_IO6, UMD_PIN_IO6); break;
+            case 7: _bitClear(UMD_PORT_IO7, UMD_PIN_IO7); break;
+            case 8: _bitClear(UMD_PORT_IO8, UMD_PIN_IO8); break;
             default: break;
             }
         }
 
-        void ioSetToOutput(uint16_t io, bool pushpull);
-        void ioSetToInput(uint16_t io, bool pullup);
+        /// @brief read an IO pin
+        /// @param io IO pin number 0-8
+        /// @return 0 or 1
+       __attribute__((always_inline)) uint8_t ioRead(const uint8_t io)
+       {
+            switch(io){
+                case 0: return _bitRead(UMD_PORT_IO0, UMD_PIN_IO0);
+                case 1: return _bitRead(UMD_PORT_IO1, UMD_PIN_IO1);
+                case 2: return _bitRead(UMD_PORT_IO2, UMD_PIN_IO2);
+                case 3: return _bitRead(UMD_PORT_IO3, UMD_PIN_IO3);
+                case 4: return _bitRead(UMD_PORT_IO4, UMD_PIN_IO4);
+                case 5: return _bitRead(UMD_PORT_IO5, UMD_PIN_IO5);
+                case 6: return _bitRead(UMD_PORT_IO6, UMD_PIN_IO6);
+                case 7: return _bitRead(UMD_PORT_IO7, UMD_PIN_IO7);
+                case 8: return _bitRead(UMD_PORT_IO8, UMD_PIN_IO8);
+                default: return 0;
+            }
+            return 0;
+       }
 
-        uint8_t ioRead(uint8_t io);
+        /// @brief configure an IO pin as an output
+        /// @param io IO pin number 0-8
+        /// @param pushpull pushpull or open drain (default = true)
+        void ioSetToOutput(uint16_t io, bool pushpull);
+
+        /// @brief configure an IO pin as an input
+        /// @param io IO pin number 0-8
+        /// @param pullup pullup resistor active (default = false)
+        void ioSetToInput(uint16_t io, bool pullup);
 
     private:
         uint16_t ticks;
+
+        /// @brief fast inline bit set on port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param GPIO_Pin GPIO pin number 1 to 16
         __attribute__((always_inline)) void _bitSet(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) { GPIOx->BSRR = GPIO_Pin; }
+
+        /// @brief fast inline bit clear on port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param GPIO_Pin GPIO pin number 1 to 16
         __attribute__((always_inline)) void _bitClear(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
         {
             GPIOx->BSRR = (uint32_t)GPIO_Pin << 16U;
         }
 
+        /// @brief fast inline bit read on port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param GPIO_Pin GPIO pin number 1 to 16
+        /// @return 0 or 1
+        __attribute__((always_inline)) uint8_t _bitRead(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+        {
+            return GPIOx->IDR & GPIO_Pin != 0 ? 1 : 0;
+        }
+
+        /// @brief configure an IO pin as an output
+        /// @param GPIOx GPIO_TypeDef
+        /// @param GPIO_Pin GPIO pin number 1 to 16
+        /// @param pushpull pushpull (true) or open drain (false) output (default = true)
         void _bitSetToOutput(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, bool pushpull);
+
+        /// @brief configure an IO pin as an input
+        /// @param GPIOx GPIO_TypeDef
+        /// @param GPIO_Pin GPIO pin number 1 to 16
+        /// @param pullup activate pullup resistor (default = false)
         void _bitSetToInput(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, bool pullup);
 
-        uint8_t _bitRead(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin);
-
+        /// @brief write a byte to the lower 8 bits of a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param value byte
         __attribute__((always_inline)) void _portByteWriteLow(GPIO_TypeDef *GPIOx, uint8_t value)
         {
-            uint16_t portValue = GPIOx->IDR;
+            uint16_t portValue = GPIOx->IDR; // don't affect the upper 8 bits
             portValue &= 0xFF00;
             portValue |= (uint16_t)(value);
             GPIOx->ODR = portValue;
         }
 
+        /// @brief read a byte from the lower 8 bits of a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @return byte
         __attribute__((always_inline)) uint8_t _portByteReadLow(GPIO_TypeDef *GPIOx)
         {
             return (uint8_t)(GPIOx->IDR & 0xFF);
         }
 
+        /// @brief write a byte to the upper 8 bits of a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param value byte
         __attribute__((always_inline)) void _portByteWriteHigh(GPIO_TypeDef *GPIOx, uint8_t value)
         {
-            uint16_t portValue = GPIOx->IDR;
+            uint16_t portValue = GPIOx->IDR; // don't affect the lower 8 bits
             portValue &= 0x00FF;
             portValue |= (uint16_t)(value << 8);
             GPIOx->ODR = portValue;
         }
 
+        /// @brief read a byte from the upper 8 bits of a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @return byte
         __attribute__((always_inline)) uint8_t _portByteReadHigh(GPIO_TypeDef *GPIOx)
         {
             return (uint8_t)((GPIOx->IDR >> 8) & 0xFF);
         }
 
+        /// @brief write a word to the full 16 bits of a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @param value word
         __attribute__((always_inline)) void _portWordWrite(GPIO_TypeDef *GPIOx, uint16_t value) { GPIOx->ODR = value; }
 
+        /// @brief read a full 16 bit word from a port
+        /// @param GPIOx GPIO_TypeDef
+        /// @return word
         __attribute__((always_inline)) uint16_t _portWordRead(GPIO_TypeDef *GPIOx) { return (uint16_t)GPIOx->IDR; }
 
+        /// @brief configure an entire 16 bit port as inputs
+        /// @param GPIOx GPIO_TypeDef
+        /// @param pullups active pullup resistors
         __attribute__((always_inline)) void _portSetToInput(GPIO_TypeDef *GPIOx, bool pullups)
         {
             GPIOx->MODER = 0x00000000; // 0b00 per pin group for input
@@ -281,6 +358,8 @@ class UMDPortsV3
             }
         }
 
+        /// @brief configure an entire 16 bit port as ouputs
+        /// @param GPIOx GPIO_TypeDef
         __attribute__((always_inline)) void _portSetToOutput(GPIO_TypeDef *GPIOx)
         {
             GPIOx->MODER = 0x55555555; // 0b01 per pin group for General Purpose Output Mode
