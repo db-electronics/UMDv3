@@ -1,7 +1,7 @@
 #include "cartridges/cartridge.h"
 
 Cartridge::Cartridge(){
-    this->setDefaults();
+    setDefaults();
 }
 
 Cartridge::~Cartridge(){
@@ -25,52 +25,65 @@ void Cartridge::testWait(void){
 uint8_t Cartridge::readByte(uint16_t address){
 
     uint8_t result;
-    this->addressWrite(address);
-    this->clearCE0();
-    this->clearRD();
+    addressWrite(address);
+    clearCE0();
+    clearRD();
     wait250ns();
-    result = this->dataReadLow();
-    this->setRD();
-    this->setCE0();
+    result = dataReadLow();
+    setRD();
+    setCE0();
     return result;
 }
 
 uint8_t Cartridge::readByte(uint32_t address){
 
     uint8_t result;
-    this->addressWrite(address);
-    this->clearCE0();
-    this->clearRD();
+    addressWrite(address);
+    clearCE0();
+    clearRD();
     wait250ns();
-    result = this->dataReadLow();
-    this->setRD();
-    this->setCE0();
+    result = dataReadLow();
+    setRD();
+    setCE0();
     return result;
 }
 
+void Cartridge::readBytes(uint32_t address, uint8_t *buffer, uint16_t size){
+
+    for(int i = 0; i < size; i++){
+        addressWrite(address++);
+        clearCE0();
+        clearRD();
+        wait250ns();
+        *(buffer++) = dataReadLow();
+        setRD();
+        setCE0();
+    }
+}
+
 void Cartridge::writeByte(uint16_t address, uint8_t data){
-    this->addressWrite(address);
-    this->dataSetToOutputs();
-    this->dataWriteLow(data);
-    this->clearCE0();
-    this->clearWR();
+    addressWrite(address);
+    dataSetToOutputs();
+    dataWriteLow(data);
+    clearCE0();
+    clearWR();
     wait250ns();
-    this->setCE0();
-    this->setWR();
+    setCE0();
+    setWR();
 
     // always leave on inputs by default
-    this->dataSetToInputs(true);
+    dataSetToInputs(true);
 }
 
 uint16_t Cartridge::readWord(uint32_t address){
 
     uint16_t result;
-    this->addressWrite(address);
-    this->clearCE0();
-    this->clearRD();
+    addressWrite(address);
+    clearCE0();
+    clearRD();
     wait250ns();
-    result = this->dataReadWord();
-    this->setRD();
-    this->setCE0();
+    result = dataReadWord();
+    setRD();
+    setCE0();
     return result;
 }

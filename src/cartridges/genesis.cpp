@@ -13,39 +13,39 @@ const char* Genesis::getSystemName(){
 uint8_t Genesis::readByte(uint32_t address){
 
     uint8_t result;
-    this->addressWrite(address);
-    this->clearCE0();
-    this->clearRD();
+    addressWrite(address);
+    clearCE0();
+    clearRD();
     wait200ns();
-    result = this->dataReadHigh();
-    this->setRD();
-    this->setCE0();
+    result = dataReadHigh();
+    setRD();
+    setCE0();
     return result;
 }
 
 void Genesis::writeByte(uint16_t address, uint8_t data){
-    this->addressWrite(address);
-    this->dataSetToOutputs();
-    this->dataWriteHigh(data);
-    this->clearCE0();
-    this->clearWR();
+    addressWrite(address);
+    dataSetToOutputs();
+    dataWriteHigh(data);
+    clearCE0();
+    clearWR();
     wait200ns();
-    this->setCE0();
-    this->setWR();
+    setCE0();
+    setWR();
 
     // always leave on inputs by default
-    this->dataSetToInputs(true);
+    dataSetToInputs(true);
 }
 
 uint16_t Genesis::readWord(uint32_t address){
 
     uint16_t result;
-    this->addressWrite(address);
-    this->clearCE0();
-    this->clearRD();
+    addressWrite(address);
+    clearCE0();
+    clearRD();
     wait200ns();
-    result = this->dataReadWordSwapped();
-    this->setRD();
-    this->setCE0();
+    result = dataReadWordSwapped();
+    setRD();
+    setCE0();
     return result;
 }
