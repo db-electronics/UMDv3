@@ -42,6 +42,7 @@ class UMDDisplay
         void scrollY(int delta, int startIndex); // increment all line numbers by delta
 
     private:
+        std::unique_ptr<UMDMenu> _menu;
         static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
         char _cursorChar;
@@ -54,6 +55,13 @@ class UMDDisplay
 
         int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
         char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+};
+
+class UMDMenu{
+    public:
+        std::vector<const char *> items;
+        
+    private:
 };
 
 #endif
