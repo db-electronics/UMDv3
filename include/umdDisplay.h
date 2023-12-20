@@ -2,6 +2,7 @@
 #define UMD_DISPLAY_H
 
 #include <string>
+#include <memory>
 #include <Adafruit_SSD1306.h>
 
 #define OLED_RESET -1 
@@ -19,6 +20,25 @@
 #define UMD_DISPLAY_BUFFER_CHARS_PER_LINE   (OLED_MAX_CHARS_PER_LINE)*2
 #define UMD_DISPLAY_BUFFER_TOTAL_LINES      32
 
+// template <size_t menuSize>
+// class UMDMenu{
+//     public:
+//         const char* menuItems[menuSize]
+//         size_t count;
+
+//         UMDMenu() : itemCount(0){}
+
+//         UMDMenu(const char* items[], size_t count) : itemCount(0) {
+//             for(size_t i = 0; i < count && i < menuSize; i++){
+//                 menuItems[i] = items[i];
+//                 itemCount++;
+//             }
+//         }
+// };
+
+// UMDMenu topLevelMenu{
+
+// };
 
 class UMDDisplay
 {
@@ -36,13 +56,16 @@ class UMDDisplay
         void print(const char characters[], int lineNumber, int pos);
         void print(const char characters[], int lineNumber);
         void print(int number, int lineNumber);
-        void redraw();
+        void initMenu(const char *menuItems[], int size);
+        void redraw(void);
         void scrollX(int lineNumber, int delta); // scroll line by delta chars
         void scrollY(int delta); // increment all line numbers by delta
         void scrollY(int delta, int startIndex); // increment all line numbers by delta
 
     private:
-        std::unique_ptr<UMDMenu> _menu;
+        std::vector<const char *> _menu;
+        int _menuItemPtr;
+
         static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
         char _cursorChar;
@@ -55,13 +78,6 @@ class UMDDisplay
 
         int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
         char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-};
-
-class UMDMenu{
-    public:
-        std::vector<const char *> items;
-        
-    private:
 };
 
 #endif

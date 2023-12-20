@@ -72,8 +72,7 @@ void setup()
     {
         umdDisplay.printf(line, F("  failed"));
         umdDisplay.redraw();
-        while (1)
-            ;
+        while (1);
     }
 
     // setup onboard mcp23008, GP6 and GP7 LED outputs
@@ -84,8 +83,7 @@ void setup()
     {
         umdDisplay.printf(line, F("  failed"));
         umdDisplay.redraw();
-        while (1)
-            ;
+        while (1);
     }
 
     onboardMCP23008.pinMode(UMD_BOARD_LEDS, OUTPUT);
@@ -108,8 +106,7 @@ void setup()
     {
         umdDisplay.printf(line, F(" -no adapter found"));
         umdDisplay.redraw();
-        while (1)
-            ;
+        while (1);
     }
 
     adapterMCP23008.pinMode(0xFF, INPUT);
@@ -119,8 +116,7 @@ void setup()
     {
         umdDisplay.printf(line++, F(" -unknown adapter"));
         umdDisplay.redraw();
-        while (1)
-            ;
+        while (1);
     }
 
     umdDisplay.printf(line++, F(" -adapter id = %d"), adapterId);

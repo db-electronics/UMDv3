@@ -121,7 +121,22 @@ void UMDDisplay::print(int number, int lineNumber){
     this->print(num_char, lineNumber);
 }
 
-void UMDDisplay::redraw()
+void UMDDisplay::initMenu(const char *menuItems[], int size){
+    _menu.clear();
+    for(int i = 0; i < size; i++){
+        _menu.push_back(menuItems[i]);
+    }
+    
+    _menuItemPtr = 0;
+
+    // fill the buffer with menu items, don't override first line
+    for(int i = 1; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++){
+        this->print(_menu[i-1], i);
+    }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::redraw(void)
 {
     if(!_needsRedraw){
         return;
