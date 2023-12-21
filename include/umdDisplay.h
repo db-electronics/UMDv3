@@ -40,6 +40,8 @@
 
 // };
 
+// const __FlashStringHelper * menuTopLevel[] = {F("Read Cartridge"), F("Write Cartridge")};
+
 class UMDDisplay
 {
     public:
@@ -57,6 +59,7 @@ class UMDDisplay
         void print(const char characters[], int lineNumber);
         void print(int number, int lineNumber);
         void initMenu(const char *menuItems[], int size);
+        void initMenu(const __FlashStringHelper *menuItems[], int size);
         void redraw(void);
         void scrollX(int lineNumber, int delta); // scroll line by delta chars
         void scrollY(int delta); // increment all line numbers by delta
@@ -74,10 +77,13 @@ class UMDDisplay
             int y;
         }_cursorPosition;
 
-        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
+        void fillBufferFromMenu(int startBufferIndex, int startMenuIndex, int keepFirstLines);
 
+        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
         int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
         char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+
 };
+
 
 #endif

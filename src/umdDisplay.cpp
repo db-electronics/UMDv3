@@ -123,22 +123,57 @@ void UMDDisplay::print(int number, int lineNumber){
 
 void UMDDisplay::initMenu(const char *menuItems[], int size){
     _menu.clear();
-    for(int i = 0; i < size; i++){
+    for(int i = 0; i < size; i++)
+    {
         _menu.push_back(menuItems[i]);
     }
-    
+    fillBufferFromMenu(1, 0, 1);
     _menuItemPtr = 0;
+    _needsRedraw = true;
+}
+
+void UMDDisplay::initMenu(const __FlashStringHelper *menuItems[], int size){
+    _menu.clear();
+    for(int i = 0; i < size; i++)
+    {
+        _menu.push_back((const char *)menuItems[i]);
+    }
+    fillBufferFromMenu(1, 0, 1);
+    _menuItemPtr = 0;
+    _needsRedraw = true;
+}
+
+void UMDDisplay::fillBufferFromMenu(int startBufferIndex, int startMenuIndex, int keepFirstLines){
 
     // fill the buffer with menu items, don't override first line
-    for(int i = 1; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++){
-        this->print(_menu[i-1], i);
+    int menuIndex = startMenuIndex;
+    int bufferIndex = startBufferIndex;
+
+    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES - keepFirstLines; i++)
+    {
+        // have we reached the end of the menu items? if so clear the rest of the buffer
+        if(menuIndex >= _menu.size())
+        {
+            //clearLine(bufferIndex);
+            return;
+        }
+        else
+        {
+            print(_menu[menuIndex++], bufferIndex);
+        }
+
+        // wrap around the buffer, keeping the first line intact
+        if(++bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
+        {
+            bufferIndex = keepFirstLines;
+        }
     }
-    _needsRedraw = true;
 }
 
 void UMDDisplay::redraw(void)
 {
-    if(!_needsRedraw){
+    if(!_needsRedraw)
+    {
         return;
     }
     
@@ -167,20 +202,23 @@ void UMDDisplay::redraw(void)
         _display->print(lineChars);
     }
 
-    if(this->_cursorPosition.x >= 0 && this->_cursorPosition.y >= 0){
+    if(this->_cursorPosition.x >= 0 && this->_cursorPosition.y >= 0)
+    {
         _display->setCursor(this->_cursorPosition.x, this->_cursorPosition.y);
         _display->print(this->_cursorChar);
     }
 
     _display->display();
-    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++){
+    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
+    {
         bufferNextPos[i] = 0;
     }
     _needsRedraw = false;
 }
 
 void UMDDisplay::scrollX(int lineNumber, int delta){
-    if(delta > UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
+    if(delta > UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
+    {
         return;
     }
 
@@ -202,13 +240,16 @@ void UMDDisplay::scrollY(int delta){
 }
 
 void UMDDisplay::scrollY(int delta, int startIndex){
-    if(delta > UMD_DISPLAY_BUFFER_TOTAL_LINES){
+    if(delta > UMD_DISPLAY_BUFFER_TOTAL_LINES)
+    {
         return;
     }
 
-    for(int lineNumber = startIndex; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++){
+    for(int lineNumber = startIndex; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++)
+    {
         scroll[lineNumber][0] += delta;
-        if(scroll[lineNumber][0] >= UMD_DISPLAY_BUFFER_TOTAL_LINES){
+        if(scroll[lineNumber][0] >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
+        {
             scroll[lineNumber][0] = startIndex;
         }
         else if(scroll[lineNumber][0] <= startIndex)

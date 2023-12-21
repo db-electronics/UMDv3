@@ -37,6 +37,9 @@ bool newInputs;
 int displayYOffset = 1;
 int cursorX = 0, cursorY = 1;
 
+const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
+const int menuTopLevelSize = 3;
+
 void setup()
 {
     int line = 0;
@@ -131,6 +134,9 @@ void setup()
     umdDisplay.clear();
     umdDisplay.printf(0, F("UMDv3/%s"), cartridge->getSystemName());
     umdDisplay.setCursorPosition(-1, -1);
+    umdDisplay.redraw();
+
+    umdDisplay.initMenu(menuTopLevel, menuTopLevelSize);
     umdDisplay.redraw();
 }
 
