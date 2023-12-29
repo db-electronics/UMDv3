@@ -22,13 +22,26 @@ bool UMDDisplay::begin()
         return false;
     }
 
-    for(int i = 0; i < OLED_MAX_LINES_PER_SCREEN; i++){
-        scroll[i][0] = i;
-        scroll[i][1] = 0;
+    int layerLength = UMD_DISPLAY_BUFFER_TOTAL_LINES;
+    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
+    {
+        for(int i = 0; i < OLED_MAX_LINES_PER_SCREEN; i++)
+        {
+            // scroll[i][0] = i;
+            // scroll[i][1] = 0;
+            _scroll[layer][i][UMD_DISPLAY_SCROLL_LINE] = i;
+        }
+        
+        // only enable first layer on init
+        _layerLength[layer] = layerLength;
+        if(layerLength > 0)
+        {
+            layerLength = 0;
+        }
     }
 
     _display->display();
-    delay(2000); // Pause for 2 seconds
+    delay(2000); // Show splash screen for 2 seconds
     _display->clearDisplay();
     _display->setTextSize(1);             // Normal 1:1 pixel scale
     _display->setTextColor(WHITE);        // Draw white text
@@ -39,117 +52,154 @@ bool UMDDisplay::begin()
 
 void UMDDisplay::setCursorChar(char c){
     _cursorChar = c;
-    this->_needsRedraw = true;
+    _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorPosition(int x, int y){
     if(x < OLED_MAX_CHARS_PER_LINE){
-        this->_cursorPosition.x = x * OLED_FONT_WIDTH;
+        _cursorPosition.x = x * OLED_FONT_WIDTH;
     }else{
-        this->_cursorPosition.x = -1;
+        _cursorPosition.x = -1;
     }
     
     if(y < OLED_MAX_LINES_PER_SCREEN){
-        this->_cursorPosition.y = y * OLED_FONT_HEIGHT;
+        _cursorPosition.y = y * OLED_FONT_HEIGHT;
     }else{
-        this->_cursorPosition.y = -1;
+        _cursorPosition.y = -1;
     }
-    this->_needsRedraw = true;
+    _needsRedraw = true;
 }
 
 void UMDDisplay::clear(void)
 {
-    for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
+    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
     {
-        this->clearLine(line);
+        for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
+        {
+            clearLine(layer, line);
+        }
     }
+
     _needsRedraw = true;
 }
 
-void UMDDisplay::clearLine(int lineNumber)
+void UMDDisplay::clearLine(int layer, int lineNumber)
 {
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
     for(int chr = 0; chr < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; chr++)
     {
-        this->buffer[lineNumber][chr] = ' ';
+        _buffer[layer][lineNumber][chr] = ' ';
     }
     _needsRedraw = true;
 }
 
-void UMDDisplay::printf(int lineNumber, const char *format, ...){
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer[lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
-    va_end(args);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::printf(int lineNumber, const __FlashStringHelper *format, ...){
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer[lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
-    va_end(args);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::print(const char characters[], int lineNumber, int printPos)
+void UMDDisplay::printf(int layer, int lineNumber, const char *format, ...)
 {
-    int i = 0;
-    bufferNextPos[lineNumber] = printPos;
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
 
-    if(bufferNextPos[lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
-        bufferNextPos[lineNumber] = 0;
+    va_list args;
+    va_start(args, format);
+    vsnprintf(_buffer[layer][lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
+    va_end(args);
+    _needsRedraw = true;
+}
+
+void UMDDisplay::printf(int layer, int lineNumber, const __FlashStringHelper *format, ...)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+    
+    va_list args;
+    va_start(args, format);
+    vsnprintf(_buffer[layer][lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
+    va_end(args);
+    _needsRedraw = true;
+}
+
+void UMDDisplay::print(int layer, const char characters[], int lineNumber, int printPos)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+    
+    int i = 0;
+    _bufferNextPos[layer][lineNumber] = printPos;
+
+    if(_bufferNextPos[layer][lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
+        _bufferNextPos[layer][lineNumber] = 0;
     }
 
     while(characters[i] != '\0'){
         // wrap around if required
         if(i >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
         {
-            bufferNextPos[lineNumber] = 0;
+            _bufferNextPos[layer][lineNumber] = 0;
         }
-        this->buffer[lineNumber][bufferNextPos[lineNumber]++] = characters[i++];
+        
+        //this->buffer[lineNumber][bufferNextPos[lineNumber]++] = characters[i++];
+        _buffer[layer][lineNumber][bufferNextPos[lineNumber]++] = characters[i++];
     }
 }
 
-void UMDDisplay::print(const char characters[], int lineNumber)
+void UMDDisplay::print(int layer, const char characters[], int lineNumber)
 {
-    this->print(characters, lineNumber, bufferNextPos[lineNumber]);
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
+    print(layer, characters, lineNumber, bufferNextPos[lineNumber]);
 }
 
-void UMDDisplay::print(int number, int lineNumber){
+void UMDDisplay::print(int layer, int number, int lineNumber)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
     std::string tmp = std::to_string(number);
     const char *num_char = tmp.c_str();
-    this->print(num_char, lineNumber);
+    print(layer, num_char, lineNumber);
 }
 
-void UMDDisplay::initMenu(const char *menuItems[], int size){
+void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
     _menu.clear();
     for(int i = 0; i < size; i++)
     {
         _menu.push_back(menuItems[i]);
     }
-    fillBufferFromMenu(1, 0, 1);
+
+    fillLayerFromMenu(layer, 0, 0);
     _menuItemPtr = 0;
     _needsRedraw = true;
 }
 
-void UMDDisplay::initMenu(const __FlashStringHelper *menuItems[], int size){
+void UMDDisplay::initMenu(int layer, const __FlashStringHelper *menuItems[], int size)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
     _menu.clear();
     for(int i = 0; i < size; i++)
     {
         _menu.push_back((const char *)menuItems[i]);
     }
-    fillBufferFromMenu(1, 0, 1);
+
+    fillLayerFromMenu(layer, 0, 0);
     _menuItemPtr = 0;
     _needsRedraw = true;
 }
 
-void UMDDisplay::fillBufferFromMenu(int startBufferIndex, int startMenuIndex, int keepFirstLines){
+void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex){
 
     // fill the buffer with menu items, don't override first line
     int menuIndex = startMenuIndex;
     int bufferIndex = startBufferIndex;
 
-    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES - keepFirstLines; i++)
+    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
     {
         // have we reached the end of the menu items? if so clear the rest of the buffer
         if(menuIndex >= _menu.size())
@@ -159,13 +209,13 @@ void UMDDisplay::fillBufferFromMenu(int startBufferIndex, int startMenuIndex, in
         }
         else
         {
-            print(_menu[menuIndex++], bufferIndex);
+            print(layer, _menu[menuIndex++], bufferIndex);
         }
 
         // wrap around the buffer, keeping the first line intact
         if(++bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
         {
-            bufferIndex = keepFirstLines;
+            bufferIndex = 0;
         }
     }
 }
@@ -182,7 +232,33 @@ void UMDDisplay::redraw(void)
 
     _display->clearDisplay();
 
-    for(int lineOnDisplay = 0; lineOnDisplay < OLED_MAX_LINES_PER_SCREEN; lineOnDisplay++)
+    // start with the overlay, over is the first X lines always
+    int lineOnDisplay = 0;
+    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
+    {
+        while(lineOnDisplay < _layerLength[layer])
+        {
+            lineFromBuffer = _scroll[layer][lineOnDisplay][UMD_DISPLAY_SCROLL_LINE];
+            _display->setCursor(0, OLED_LINE_NUMBER(lineOnDisplay));
+            bufferPos = _scroll[layer][lineFromBuffer][UMD_DISPLAY_SCROLL_CHAR];
+            
+            // file the lineChars buffer
+            for(int pos = 0; pos < OLED_MAX_CHARS_PER_LINE; pos++)
+            {
+                // wrap around if required
+                if(bufferPos >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
+                {
+                    bufferPos = 0;
+                }
+                lineChars[pos] = buffer[lineFromBuffer][bufferPos++];
+            }
+            lineChars[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
+            _display->print(lineChars);
+        }
+    }
+
+
+    for(lineOnDisplay; lineOnDisplay < OLED_MAX_LINES_PER_SCREEN; lineOnDisplay++)
     {
         lineFromBuffer = scroll[lineOnDisplay][0];
 

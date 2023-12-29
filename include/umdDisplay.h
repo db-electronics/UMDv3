@@ -2,6 +2,7 @@
 #define UMD_DISPLAY_H
 
 #include <string>
+#include <vector>
 #include <memory>
 #include <Adafruit_SSD1306.h>
 
@@ -18,7 +19,13 @@
 #define OLED_LINE_NUMBER(n)             OLED_FONT_HEIGHT * n
 
 #define UMD_DISPLAY_BUFFER_CHARS_PER_LINE   (OLED_MAX_CHARS_PER_LINE)*2
-#define UMD_DISPLAY_BUFFER_TOTAL_LINES      32
+#define UMD_DISPLAY_BUFFER_TOTAL_LINES      16
+#define UMD_DISPLAY_LAYERS                  2
+#define UMD_DISPLAY_LAYER_FG                0
+#define UMD_DISPLAY_LAYER_BG                1
+
+#define UMD_DISPLAY_SCROLL_LINE             0
+#define UMD_DISPLAY_SCROLL_CHAR             1
 
 // template <size_t menuSize>
 // class UMDMenu{
@@ -52,15 +59,16 @@ class UMDDisplay
         void setCursorChar(char c);
         void setCursorPosition(int x, int y);
         void clear(void);
-        void clearLine(int lineNumber);
-        void printf(int lineNumber, const char *format, ...);
-        void printf(int lineNumber, const __FlashStringHelper *format, ...);
-        void print(const char characters[], int lineNumber, int pos);
-        void print(const char characters[], int lineNumber);
-        void print(int number, int lineNumber);
-        void initMenu(const char *menuItems[], int size);
-        void initMenu(const __FlashStringHelper *menuItems[], int size);
+        void clearLine(int layer, int lineNumber);
+        void printf(int layer, int lineNumber, const char *format, ...);
+        void printf(int layer, int lineNumber, const __FlashStringHelper *format, ...);
+        void print(int layer, const char characters[], int lineNumber, int pos);
+        void print(int layer, const char characters[], int lineNumber);
+        void print(int layer, int number, int lineNumber);
+        void initMenu(int layer, const char *menuItems[], int size);
+        void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
         void redraw(void);
+
         void scrollX(int lineNumber, int delta); // scroll line by delta chars
         void scrollY(int delta); // increment all line numbers by delta
         void scrollY(int delta, int startIndex); // increment all line numbers by delta
@@ -77,12 +85,17 @@ class UMDDisplay
             int y;
         }_cursorPosition;
 
-        void fillBufferFromMenu(int startBufferIndex, int startMenuIndex, int keepFirstLines);
+        void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
 
         int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
         int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
+
         char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
 
+        int _layerLength[UMD_DISPLAY_LAYERS];
+        int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
+        char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+        int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 };
 
 
