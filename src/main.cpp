@@ -34,11 +34,15 @@ void inputInterrupt(void);
 
 bool newInputs;
 
-int displayYOffset = 1;
-int cursorX = 0, cursorY = 1;
+enum UMDState
+{
+    TOPLEVEL,
+    TOPLEVEL_WAIT_FOR_INPUT,
+    CARTRIDGE
+};
 
-const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
-const int menuTopLevelSize = 3;
+// const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
+// const int menuTopLevelSize = 3;
 
 void setup()
 {
@@ -139,30 +143,37 @@ void setup()
     umdDisplay.setCursorPosition(-1, -1);
     umdDisplay.redraw();
 
-    umdDisplay.initMenu(1, menuTopLevel, menuTopLevelSize);
-    umdDisplay.redraw();
+
 }
 
 void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all
+    static UMDState umdState = TOPLEVEL;
     static uint32_t currentTicks = HAL_GetTick();
     static Controls userInput;
 
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
 
-    if(userInput.Down == userInput.PRESSED)
+    switch(umdState)
     {
-        umdDisplay.menuCursorUpdate(1, true);
+        case TOPLEVEL_WAIT_FOR_INPUT:
+            if(userInput.Down == userInput.PRESSED)
+            {
+                umdDisplay.menuCursorUpdate(1, true);
+            }
+            else if (userInput.Up == userInput.PRESSED)
+            {
+                umdDisplay.menuCursorUpdate(-1, true);
+            }
+            break;
+        case TOPLEVEL:
+        default:
+            umdDisplay.initMenu(1, cartridge->getMenuItems(), cartridge->getMenuSize());
+            umdState = TOPLEVEL_WAIT_FOR_INPUT;
+            break;
     }
-    else if (userInput.Up == userInput.PRESSED)
-    {
-        umdDisplay.menuCursorUpdate(-1, true);
-    }
-
-    // cartridge->testWait();
-    // cartridge->testWaitNs();
 
     umdDisplay.redraw();
     delay(100);

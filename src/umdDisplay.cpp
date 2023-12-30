@@ -230,8 +230,6 @@ void UMDDisplay::menuCursorUpdate(int delta, bool active)
         _menuCursor.active = false;
         setCursorPosition(-1, -1);
     }
-    
-
 }
 
 int UMDDisplay::menuCurrentItem()
@@ -279,14 +277,12 @@ void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMen
         }
         else
         {
-            print(layer, _menu[menuIndex++], bufferIndex);
+            print(layer, _menu[menuIndex++], bufferIndex++, 1);
         }
 
         // wrap around the buffer, keeping the first line intact
-        if(++bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
-        {
+        if(bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
             bufferIndex = 0;
-        }
     }
 }
 

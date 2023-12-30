@@ -9,7 +9,8 @@ class Controls{
     public:
         Controls();
 
-        enum ButtonState{
+        enum ButtonState
+        {
             OFF,
             PRESSED,
             HELD,
