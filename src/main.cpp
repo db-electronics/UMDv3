@@ -66,25 +66,25 @@ void setup()
     }
 
     // sd card
-    umdDisplay.printf(line++, F("init SD card"));
+    umdDisplay.printf(0, line++, F("init SD card"));
     umdDisplay.redraw();
     SD.setDx(PC8, PC9, PC10, PC11);
     SD.setCMD(PD2);
     SD.setCK(PC12);
     if (!SD.begin(SD_DETECT_PIN))
     {
-        umdDisplay.printf(line, F("  failed"));
+        umdDisplay.printf(0, line, F("  failed"));
         umdDisplay.redraw();
         while (1);
     }
 
     // setup onboard mcp23008, GP6 and GP7 LED outputs
-    umdDisplay.printf(line++, F("init umd MCP23008"));
+    umdDisplay.printf(0, line++, F("init umd MCP23008"));
     umdDisplay.redraw();
 
     if (!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS))
     {
-        umdDisplay.printf(line, F("  failed"));
+        umdDisplay.printf(0, line, F("  failed"));
         umdDisplay.redraw();
         while (1);
     }
@@ -103,11 +103,11 @@ void setup()
     // inputInterrupt, FALLING);
 
     // setup adapter mcp23008, read adapter id
-    umdDisplay.printf(line++, F("init cart MCP23008"));
+    umdDisplay.printf(0, line++, F("init cart MCP23008"));
     umdDisplay.redraw();
     if (!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS))
     {
-        umdDisplay.printf(line, F(" -no adapter found"));
+        umdDisplay.printf(0, line, F(" -no adapter found"));
         umdDisplay.redraw();
         while (1);
     }
@@ -117,13 +117,13 @@ void setup()
     cartridge = cartFactory.getCart(adapterId);
     if (cartridge == nullptr)
     {
-        umdDisplay.printf(line++, F(" -unknown adapter"));
+        umdDisplay.printf(0, line++, F(" -unknown adapter"));
         umdDisplay.redraw();
         while (1);
     }
 
-    umdDisplay.printf(line++, F(" -adapter id = %d"), adapterId);
-    umdDisplay.printf(line++, F(" -%s"), cartridge->getSystemName());
+    umdDisplay.printf(0, line++, F(" -adapter id = %d"), adapterId);
+    umdDisplay.printf(0, line++, F(" -%s"), cartridge->getSystemName());
     umdDisplay.redraw();
 
     // register callbacks for SerialCommand related to the cartridge
@@ -131,12 +131,15 @@ void setup()
 
     delay(2000);
 
+    // setup the display with 2 layers, having the UMDv3/... static on the first line
     umdDisplay.clear();
-    umdDisplay.printf(0, F("UMDv3/%s"), cartridge->getSystemName());
+    umdDisplay.setLayerLineLength(0, 1);
+    umdDisplay.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
+    umdDisplay.printf(0, 0, F("UMDv3/%s"), cartridge->getSystemName());
     umdDisplay.setCursorPosition(-1, -1);
     umdDisplay.redraw();
 
-    umdDisplay.initMenu(menuTopLevel, menuTopLevelSize);
+    umdDisplay.initMenu(1, menuTopLevel, menuTopLevelSize);
     umdDisplay.redraw();
 }
 

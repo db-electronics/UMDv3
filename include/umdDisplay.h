@@ -58,6 +58,7 @@ class UMDDisplay
         bool begin();
         void setCursorChar(char c);
         void setCursorPosition(int x, int y);
+        void setLayerLineLength(int layer, int length);
         void clear(void);
         void clearLine(int layer, int lineNumber);
         void printf(int layer, int lineNumber, const char *format, ...);
@@ -69,9 +70,9 @@ class UMDDisplay
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
         void redraw(void);
 
-        void scrollX(int lineNumber, int delta); // scroll line by delta chars
-        void scrollY(int delta); // increment all line numbers by delta
-        void scrollY(int delta, int startIndex); // increment all line numbers by delta
+
+        void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
+        void scrollY(int layer, int delta); // increment all line numbers by delta
 
     private:
         std::vector<const char *> _menu;
@@ -87,10 +88,10 @@ class UMDDisplay
 
         void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
 
-        int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
-        int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
+        // int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
+        // int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
 
-        char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+        // char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
 
         int _layerLength[UMD_DISPLAY_LAYERS];
         int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
