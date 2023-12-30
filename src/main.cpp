@@ -152,7 +152,16 @@ void loop()
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
 
-    cartridge->testWait();
+    if(userInput.Down == userInput.PRESSED)
+    {
+        umdDisplay.menuCursorUpdate(1, true);
+    }
+    else if (userInput.Up == userInput.PRESSED)
+    {
+        umdDisplay.menuCursorUpdate(-1, true);
+    }
+
+    // cartridge->testWait();
     // cartridge->testWaitNs();
 
     umdDisplay.redraw();

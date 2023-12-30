@@ -66,9 +66,12 @@ class UMDDisplay
         void print(int layer, const char characters[], int lineNumber, int pos);
         void print(int layer, const char characters[], int lineNumber);
         void print(int layer, int number, int lineNumber);
+        void redraw(void);
+
         void initMenu(int layer, const char *menuItems[], int size);
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
-        void redraw(void);
+        void menuCursorUpdate(int delta, bool active);
+        int menuCurrentItem();
 
 
         void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
@@ -76,22 +79,27 @@ class UMDDisplay
 
     private:
         std::vector<const char *> _menu;
-        int _menuItemPtr;
+        struct MenuCursor
+        {
+            bool active;
+            int scrollRequired;
+            int size;
+            int item;
+            int startLine;
+        }_menuCursor;
 
         static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
         char _cursorChar;
-        struct CursorPosition{
+        struct CursorPosition
+        {
             int x;
             int y;
         }_cursorPosition;
 
         void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
-
-        // int scroll[OLED_MAX_LINES_PER_SCREEN][2]; // { line index, char index, previous line index }
-        // int bufferNextPos[UMD_DISPLAY_BUFFER_TOTAL_LINES];
-
-        // char buffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+        void initMenuCursor(int layer, int size);
+        void setCursorMenuPosition();
 
         int _layerLength[UMD_DISPLAY_LAYERS];
         int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];

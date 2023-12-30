@@ -17,6 +17,7 @@ bool UMDDisplay::begin()
     //place cursor offscreen;
     _cursorPosition.x = -1;
     _cursorPosition.y = -1;
+    _menuCursor.active = false;
 
     if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
@@ -67,6 +68,11 @@ void UMDDisplay::setCursorPosition(int x, int y)
         _cursorPosition.y = -1;
     }
     _needsRedraw = true;
+}
+
+void UMDDisplay::setCursorMenuPosition()
+{
+    setCursorPosition(0, _menuCursor.startLine + _menuCursor.item);
 }
 
 void UMDDisplay::setLayerLineLength(int layer, int length)
@@ -183,7 +189,7 @@ void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
     }
 
     fillLayerFromMenu(layer, 0, 0);
-    _menuItemPtr = 0;
+    initMenuCursor(layer, size);
     _needsRedraw = true;
 }
 
@@ -199,11 +205,65 @@ void UMDDisplay::initMenu(int layer, const __FlashStringHelper *menuItems[], int
     }
 
     fillLayerFromMenu(layer, 0, 0);
-    _menuItemPtr = 0;
+    initMenuCursor(layer, size);
     _needsRedraw = true;
 }
 
-void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex){
+void UMDDisplay::menuCursorUpdate(int delta, bool active)
+{
+    if(active)
+    {
+        delta %= _menuCursor.size;
+        _menuCursor.item += delta;
+        if(_menuCursor.item < 0)
+        {
+            _menuCursor.item += _menuCursor.size;
+        }
+        else if(_menuCursor.item >= _menuCursor.size)
+        {
+            _menuCursor.item -= _menuCursor.size;
+        }
+        setCursorMenuPosition();
+    }
+    else
+    {
+        _menuCursor.active = false;
+        setCursorPosition(-1, -1);
+    }
+    
+
+}
+
+int UMDDisplay::menuCurrentItem()
+{
+    return _menuCursor.item;
+}
+
+void UMDDisplay::initMenuCursor(int layer, int size)
+{
+    _menuCursor.active = true;
+    _menuCursor.size = size;
+    _menuCursor.scrollRequired = 0;
+    _menuCursor.item = 0;
+    if(layer == 0)
+    {
+        _menuCursor.startLine = 0;
+    }
+    else
+    {
+        // find where this menu starts in display line space
+        int line = 0;
+        for(int prevLayers = 0; prevLayers < layer; prevLayers++)
+        {
+            line += _layerLength[prevLayers];
+        }
+        _menuCursor.startLine = line;
+    }
+    setCursorMenuPosition();
+}
+
+void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex)
+{
 
     // fill the buffer with menu items, don't override first line
     int menuIndex = startMenuIndex;
@@ -270,27 +330,7 @@ void UMDDisplay::redraw(void)
         }
     }
 
-
-    // for(lineOnDisplay; lineOnDisplay < OLED_MAX_LINES_PER_SCREEN; lineOnDisplay++)
-    // {
-    //     lineFromBuffer = scroll[lineOnDisplay][0];
-
-    //     _display->setCursor(0, OLED_LINE_NUMBER(lineOnDisplay));
-    //     bufferPos = scroll[lineOnDisplay][1];
-    //     // file the lineChars buffer
-    //     for(int pos = 0; pos < OLED_MAX_CHARS_PER_LINE; pos++)
-    //     {
-    //         // wrap around if required
-    //         if(bufferPos >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
-    //         {
-    //             bufferPos = 0;
-    //         }
-    //         lineChars[pos] = buffer[lineFromBuffer][bufferPos++];
-    //     }
-    //     lineChars[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
-    //     _display->print(lineChars);
-    // }
-
+    // draw the cursor if visible
     if(this->_cursorPosition.x >= 0 && this->_cursorPosition.y >= 0)
     {
         _display->setCursor(this->_cursorPosition.x, this->_cursorPosition.y);
