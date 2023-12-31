@@ -10,9 +10,21 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
-const __FlashStringHelper** Genesis::getMenuItems()
+const __FlashStringHelper** Genesis::getMenuItems(int id)
 {
-    return _menuTopLevel;
+    //return _menuTopLevel;
+    switch(id){
+        case 0: return _mainMenu.Items; break;
+        default: return _myMenu.data(); break;
+    }
+}
+
+int Genesis::getMenuSize(int id)
+{
+    switch(id){
+        case 0: return _mainMenu.Size; break;
+        default: return _myMenu.size(); break;
+    }
 }
 
 uint8_t Genesis::readByte(uint32_t address){

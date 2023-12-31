@@ -12,9 +12,9 @@ class Controls{
         enum ButtonState
         {
             OFF,
+            RELEASED,
             PRESSED,
-            HELD,
-            RELEASED
+            HELD
         };
 
         ButtonState Up;
@@ -31,7 +31,6 @@ class Controls{
         class BtnState 
         {
             public:
-                //BtnState(const BtnState&) = delete;
                 BtnState(ButtonState *state, uint8_t mask) : state(state), pinMask(mask){}
                 ButtonState *state;
                 uint8_t pinMask;

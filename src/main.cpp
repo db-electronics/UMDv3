@@ -161,18 +161,18 @@ void loop()
     switch(umdState)
     {
         case TOPLEVEL_WAIT_FOR_INPUT:
-            if(userInput.Down == userInput.PRESSED)
+            if(userInput.Down >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(1, true);
             }
-            else if (userInput.Up == userInput.PRESSED)
+            else if (userInput.Up >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(-1, true);
             }
             break;
         case TOPLEVEL:
         default:
-            umdDisplay.initMenu(1, cartridge->getMenuItems(), cartridge->getMenuSize());
+            umdDisplay.initMenu(1, cartridge->getMenuItems(0), cartridge->getMenuSize(0));
             umdState = TOPLEVEL_WAIT_FOR_INPUT;
             break;
     }
