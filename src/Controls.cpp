@@ -21,52 +21,55 @@ Controls::Controls()
 void Controls::process(uint8_t inputs, uint32_t currentTicks)
 {
 
-    for (auto btn : this->_btnStates)
+    for (auto& btn : _btnStates)
     {
-        this->_setButtonState(inputs, currentTicks, &btn);
+        _setButtonState(inputs, currentTicks, btn);
     }
 }
 
-void Controls::_setButtonState(uint8_t inputs, uint32_t currentTicks, BtnState *btnState)
+void Controls::_setButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
 {
+    bool isPressed = (inputs & btnState.pinMask) == 0;
 
-    bool isPressed = (inputs & btnState->pinMask) == 0;
-
-    switch (*(btnState->state))
+    switch (*(btnState.state))
     {
-    case OFF:
-        *(btnState->state) = isPressed ? PRESSED : OFF;
-        break;
-    case PRESSED:
-        if (isPressed)
-        {
-            if (currentTicks > (btnState->previousTicks + this->_pressedToHeldTicks))
+        case OFF:
+            *(btnState.state) = isPressed ? PRESSED : OFF;
+            btnState.previousTicks = currentTicks;
+            break;
+        case PRESSED:
+            if (isPressed)
             {
-                *(btnState->state) = HELD;
+                if (currentTicks > (btnState.previousTicks + _pressedToHeldTicks))
+                {
+                    *(btnState.state) = HELD;
+                }
             }
-        }
-        else
-        {
-            *(btnState->state) = RELEASED;
-        }
-        break;
-    case HELD:
-        *(btnState->state) = isPressed ? HELD : RELEASED;
-        break;
-    case RELEASED:
-        if (!isPressed)
-        {
-            if (currentTicks > (btnState->previousTicks + this->_releasedToOffTicks))
+            else
             {
-                *(btnState->state) = OFF;
+                *(btnState.state) = RELEASED;
             }
-        }
-        else
-        {
-            *(btnState->state) = PRESSED;
-        }
-        break;
-    default:
-        break;
+            break;
+        case HELD:
+            *(btnState.state) = isPressed ? HELD : RELEASED;
+            btnState.previousTicks = currentTicks;
+            break;
+        case RELEASED:
+            if (!isPressed)
+            {
+                if (currentTicks > (btnState.previousTicks + _releasedToOffTicks))
+                {
+                    *(btnState.state) = OFF;
+                }
+            }
+            else
+            {
+                *(btnState.state) = PRESSED;
+                btnState.previousTicks = currentTicks;
+            }
+            break;
+        default:
+            break;
     }
+    
 }

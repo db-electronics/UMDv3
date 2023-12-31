@@ -70,7 +70,7 @@ class UMDDisplay
 
         void initMenu(int layer, const char *menuItems[], int size);
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
-        void menuCursorUpdate(int delta, bool active);
+        void menuCursorUpdate(int delta, bool visible);
         int menuCurrentItem();
 
 
@@ -78,15 +78,19 @@ class UMDDisplay
         void scrollY(int layer, int delta); // increment all line numbers by delta
 
     private:
-        std::vector<const char *> _menu;
-        struct MenuCursor
+        
+        struct Menu
         {
-            bool active;
+            std::vector<const char *> items;
+            bool cursorVisible;
             int scrollRequired;
-            int size;
-            int item;
+            int currentItem;
             int startLine;
-        }_menuCursor;
+            int windowStart;
+            int windowEnd;
+            int windowSize;
+            int layer;
+        }_menu;
 
         static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
@@ -98,7 +102,8 @@ class UMDDisplay
         }_cursorPosition;
 
         void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
-        void initMenuCursor(int layer, int size);
+        void scrollMenu(int delta);
+        void initMenuCursor(int layer);
         void setCursorMenuPosition();
 
         int _layerLength[UMD_DISPLAY_LAYERS];

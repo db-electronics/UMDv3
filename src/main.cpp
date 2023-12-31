@@ -150,9 +150,11 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all
     static UMDState umdState = TOPLEVEL;
-    static uint32_t currentTicks = HAL_GetTick();
+    static uint32_t currentTicks;
     static Controls userInput;
 
+    // get the ticks
+    currentTicks = HAL_GetTick();
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
 

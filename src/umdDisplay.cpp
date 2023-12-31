@@ -17,7 +17,7 @@ bool UMDDisplay::begin()
     //place cursor offscreen;
     _cursorPosition.x = -1;
     _cursorPosition.y = -1;
-    _menuCursor.active = false;
+    _menu.cursorVisible = false;
 
     if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
@@ -72,7 +72,8 @@ void UMDDisplay::setCursorPosition(int x, int y)
 
 void UMDDisplay::setCursorMenuPosition()
 {
-    setCursorPosition(0, _menuCursor.startLine + _menuCursor.item);
+
+    setCursorPosition(0, _menu.startLine + (_menu.currentItem - _menu.windowStart));
 }
 
 void UMDDisplay::setLayerLineLength(int layer, int length)
@@ -182,14 +183,14 @@ void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
     if(layer >= UMD_DISPLAY_LAYERS)
         return;
 
-    _menu.clear();
+    _menu.items.clear();
     for(int i = 0; i < size; i++)
     {
-        _menu.push_back(menuItems[i]);
+        _menu.items.push_back(menuItems[i]);
     }
 
     fillLayerFromMenu(layer, 0, 0);
-    initMenuCursor(layer, size);
+    initMenuCursor(layer);
     _needsRedraw = true;
 }
 
@@ -198,54 +199,78 @@ void UMDDisplay::initMenu(int layer, const __FlashStringHelper *menuItems[], int
     if(layer >= UMD_DISPLAY_LAYERS)
         return;
 
-    _menu.clear();
+    _menu.items.clear();
     for(int i = 0; i < size; i++)
     {
-        _menu.push_back((const char *)menuItems[i]);
+        _menu.items.push_back((const char *)menuItems[i]);
     }
 
     fillLayerFromMenu(layer, 0, 0);
-    initMenuCursor(layer, size);
+    initMenuCursor(layer);
     _needsRedraw = true;
 }
 
-void UMDDisplay::menuCursorUpdate(int delta, bool active)
+void UMDDisplay::menuCursorUpdate(int delta, bool visible)
 {
-    if(active)
+    if(visible)
     {
-        delta %= _menuCursor.size;
-        _menuCursor.item += delta;
-        if(_menuCursor.item < 0)
+        _menu.currentItem += delta;
+        if(_menu.currentItem < 0)
         {
-            _menuCursor.item += _menuCursor.size;
+           _menu.currentItem = 0;
         }
-        else if(_menuCursor.item >= _menuCursor.size)
+        else if(_menu.currentItem >= _menu.items.size())
         {
-            _menuCursor.item -= _menuCursor.size;
+            _menu.currentItem = _menu.items.size() - 1;
         }
+
+        if(_menu.items.size() > _menu.windowSize)
+        {
+            // reached the top of the displayed menu and we need to scroll up?
+            if(_menu.currentItem == _menu.windowStart && _menu.windowStart > 0)
+            {
+                _menu.scrollRequired = delta;
+                _menu.windowStart += delta;
+                _menu.windowEnd += delta;
+                scrollMenu(delta);
+            }
+            // reached the bottom of the displayed menu and we need to scroll down?
+            else if(_menu.currentItem == _menu.windowEnd && _menu.windowEnd < _menu.items.size())
+            {
+                _menu.scrollRequired = delta;
+                _menu.windowStart += delta;
+                _menu.windowEnd += delta;
+                scrollMenu(delta);
+            }
+
+        }
+
         setCursorMenuPosition();
     }
     else
     {
-        _menuCursor.active = false;
+        _menu.cursorVisible = false;
         setCursorPosition(-1, -1);
     }
 }
 
 int UMDDisplay::menuCurrentItem()
 {
-    return _menuCursor.item;
+    return _menu.currentItem;
 }
 
-void UMDDisplay::initMenuCursor(int layer, int size)
+void UMDDisplay::initMenuCursor(int layer)
 {
-    _menuCursor.active = true;
-    _menuCursor.size = size;
-    _menuCursor.scrollRequired = 0;
-    _menuCursor.item = 0;
+    _menu.cursorVisible = true;
+    _menu.layer = layer;
+    _menu.windowStart = 0;
+    _menu.scrollRequired = 0;
+    _menu.currentItem = 0;
     if(layer == 0)
     {
-        _menuCursor.startLine = 0;
+        _menu.startLine = 0;
+        _menu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN);
+        
     }
     else
     {
@@ -255,34 +280,52 @@ void UMDDisplay::initMenuCursor(int layer, int size)
         {
             line += _layerLength[prevLayers];
         }
-        _menuCursor.startLine = line;
+
+        _menu.startLine = line;
+        _menu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN - line);
     }
+
+    _menu.windowEnd = _menu.windowStart + _menu.windowSize - 1;
     setCursorMenuPosition();
 }
 
 void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex)
 {
 
-    // fill the buffer with menu items, don't override first line
+    // fill the buffer with menu items
     int menuIndex = startMenuIndex;
     int bufferIndex = startBufferIndex;
 
     for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
     {
         // have we reached the end of the menu items? if so clear the rest of the buffer
-        if(menuIndex >= _menu.size())
+        if(menuIndex >= _menu.items.size())
         {
             //clearLine(bufferIndex);
             return;
         }
         else
         {
-            print(layer, _menu[menuIndex++], bufferIndex++, 1);
+            // always leave 1 blank character at start of string for menus
+            print(layer, _menu.items[menuIndex++], bufferIndex++, 1);
         }
 
-        // wrap around the buffer, keeping the first line intact
+        // wrap around the buffer
         if(bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
             bufferIndex = 0;
+    }
+}
+
+void UMDDisplay::scrollMenu(int delta)
+{
+    // easy case if menu is smaller than layer buffer
+    if(_menu.items.size() < UMD_DISPLAY_BUFFER_TOTAL_LINES)
+    {
+        scrollY(_menu.layer, delta);
+    }
+    else
+    {
+
     }
 }
 
@@ -379,12 +422,12 @@ void UMDDisplay::scrollY(int layer, int delta)
 
     for(int lineNumber = 0; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++)
     {
-        _scroll[layer][lineNumber][0] += delta;
-        if(_scroll[layer][lineNumber][0] >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
+        _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] += delta;
+        if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
         {
-            _scroll[layer][lineNumber][0] = 0;
+            _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] = 0;
         }
-        else if(_scroll[layer][lineNumber][0] <= 0)
+        else if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] < 0)
         {
             _scroll[layer][lineNumber][0] = UMD_DISPLAY_BUFFER_TOTAL_LINES-1;
         }
