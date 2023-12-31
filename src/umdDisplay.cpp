@@ -39,7 +39,7 @@ bool UMDDisplay::begin()
     }
 
     _display->display();
-    delay(2000); // Show splash screen for 2 seconds
+    //delay(2000); // Show splash screen for 2 seconds
     _display->clearDisplay();
     _display->setTextSize(1);             // Normal 1:1 pixel scale
     _display->setTextColor(WHITE);        // Draw white text

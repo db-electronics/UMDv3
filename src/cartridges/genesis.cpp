@@ -10,20 +10,29 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
-const __FlashStringHelper** Genesis::getMenuItems(int id)
-{
-    //return _menuTopLevel;
-    switch(id){
-        case 0: return _mainMenu.Items; break;
-        default: return _myMenu.data(); break;
-    }
-}
+// const __FlashStringHelper** Genesis::getMenuItems(int id)
+// {
+//     //return _menuTopLevel;
+//     switch(id){
+//         case 0: return _mainMenu.Items; break;
+//         default: return _mainMenu.Items; break;
+//     }
+// }
 
-int Genesis::getMenuSize(int id)
+// int Genesis::getMenuSize(int id)
+// {
+//     switch(id){
+//         case 0: return _mainMenu.Size; break;
+//         default: return _mainMenu.Size; break;
+//     }
+// }
+
+std::tuple<const __FlashStringHelper**, int> Genesis::getMenu(int id)
 {
-    switch(id){
-        case 0: return _mainMenu.Size; break;
-        default: return _myMenu.size(); break;
+    switch(id)
+    {
+        case 0:
+        default: return std::make_tuple(_mainMenu.Items, _mainMenu.Size);
     }
 }
 

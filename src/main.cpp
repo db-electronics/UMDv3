@@ -19,6 +19,7 @@
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
 #endif
+#define SD_CLK_DIV  8
 
 SdFatFs fatFs;
 SerialCommand SCmd;
@@ -44,6 +45,9 @@ enum UMDState
 // const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
 // const int menuTopLevelSize = 3;
 
+int verifySdCard(int& line);
+int verifySdCardSystemSetup(int& line, const char* systemName);
+
 void setup()
 {
     int line = 0;
@@ -65,8 +69,7 @@ void setup()
     if (!umdDisplay.begin())
     {
         SerialUSB.println(F("display init failure"));
-        while (1)
-            ;
+        while (1);
     }
 
     // sd card
@@ -77,7 +80,24 @@ void setup()
     SD.setCK(PC12);
     if (!SD.begin(SD_DETECT_PIN))
     {
-        umdDisplay.printf(0, line, F("  failed"));
+        umdDisplay.printf(0, line, F("  no card"));
+        umdDisplay.redraw();
+        while (1);
+    }
+    // sdCard.setDx(PC8, PC9, PC10, PC11);
+    // sdCard.setCMD(PD2);
+    // sdCard.setCK(PC12);
+    // if(!sdCard.init(SD_DETECT_PIN)){
+    //     umdDisplay.printf(0, line, F("  failed"));
+    //     umdDisplay.redraw();
+    //     while (1);
+    // }
+
+    // check that the SD cart is properly formatted for UMDv3
+    int sdVerify = verifySdCard(line);
+    if(sdVerify != 0)
+    {
+        umdDisplay.printf(0, line, F("  SD error %d"), sdVerify);
         umdDisplay.redraw();
         while (1);
     }
@@ -111,7 +131,7 @@ void setup()
     umdDisplay.redraw();
     if (!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS))
     {
-        umdDisplay.printf(0, line, F(" -no adapter found"));
+        umdDisplay.printf(0, line, F("  no adapter found"));
         umdDisplay.redraw();
         while (1);
     }
@@ -121,14 +141,24 @@ void setup()
     cartridge = cartFactory.getCart(adapterId);
     if (cartridge == nullptr)
     {
-        umdDisplay.printf(0, line++, F(" -unknown adapter"));
+        umdDisplay.printf(0, line++, F("  unknown adapter"));
         umdDisplay.redraw();
         while (1);
     }
 
-    umdDisplay.printf(0, line++, F(" -adapter id = %d"), adapterId);
-    umdDisplay.printf(0, line++, F(" -%s"), cartridge->getSystemName());
+    //umdDisplay.printf(0, line++, F("  adapter id = %d"), adapterId);
+    auto systemName = cartridge->getSystemName();
+    umdDisplay.printf(0, line++, F("  %s"), systemName);
     umdDisplay.redraw();
+
+    // check if the sdcard has a _db.txt file containing rom checksums for this system
+    sdVerify = verifySdCardSystemSetup(line, systemName);
+    if(sdVerify != 0)
+    {
+        umdDisplay.printf(0, line, F("  SD error %d"), sdVerify);
+        umdDisplay.redraw();
+        while (1);
+    }
 
     // register callbacks for SerialCommand related to the cartridge
     SCmd.addCommand("scani2c", scmdScanI2C);
@@ -139,10 +169,9 @@ void setup()
     umdDisplay.clear();
     umdDisplay.setLayerLineLength(0, 1);
     umdDisplay.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
-    umdDisplay.printf(0, 0, F("UMDv3/%s"), cartridge->getSystemName());
+    umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
     umdDisplay.setCursorPosition(-1, -1);
     umdDisplay.redraw();
-
 
 }
 
@@ -172,7 +201,9 @@ void loop()
             break;
         case TOPLEVEL:
         default:
-            umdDisplay.initMenu(1, cartridge->getMenuItems(0), cartridge->getMenuSize(0));
+            auto [items, size] = cartridge->getMenu(0);
+            //umdDisplay.initMenu(1, cartridge->getMenuItems(0), cartridge->getMenuSize(0));
+            umdDisplay.initMenu(1, items, size);
             umdState = TOPLEVEL_WAIT_FOR_INPUT;
             break;
     }
@@ -202,4 +233,49 @@ void scmdScanI2C(void)
 void inputInterrupt(void)
 {
     newInputs = true;
+}
+
+int verifySdCard(int& line)
+{
+    File file = SD.open("/UMD");
+    //File file = SD.open("/UMD/Genesis/_db.txt");
+    if(!file)
+    {
+        return 1;
+    }
+
+    auto fileName = file.fullname();
+    umdDisplay.printf(0, line++, F("  %s"), fileName);
+    umdDisplay.redraw();
+    file.close();
+
+    return 0;
+}
+
+int verifySdCardSystemSetup(int& line, const char* systemName)
+{
+    String systemStr = systemName;
+    String filePath = "/UMD/" + systemStr + "/_db.txt";
+    // File file = SD.open(filePath.c_str()); //somehow this doesn't work
+    auto path = filePath.c_str();
+    File file = SD.open(path, FILE_READ);
+    if(!file)
+    {
+        return 1;
+    }
+
+    auto fileName = file.fullname();
+    umdDisplay.printf(0, line++, F("  %s"), fileName);
+    umdDisplay.redraw();
+
+    int read;
+    while(file.available())
+    {
+        read = file.read();
+        SerialUSB.write(read);
+    }
+
+    file.close();
+
+    return 0;
 }

@@ -2,6 +2,7 @@
 #define CARTRIDGE_H
 
 #include "UMDPortsV3.h"
+#include <tuple>
 
 class Cartridge : public UMDPortsV3 {
     public:
@@ -10,8 +11,9 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
         void testWait(void);
 
-        virtual const __FlashStringHelper** getMenuItems(int id) = 0;
-        virtual int getMenuSize(int id) = 0;
+        // virtual const __FlashStringHelper** getMenuItems(int id) = 0;
+        // virtual int getMenuSize(int id) = 0;
+        virtual std::tuple<const __FlashStringHelper**, int> getMenu(int id) = 0;
 
         virtual const char* getSystemName() = 0;
         virtual uint8_t readByte(uint16_t address);
