@@ -84,6 +84,10 @@ void setup()
         umdDisplay.redraw();
         while (1);
     }
+
+    // reduce the SDIO clock, seems more stable like this
+    SDIO->CLKCR |= SD_CLK_DIV; 
+    
     // sdCard.setDx(PC8, PC9, PC10, PC11);
     // sdCard.setCMD(PD2);
     // sdCard.setCK(PC12);
