@@ -91,12 +91,26 @@ void UMDDisplay::clear(void)
 {
     for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
     {
-        for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
-        {
-            clearLine(layer, line);
-        }
+        // for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
+        // {
+        //     clearLine(layer, line);
+        // }
+        clearLayer(layer);
     }
 
+    _needsRedraw = true;
+}
+
+
+void UMDDisplay::clearLayer(int layer)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
+    for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
+    {
+        clearLine(layer, line);
+    }
     _needsRedraw = true;
 }
 
@@ -291,6 +305,8 @@ void UMDDisplay::initMenuCursor(int layer)
 
 void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex)
 {
+    // clear the layer
+    clearLayer(layer);
 
     // fill the buffer with menu items
     int menuIndex = startMenuIndex;

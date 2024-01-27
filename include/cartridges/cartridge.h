@@ -1,6 +1,7 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
+#include <STM32SD.h>
 #include "UMDPortsV3.h"
 #include <tuple>
 
@@ -11,11 +12,10 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
         void testWait(void);
 
-        // virtual const __FlashStringHelper** getMenuItems(int id) = 0;
-        // virtual int getMenuSize(int id) = 0;
-        virtual std::tuple<const __FlashStringHelper**, int> getMenu(int id) = 0;
-
         virtual const char* getSystemName() = 0;
+        virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
+        virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd) = 0;
+        
         virtual uint8_t readByte(uint16_t address);
         virtual uint8_t readByte(uint32_t address);
         virtual void readBytes(uint32_t address, uint8_t *buffer, uint16_t size);
@@ -33,12 +33,6 @@ class Cartridge : public UMDPortsV3 {
         // const int menuTopLevelSize = 3;
 
 };
-
-
-// Given the following templated class, how can I declare a new instance and
-// initialize it with the following values?
-// {("Read Cartridge"), ("Write Cartridge"), ("Checksum")};
-
 
 
 #endif

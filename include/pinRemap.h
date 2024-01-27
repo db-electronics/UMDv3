@@ -14,4 +14,7 @@ const PinMap PinMap_I2C_SCL[] = {
   {NC,    NP,    0}
 };
 
-#endif
+// redefine SDIO pins
+
+
+#endif 

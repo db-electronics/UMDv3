@@ -21,7 +21,8 @@
 #endif
 #define SD_CLK_DIV  8
 
-SdFatFs fatFs;
+//SdFatFs fatFs;
+File sdFile;
 SerialCommand SCmd;
 MCP23008 onboardMCP23008;
 MCP23008 adapterMCP23008;
@@ -38,7 +39,7 @@ bool newInputs;
 enum UMDState
 {
     TOPLEVEL,
-    TOPLEVEL_WAIT_FOR_INPUT,
+    WAIT_FOR_INPUT,
     CARTRIDGE
 };
 
@@ -75,10 +76,10 @@ void setup()
     // sd card
     umdDisplay.printf(0, line++, F("init SD card"));
     umdDisplay.redraw();
-    SD.setDx(PC8, PC9, PC10, PC11);
-    SD.setCMD(PD2);
-    SD.setCK(PC12);
-    if (!SD.begin(SD_DETECT_PIN))
+    // SD.setDx(PC8, PC9, PC10, PC11);
+    // SD.setCMD(PD2);
+    // SD.setCK(PC12);
+    if (!SD.begin(SD_DETECT_PIN, PC8, PC9, PC10, PC11, PD2, PC12))
     {
         umdDisplay.printf(0, line, F("  no card"));
         umdDisplay.redraw();
@@ -88,15 +89,6 @@ void setup()
     // reduce the SDIO clock, seems more stable like this
     SDIO->CLKCR |= SD_CLK_DIV; 
     
-    // sdCard.setDx(PC8, PC9, PC10, PC11);
-    // sdCard.setCMD(PD2);
-    // sdCard.setCK(PC12);
-    // if(!sdCard.init(SD_DETECT_PIN)){
-    //     umdDisplay.printf(0, line, F("  failed"));
-    //     umdDisplay.redraw();
-    //     while (1);
-    // }
-
     // check that the SD cart is properly formatted for UMDv3
     int sdVerify = verifySdCard(line);
     if(sdVerify != 0)
@@ -185,6 +177,7 @@ void loop()
     static UMDState umdState = TOPLEVEL;
     static uint32_t currentTicks;
     static Controls userInput;
+    static uint16_t menuIndex;
 
     // get the ticks
     currentTicks = HAL_GetTick();
@@ -193,7 +186,7 @@ void loop()
 
     switch(umdState)
     {
-        case TOPLEVEL_WAIT_FOR_INPUT:
+        case WAIT_FOR_INPUT:
             if(userInput.Down >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(1, true);
@@ -202,13 +195,20 @@ void loop()
             {
                 umdDisplay.menuCursorUpdate(-1, true);
             }
+            else if (userInput.Ok >= userInput.PRESSED){
+                int menuItemIndex = umdDisplay.menuCurrentItem();
+                menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD);
+                auto [items, size] = cartridge->getMenu(menuIndex);
+                umdDisplay.initMenu(1, items, size);
+            }
             break;
         case TOPLEVEL:
         default:
             auto [items, size] = cartridge->getMenu(0);
             //umdDisplay.initMenu(1, cartridge->getMenuItems(0), cartridge->getMenuSize(0));
             umdDisplay.initMenu(1, items, size);
-            umdState = TOPLEVEL_WAIT_FOR_INPUT;
+            menuIndex = 0;
+            umdState = WAIT_FOR_INPUT;
             break;
     }
 
@@ -218,15 +218,6 @@ void loop()
 
 void scmdScanI2C(void)
 {
-    // char *arg;
-    // uint32_t address, value;
-
-    // this is the address to poke
-    // arg = SCmd.next();
-    // address = (uint32_t)strtoul(arg, (char**)0, 0);
-
-    // value = *(__IO uint32_t *)(address);
-    // SerialUSB.print(value, HEX);
     I2CScanner scanner;
     std::vector<uint8_t> addresses;
     addresses = scanner.findDevices(&Wire);
@@ -241,17 +232,17 @@ void inputInterrupt(void)
 
 int verifySdCard(int& line)
 {
-    File file = SD.open("/UMD");
+    sdFile = SD.open("/UMD");
     //File file = SD.open("/UMD/Genesis/_db.txt");
-    if(!file)
+    if(!sdFile)
     {
         return 1;
     }
 
-    auto fileName = file.fullname();
+    auto fileName = sdFile.fullname();
     umdDisplay.printf(0, line++, F("  %s"), fileName);
     umdDisplay.redraw();
-    file.close();
+    sdFile.close();
 
     return 0;
 }
@@ -262,24 +253,26 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     String filePath = "/UMD/" + systemStr + "/_db.txt";
     // File file = SD.open(filePath.c_str()); //somehow this doesn't work
     auto path = filePath.c_str();
-    File file = SD.open(path, FILE_READ);
-    if(!file)
+    sdFile = SD.open(path);
+    if(!sdFile)
     {
         return 1;
     }
 
-    auto fileName = file.fullname();
+    auto fileName = sdFile.fullname();
     umdDisplay.printf(0, line++, F("  %s"), fileName);
     umdDisplay.redraw();
 
-    int read;
-    while(file.available())
+    // test read file contents
+    char c[16];
+    int i = 0;
+    while(sdFile.available())
     {
-        read = file.read();
-        SerialUSB.write(read);
+        c[i++] = sdFile.read();
+        SerialUSB.write(c);
     }
 
-    file.close();
+    sdFile.close();
 
     return 0;
 }

@@ -60,6 +60,7 @@ class UMDDisplay
         void setCursorPosition(int x, int y);
         void setLayerLineLength(int layer, int length);
         void clear(void);
+        void clearLayer(int layer);
         void clearLine(int layer, int lineNumber);
         void printf(int layer, int lineNumber, const char *format, ...);
         void printf(int layer, int lineNumber, const __FlashStringHelper *format, ...);
