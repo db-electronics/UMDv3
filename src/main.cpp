@@ -167,6 +167,7 @@ void setup()
     umdDisplay.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
     umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
     umdDisplay.setCursorPosition(-1, -1);
+    umdDisplay.setClockPosition(20, 7);
     umdDisplay.redraw();
 
 }
@@ -212,7 +213,9 @@ void loop()
             break;
     }
 
+    umdDisplay.advanceClockAnimation();
     umdDisplay.redraw();
+    SerialUSB.println(F("Tick"));
     delay(100);
 }
 

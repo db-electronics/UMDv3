@@ -13,11 +13,15 @@ bool UMDDisplay::begin()
     // I don't like being tied to Adafruit_SSD1306 like this
     //_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-    _cursorChar = '*';
+    _cursor.character = '*';
     //place cursor offscreen;
-    _cursorPosition.x = -1;
-    _cursorPosition.y = -1;
+    _cursor.x = -1;
+    _cursor.y = -1;
     _menu.cursorVisible = false;
+
+    _clock.framePointer = 0;
+    _clock.x = -1;
+    _clock.y = -1;
 
     if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
@@ -50,29 +54,51 @@ bool UMDDisplay::begin()
 
 void UMDDisplay::setCursorChar(char c)
 {
-    _cursorChar = c;
+    _cursor.character = c;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorPosition(int x, int y)
 {
     if(x < OLED_MAX_CHARS_PER_LINE){
-        _cursorPosition.x = x * OLED_FONT_WIDTH;
+        _cursor.x = x * OLED_FONT_WIDTH;
     }else{
-        _cursorPosition.x = -1;
+        _cursor.x = -1;
     }
     
     if(y < OLED_MAX_LINES_PER_SCREEN){
-        _cursorPosition.y = y * OLED_FONT_HEIGHT;
+        _cursor.y = y * OLED_FONT_HEIGHT;
     }else{
-        _cursorPosition.y = -1;
+        _cursor.y = -1;
     }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::setClockPosition(int x, int y)
+{
+    if(x < OLED_MAX_CHARS_PER_LINE){
+        _clock.x = x * OLED_FONT_WIDTH;
+    }else{
+        _clock.x = -1;
+    }
+    
+    if(y < OLED_MAX_LINES_PER_SCREEN){
+        _clock.y = y * OLED_FONT_HEIGHT;
+    }else{
+        _clock.y = -1;
+    }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::advanceClockAnimation()
+{
+    if(++_clock.framePointer == UMD_CLOCK_ANIMATION_FRAMES)
+        _clock.framePointer = 0;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorMenuPosition()
 {
-
     setCursorPosition(0, _menu.startLine + (_menu.currentItem - _menu.windowStart));
 }
 
@@ -386,10 +412,15 @@ void UMDDisplay::redraw(void)
     }
 
     // draw the cursor if visible
-    if(this->_cursorPosition.x >= 0 && this->_cursorPosition.y >= 0)
+    if(this->_cursor.x >= 0 && this->_cursor.y >= 0)
     {
-        _display->setCursor(this->_cursorPosition.x, this->_cursorPosition.y);
-        _display->print(this->_cursorChar);
+        _display->setCursor(this->_cursor.x, this->_cursor.y);
+        _display->print(this->_cursor.character);
+    }
+
+    // draw the clock if visible
+    if(_clock.x >= 0 && _clock.y >= 0){
+        _display->drawBitmap(_clock.x, _clock.y, _clockAnimation[_clock.framePointer], 8, 8, SSD1306_WHITE);
     }
 
     _display->display();

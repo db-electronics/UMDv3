@@ -58,6 +58,8 @@ class UMDDisplay
         bool begin();
         void setCursorChar(char c);
         void setCursorPosition(int x, int y);
+        void setClockPosition(int x, int y);
+        void advanceClockAnimation();
         void setLayerLineLength(int layer, int length);
         void clear(void);
         void clearLayer(int layer);
@@ -73,7 +75,6 @@ class UMDDisplay
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
         void menuCursorUpdate(int delta, bool visible);
         int menuCurrentItem();
-
 
         void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
         void scrollY(int layer, int delta); // increment all line numbers by delta
@@ -95,12 +96,64 @@ class UMDDisplay
 
         static Adafruit_SSD1306 *_display;
         bool _needsRedraw;
-        char _cursorChar;
-        struct CursorPosition
+
+        struct Cursor
         {
             int x;
             int y;
-        }_cursorPosition;
+            char character;
+        }_cursor;
+
+        #define UMD_CLOCK_ANIMATION_FRAMES 4
+        struct Clock
+        {
+            int framePointer;
+            int x;
+            int y;
+        }_clock;
+
+        const uint8_t _clockAnimation[UMD_CLOCK_ANIMATION_FRAMES][8] = {
+            {
+                0b00111000,
+                0b01000100,
+                0b10010010,
+                0b10011010,
+                0b10000010,
+                0b01000100,
+                0b00111000,
+                0b00000000
+            },
+            {
+                0b00111000,
+                0b01000100,
+                0b10000010,
+                0b10011010,
+                0b10010010,
+                0b01000100,
+                0b00111000,
+                0b00000000
+            },
+            {
+                0b00111000,
+                0b01000100,
+                0b10000010,
+                0b10110010,
+                0b10010010,
+                0b01000100,
+                0b00111000,
+                0b00000000
+            },
+            {
+                0b00111000,
+                0b01000100,
+                0b10010010,
+                0b10110010,
+                0b10000010,
+                0b01000100,
+                0b00111000,
+                0b00000000
+            },
+        };
 
         void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
         void scrollMenu(int delta);
