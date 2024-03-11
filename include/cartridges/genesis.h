@@ -53,7 +53,7 @@ class Genesis : public Cartridge {
         virtual void initIO();
         virtual const char* getSystemName();
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
-        virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd);
+        virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
         virtual FlashInfo getFlashInfo();

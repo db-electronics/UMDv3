@@ -3,6 +3,7 @@
 
 #include <STM32SD.h>
 #include "UMDPortsV3.h"
+#include "umdDisplay.h"
 #include <tuple>
 
 struct FlashInfo{
@@ -21,9 +22,12 @@ class Cartridge : public UMDPortsV3 {
         virtual void initIO() = 0;
         virtual const char* getSystemName() = 0;
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
-        virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd) = 0;
+        virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
         
         virtual bool calculateChecksum(uint32_t start, uint32_t end) = 0;
+        uint16_t ExpectedChecksum;
+        uint16_t ActualChecksum;
+
         virtual FlashInfo getFlashInfo() = 0;
 
         virtual uint8_t readByte(uint16_t address);

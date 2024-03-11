@@ -57,6 +57,8 @@ bool Genesis::readHeader(){
     _header.SRAMEnd = UMD_SWAP_BYTES_32(_header.SRAMEnd);
     _header.Checksum = UMD_SWAP_BYTES_16(_header.Checksum);
 
+    ExpectedChecksum = _header.Checksum;
+
     // check if the first 4 character of _header.SystemType are "SEGA"
     if(_header.SystemType[0] != 'S' || _header.SystemType[1] != 'E' || _header.SystemType[2] != 'G' || _header.SystemType[3] != 'A'){
         return false;
@@ -71,6 +73,8 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
         checksum += readWord(i);
     }
     
+    ActualChecksum = checksum;
+
     if(checksum == _header.Checksum){
         return true;
     }else{
@@ -108,7 +112,7 @@ std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
     }
 }
 
-uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd)
+int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
 {
     switch(menuIndex)
     {
@@ -163,7 +167,10 @@ uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDC
                     validRom = readHeader();
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
-                    return 0; // index of Main menu
+                    // show results
+                    disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);
+                    disp.printf(1, 6, "Actual:   %04X", ActualChecksum);
+                    return -1; // stay in Checksum menu
                 default:
                     return 0;
             }

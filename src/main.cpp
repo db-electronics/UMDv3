@@ -178,7 +178,7 @@ void loop()
     static UMDState umdState = TOPLEVEL;
     static uint32_t currentTicks;
     static Controls userInput;
-    static uint16_t menuIndex;
+    static int menuIndex;
 
     // get the ticks
     currentTicks = HAL_GetTick();
@@ -198,9 +198,16 @@ void loop()
             }
             else if (userInput.Ok >= userInput.PRESSED){
                 int menuItemIndex = umdDisplay.menuCurrentItem();
-                menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD);
-                auto [items, size] = cartridge->getMenu(menuIndex);
+                menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD, umdDisplay);
+                if(menuIndex >= 0){
+                    auto [items, size] = cartridge->getMenu(menuIndex);
+                    umdDisplay.initMenu(1, items, size);
+                }
+            }
+            else if (userInput.Back >= userInput.PRESSED){
+                auto [items, size] = cartridge->getMenu(0);
                 umdDisplay.initMenu(1, items, size);
+                menuIndex = 0;
             }
             break;
         case TOPLEVEL:
