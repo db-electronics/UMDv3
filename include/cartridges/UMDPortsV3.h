@@ -45,7 +45,7 @@
 #define UMD_PORT_IO8           GPIOB
 #define UMD_PIN_IO8            GPIO_PIN_7
 
-#define UMD_PORT_SWAP_BYTES(w) (w << 8) || (w >> 8)
+#define UMD_PORT_SWAP_BYTES(w) (w << 8) | (w >> 8)
 
 #define M_REPEAT_5(X)          X X X X X
 #define M_REPEAT_10(X)         M_REPEAT_5(X) M_REPEAT_5(X)

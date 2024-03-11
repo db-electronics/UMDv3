@@ -19,6 +19,11 @@ void UMDPortsV3::setDefaults(){
     HAL_TIM_Base_Start(&htim7);
 
     // setup GPIO
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+    __HAL_RCC_GPIOC_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOE_CLK_ENABLE();
     GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     // enable master clock output on MCo1 PA8

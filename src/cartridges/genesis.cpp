@@ -1,10 +1,43 @@
 #include "cartridges/genesis.h"
 
 Genesis::Genesis(){
-    this->setDefaults();
+    initIO();
 }
 
 Genesis::~Genesis(){}
+
+void Genesis::initIO(){
+    setDefaults();
+
+    // set pins to high
+    setTIME();
+    setAS();
+    setLWR();
+    setCE();
+
+    setRD();
+    setWR();
+
+    dataSetToInputs(true);
+
+    // DTACK on IO0
+    ioSetToOutput(0, true);
+    setDTACK();
+
+    // VRES on IO1
+    ioSetToOutput(1, true);
+    setVRES();
+
+    // M3 on IO2
+    ioSetToInput(2, false);
+
+    // ASEL on IO3
+    ioSetToOutput(3, true);
+    setASEL();
+
+    // MRES on IO8
+    ioSetToInput(8, false);
+}
 
 const char* Genesis::getSystemName(){
     return "Genesis";
@@ -65,6 +98,8 @@ uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDC
             switch(menuItemIndex)
             {
                 case 0: // ROM
+                    uint16_t word;
+                    word = readWord(0x100);
                     return 0; // index of Main menu
                 case 1: // RAM
                     return 0; // index of Main menu
@@ -102,12 +137,12 @@ uint8_t Genesis::readByte(uint32_t address){
 
     uint8_t result;
     addressWrite(address);
-    clearCE0();
+    clearCE();
     clearRD();
     wait200ns();
     result = dataReadHigh();
     setRD();
-    setCE0();
+    setCE();
     return result;
 }
 
@@ -115,10 +150,10 @@ void Genesis::writeByte(uint16_t address, uint8_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWriteHigh(data);
-    clearCE0();
+    clearCE();
     clearWR();
     wait200ns();
-    setCE0();
+    setCE();
     setWR();
 
     // always leave on inputs by default
@@ -129,11 +164,13 @@ uint16_t Genesis::readWord(uint32_t address){
 
     uint16_t result;
     addressWrite(address);
-    clearCE0();
+    clearCE();
+    clearAS();
     clearRD();
     wait200ns();
     result = dataReadWordSwapped();
     setRD();
-    setCE0();
+    setAS();
+    setCE();
     return result;
 }

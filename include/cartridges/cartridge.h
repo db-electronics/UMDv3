@@ -12,6 +12,7 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
         void testWait(void);
 
+        virtual void initIO() = 0;
         virtual const char* getSystemName() = 0;
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
         virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd) = 0;

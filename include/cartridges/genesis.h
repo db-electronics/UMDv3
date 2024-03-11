@@ -12,6 +12,8 @@ class Genesis : public Cartridge {
 
         Genesis();
         virtual ~Genesis();
+
+        virtual void initIO();
         virtual const char* getSystemName();
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd);
@@ -21,6 +23,36 @@ class Genesis : public Cartridge {
         virtual uint16_t readWord(uint32_t address);
 
     protected:
+
+        // rename Genesis CE pins
+        __attribute__((always_inline)) void setTIME() { setCE0(); }
+        __attribute__((always_inline)) void setAS() { setCE1(); }
+        __attribute__((always_inline)) void setLWR() { setCE2(); }
+        __attribute__((always_inline)) void setCE() { setCE3(); }
+
+        __attribute__((always_inline)) void clearTIME() { clearCE0(); }
+        __attribute__((always_inline)) void clearAS() { clearCE1(); }
+        __attribute__((always_inline)) void clearLWR() { clearCE2(); }
+        __attribute__((always_inline)) void clearCE() { clearCE3(); }
+
+        // DTACK on IO0
+        __attribute__((always_inline)) void setDTACK() { setIO(0); }
+        __attribute__((always_inline)) void clearDTACK() { clearIO(0); }
+
+        // VRES on IO1
+        __attribute__((always_inline)) void setVRES() { setIO(1); }
+        __attribute__((always_inline)) void clearVRES() { clearIO(1); }
+
+        // M3 on IO2
+        __attribute__((always_inline)) void readM3() { ioRead(2); }
+
+        // ASEL on IO3
+        __attribute__((always_inline)) void setASEL() { setIO(3); }
+        __attribute__((always_inline)) void clearASEL() { clearIO(3); }
+
+        // MRES on IO8
+        __attribute__((always_inline)) void readMRES() { ioRead(8); }
+
         //const __FlashStringHelper* _menuItems[2] = {F("Read"), F("Write")};
         //Menu<2> _bad {{F("Read"), F("Write")}};
 
