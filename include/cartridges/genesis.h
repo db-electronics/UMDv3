@@ -6,6 +6,43 @@
 #include "Menu.h"
 #include <string>
 
+#define GENESIS_HEADER_SIZE             256
+#define GENESIS_HEADER_START_ADDR       0x00000100
+#define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
+#define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
+
+struct GenesisHeader{
+    union {
+        struct{
+            char SystemType[16];
+            char Copyright[16];
+            char DomesticName[48];
+            char InternationalName[48];
+            char SerialNumber[14];
+            uint16_t Checksum;
+            char DeviceSupport[16];
+            uint32_t ROMStart;
+            uint32_t ROMEnd;
+            uint32_t RAMStart;
+            uint32_t RAMEnd;
+            char MemoryType[2];
+            uint8_t RAMType;
+            uint8_t RAM20;
+            uint32_t SRAMStart;
+            uint32_t SRAMEnd;
+            char ModemSupport[12];
+            char Notes[40];
+            char RegionSupport[3];
+            char Reserved[13];
+        };
+        struct{
+            uint8_t bytes[256];
+        };
+        struct{
+            uint16_t words[128];
+        };
+    };
+};
 
 class Genesis : public Cartridge {
     public:
@@ -18,11 +55,21 @@ class Genesis : public Cartridge {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd);
 
+        virtual bool calculateChecksum(uint32_t start, uint32_t end);
+
         virtual uint8_t readByte(uint32_t address);
         virtual void writeByte(uint16_t address, uint8_t data);
         virtual uint16_t readWord(uint32_t address);
 
     protected:
+
+        GenesisHeader _header;
+
+        bool readHeader();
+
+        uint32_t readLong(uint32_t address);
+        uint32_t getRomSizeFromHeader();
+
 
         // rename Genesis CE pins
         __attribute__((always_inline)) void setTIME() { setCE0(); }

@@ -43,22 +43,55 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
-// const __FlashStringHelper** Genesis::getMenuItems(int id)
-// {
-//     //return _menuTopLevel;
-//     switch(id){
-//         case 0: return _mainMenu.Items; break;
-//         default: return _mainMenu.Items; break;
-//     }
-// }
+bool Genesis::readHeader(){
+    for(int i = 0; i < GENESIS_HEADER_SIZE; i+=2){
+        _header.words[i>>1] = UMD_SWAP_BYTES_16(readWord(GENESIS_HEADER_START_ADDR + i));
+    }
 
-// int Genesis::getMenuSize(int id)
-// {
-//     switch(id){
-//         case 0: return _mainMenu.Size; break;
-//         default: return _mainMenu.Size; break;
-//     }
-// }
+    // the long values need additional work
+    _header.ROMStart = UMD_SWAP_BYTES_32(_header.ROMStart);
+    _header.ROMEnd = UMD_SWAP_BYTES_32(_header.ROMEnd);
+    _header.RAMStart = UMD_SWAP_BYTES_32(_header.RAMStart);
+    _header.RAMEnd = UMD_SWAP_BYTES_32(_header.RAMEnd);
+    _header.SRAMStart = UMD_SWAP_BYTES_32(_header.SRAMStart);
+    _header.SRAMEnd = UMD_SWAP_BYTES_32(_header.SRAMEnd);
+    _header.Checksum = UMD_SWAP_BYTES_16(_header.Checksum);
+
+    // check if the first 4 character of _header.SystemType are "SEGA"
+    if(_header.SystemType[0] != 'S' || _header.SystemType[1] != 'E' || _header.SystemType[2] != 'G' || _header.SystemType[3] != 'A'){
+        return false;
+    }
+
+    return true;
+}
+
+bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
+    uint16_t checksum = 0;
+    for(uint32_t i = start; i < end; i+=2){
+        checksum += readWord(i);
+    }
+    
+    if(checksum == _header.Checksum){
+        return true;
+    }else{
+        return false;
+    }
+}
+
+uint32_t Genesis::getRomSizeFromHeader(){
+    uint32_t romSize = 0;
+    romSize = readLong(GENESIS_HEADER_ROM_END_ADDR);
+    romSize++;
+    return romSize;
+}
+
+uint32_t Genesis::readLong(uint32_t address){
+    uint32_t result;
+    result = readWord(address);
+    result = result << 16;
+    result |= readWord(address+2);
+    return result;
+}
 
 std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
 {
@@ -99,7 +132,11 @@ uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDC
             {
                 case 0: // ROM
                     uint16_t word;
-                    word = readWord(0x100);
+                    uint32_t romSize;
+                    bool validRom, validChecksum;
+                    validRom = readHeader();
+                    romSize = _header.ROMEnd + 1;
+                    validChecksum = calculateChecksum(0x200, romSize);
                     return 0; // index of Main menu
                 case 1: // RAM
                     return 0; // index of Main menu
@@ -151,9 +188,11 @@ void Genesis::writeByte(uint16_t address, uint8_t data){
     dataSetToOutputs();
     dataWriteHigh(data);
     clearCE();
+    clearAS();
     clearWR();
     wait200ns();
     setCE();
+    setAS();
     setWR();
 
     // always leave on inputs by default
@@ -168,7 +207,7 @@ uint16_t Genesis::readWord(uint32_t address){
     clearAS();
     clearRD();
     wait200ns();
-    result = dataReadWordSwapped();
+    result = dataReadWord();
     setRD();
     setAS();
     setCE();

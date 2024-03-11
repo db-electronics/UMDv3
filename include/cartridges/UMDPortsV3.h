@@ -45,7 +45,8 @@
 #define UMD_PORT_IO8           GPIOB
 #define UMD_PIN_IO8            GPIO_PIN_7
 
-#define UMD_PORT_SWAP_BYTES(w) (w << 8) | (w >> 8)
+#define UMD_SWAP_BYTES_16(w)   (w << 8) | (w >> 8)
+#define UMD_SWAP_BYTES_32(l)   (((l >> 24) & 0xff) | ((l << 8) & 0xff0000) | ((l >> 8) & 0xff00) | ((l << 24) & 0xff000000))
 
 #define M_REPEAT_5(X)          X X X X X
 #define M_REPEAT_10(X)         M_REPEAT_5(X) M_REPEAT_5(X)
@@ -115,7 +116,7 @@ class UMDPortsV3
         /// @return big endian word
         __attribute__((always_inline)) uint16_t dataReadWordSwapped()
         {
-            return UMD_PORT_SWAP_BYTES(_portWordRead(UMD_PORT_DATABUS));
+            return UMD_SWAP_BYTES_16(_portWordRead(UMD_PORT_DATABUS));
         }
 
         /// @brief write a byte to the data bus
@@ -144,7 +145,7 @@ class UMDPortsV3
         /// @param value
         __attribute__((always_inline)) void dataWriteSwapped(uint16_t value)
         {
-            _portWordWrite(UMD_PORT_DATABUS, UMD_PORT_SWAP_BYTES(value));
+            _portWordWrite(UMD_PORT_DATABUS, UMD_SWAP_BYTES_16(value));
         }
 
         /// @brief set the data bus to inputs
