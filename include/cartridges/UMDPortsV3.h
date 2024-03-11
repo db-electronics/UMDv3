@@ -171,7 +171,7 @@ class UMDPortsV3
         __attribute__((always_inline)) void setCE3() { _bitSet(UMD_PORT_CE3, UMD_PIN_CE3); }
 
         /// @brief set the WR pin
-        __attribute__((always_inline)) void setWR() { _bitSet(UMD_PORT_RD, UMD_PIN_RD); }
+        __attribute__((always_inline)) void setWR() { _bitSet(UMD_PORT_WR, UMD_PIN_WR); }
 
         /// @brief set the RD pin
         __attribute__((always_inline)) void setRD() { _bitSet(UMD_PORT_RD, UMD_PIN_RD); }

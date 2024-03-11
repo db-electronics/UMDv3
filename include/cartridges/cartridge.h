@@ -5,6 +5,12 @@
 #include "UMDPortsV3.h"
 #include <tuple>
 
+struct FlashInfo{
+    uint16_t Manufacturer;
+    uint16_t Device;
+    uint32_t Size;
+};
+
 class Cartridge : public UMDPortsV3 {
     public:
 
@@ -18,6 +24,7 @@ class Cartridge : public UMDPortsV3 {
         virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd) = 0;
         
         virtual bool calculateChecksum(uint32_t start, uint32_t end) = 0;
+        virtual FlashInfo getFlashInfo() = 0;
 
         virtual uint8_t readByte(uint16_t address);
         virtual uint8_t readByte(uint32_t address);
@@ -26,8 +33,14 @@ class Cartridge : public UMDPortsV3 {
         virtual void writeByte(uint16_t address, uint8_t data);
 
         virtual uint16_t readWord(uint32_t);
+        virtual void writeWord(uint32_t, uint16_t);
 
     protected:
+
+        FlashInfo _flashInfo;
+
+        uint32_t getFlashSizeFromInfo(FlashInfo info);
+
         const uint16_t addressSetupTime = 100;
         const uint16_t readHoldTime = 200;
         const uint16_t writeHoldTime = 200;

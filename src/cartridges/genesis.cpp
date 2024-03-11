@@ -29,7 +29,7 @@ void Genesis::initIO(){
     setVRES();
 
     // M3 on IO2
-    ioSetToInput(2, false);
+    ioSetToInput(2, true);
 
     // ASEL on IO3
     ioSetToOutput(3, true);
@@ -48,7 +48,7 @@ bool Genesis::readHeader(){
         _header.words[i>>1] = UMD_SWAP_BYTES_16(readWord(GENESIS_HEADER_START_ADDR + i));
     }
 
-    // the long values need additional work
+    // the numeric values need additional work
     _header.ROMStart = UMD_SWAP_BYTES_32(_header.ROMStart);
     _header.ROMEnd = UMD_SWAP_BYTES_32(_header.ROMEnd);
     _header.RAMStart = UMD_SWAP_BYTES_32(_header.RAMStart);
@@ -78,19 +78,17 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     }
 }
 
-uint32_t Genesis::getRomSizeFromHeader(){
-    uint32_t romSize = 0;
-    romSize = readLong(GENESIS_HEADER_ROM_END_ADDR);
-    romSize++;
-    return romSize;
-}
+FlashInfo Genesis::getFlashInfo(){
+    FlashInfo info;
 
-uint32_t Genesis::readLong(uint32_t address){
-    uint32_t result;
-    result = readWord(address);
-    result = result << 16;
-    result |= readWord(address+2);
-    return result;
+    writeWord(0x00000555 << 1, 0x00AA);
+    writeWord(0x000002AA << 1, 0x0055);
+    writeWord(0x00000555 << 1, 0x0090);
+    info.Manufacturer = readWord(0x00000000);
+    info.Device = readWord(0x00000002);
+    writeWord(0x00000000, 0x00F0);
+    info.Size = getFlashSizeFromInfo(info);
+    return info;
 }
 
 std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
@@ -148,6 +146,7 @@ uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDC
             switch(menuItemIndex)
             {
                 case 0: // ROM
+                    _flashInfo = getFlashInfo();
                     return 0; // index of Main menu
                 case 1: // RAM
                     return 0; // index of Main menu
@@ -159,6 +158,11 @@ uint16_t Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDC
             switch(menuItemIndex)
             {
                 case 0: // Verify Checksum
+                    uint32_t romSize;
+                    bool validRom, validChecksum;
+                    validRom = readHeader();
+                    romSize = _header.ROMEnd + 1;
+                    validChecksum = calculateChecksum(0x200, romSize);
                     return 0; // index of Main menu
                 default:
                     return 0;
@@ -212,4 +216,20 @@ uint16_t Genesis::readWord(uint32_t address){
     setAS();
     setCE();
     return result;
+}
+
+void Genesis::writeWord(uint32_t address, uint16_t data){
+    addressWrite(address);
+    dataSetToOutputs();
+    dataWrite(data);
+    clearCE();
+    clearAS();
+    clearWR();
+    wait200ns();
+    setCE();
+    setAS();
+    setWR();
+
+    // always leave on inputs by default
+    dataSetToInputs(true);
 }

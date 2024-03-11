@@ -56,20 +56,19 @@ class Genesis : public Cartridge {
         virtual uint16_t doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd);
 
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
+        virtual FlashInfo getFlashInfo();
 
         virtual uint8_t readByte(uint32_t address);
         virtual void writeByte(uint16_t address, uint8_t data);
+
         virtual uint16_t readWord(uint32_t address);
+        virtual void writeWord(uint32_t address, uint16_t data);
 
     protected:
 
         GenesisHeader _header;
 
         bool readHeader();
-
-        uint32_t readLong(uint32_t address);
-        uint32_t getRomSizeFromHeader();
-
 
         // rename Genesis CE pins
         __attribute__((always_inline)) void setTIME() { setCE0(); }
