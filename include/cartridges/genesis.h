@@ -108,8 +108,8 @@ class Genesis : public Cartridge {
         Menu<GENESIS_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
 
         // 1 - READ MENU
-        #define GENESIS_READ_MENU_SIZE 2
-        const __FlashStringHelper* _readMenuItems[GENESIS_READ_MENU_SIZE] = {F("Dump ROM"), F("Dump RAM")};
+        #define GENESIS_READ_MENU_SIZE 3
+        const __FlashStringHelper* _readMenuItems[GENESIS_READ_MENU_SIZE] = {F("Dump ROM"), F("Dump RAM"), F("Header")};
         Menu<GENESIS_READ_MENU_SIZE> _readMenu = _readMenuItems;
 
         // 2 - WRITE MENU

@@ -114,6 +114,8 @@ std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
 
 int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
 {
+    bool validRom, validChecksum;
+    
     switch(menuIndex)
     {
         case 0: // Main menu
@@ -135,13 +137,17 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                 case 0: // ROM
                     uint16_t word;
                     uint32_t romSize;
-                    bool validRom, validChecksum;
                     validRom = readHeader();
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
                     return 0; // index of Main menu
                 case 1: // RAM
                     return 0; // index of Main menu
+                case 2: // Header
+                    validRom = readHeader();
+                    disp.printf(1, 5, "S/N: %s", _header.SerialNumber);
+                    disp.printf(1, 6, "%s", _header.Copyright);
+                    return -1; // stay in Read menu
                 default:
                     return 0;
             }
@@ -163,7 +169,6 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             {
                 case 0: // Verify Checksum
                     uint32_t romSize;
-                    bool validRom, validChecksum;
                     validRom = readHeader();
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
