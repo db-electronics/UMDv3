@@ -42,6 +42,14 @@ struct GenesisHeader{
             uint16_t words[128];
         };
     };
+
+    String GetCopryright(){
+        return String(Copyright);
+    }
+
+    String GetSerialNumber(){
+        return String(SerialNumber);
+    }
 };
 
 class Genesis : public Cartridge {

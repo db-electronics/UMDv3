@@ -145,8 +145,8 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     return 0; // index of Main menu
                 case 2: // Header
                     validRom = readHeader();
-                    disp.printf(1, 5, "S/N: %s", _header.SerialNumber);
-                    disp.printf(1, 6, "%s", _header.Copyright);
+                    disp.printf(1, 5, "S/N: %s", _header.GetSerialNumber());
+                    disp.printf(1, 6, "%s", _header.GetCopryright());
                     return -1; // stay in Read menu
                 default:
                     return 0;
