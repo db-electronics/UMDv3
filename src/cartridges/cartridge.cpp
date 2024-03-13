@@ -27,6 +27,18 @@ uint32_t Cartridge::getFlashSizeFromInfo(FlashInfo info){
     uint32_t size = 0;
 
     switch(info.Manufacturer){
+        // spansion
+        case 0x01:
+        switch(info.Device)
+            {
+                case 0x7E: // S29GL512N
+                case 0x227E:
+                    size = 0x1000000;
+                    break;
+                default:
+                    break;
+            }
+            break;
         // microchip
         case 0xBF:
             switch(info.Device)
@@ -63,7 +75,9 @@ uint32_t Cartridge::getFlashSizeFromInfo(FlashInfo info){
                     size = 0x800000;
                     break;
                 case 0xA7: // MX29LV320ET
+                case 0x22A7:
                 case 0xA8: // MX29LV320EB
+                case 0x22A8:
                     size = 0x400000;
                     break;
                 case 0xC4: // MX29LV160DT

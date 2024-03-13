@@ -148,6 +148,11 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     disp.printf(1, 5, "S/N: %s", _header.GetSerialNumber());
                     disp.printf(1, 6, "%s", _header.GetCopryright());
                     return -1; // stay in Read menu
+                case 3: // Flash ID
+                    _flashInfo = getFlashInfo();
+                    disp.printf(1, 5, "Manufacturer: %04X", _flashInfo.Manufacturer);
+                    disp.printf(1, 6, "Device:       %04X", _flashInfo.Device);
+                    return -1; // stay in Read menu
                 default:
                     return 0;
             }
@@ -156,7 +161,6 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             switch(menuItemIndex)
             {
                 case 0: // ROM
-                    _flashInfo = getFlashInfo();
                     return 0; // index of Main menu
                 case 1: // RAM
                     return 0; // index of Main menu
