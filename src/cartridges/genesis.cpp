@@ -45,7 +45,7 @@ const char* Genesis::getSystemName(){
 
 bool Genesis::readHeader(){
     for(int i = 0; i < GENESIS_HEADER_SIZE; i+=2){
-        _header.words[i>>1] = UMD_SWAP_BYTES_16(readWord(GENESIS_HEADER_START_ADDR + i));
+        _header.words[i>>1] = UMD_SWAP_BYTES_16(readPrgWord(GENESIS_HEADER_START_ADDR + i));
     }
 
     // the numeric values need additional work
@@ -64,13 +64,40 @@ bool Genesis::readHeader(){
         return false;
     }
 
+    memcpy(_header.Printable.SystemType, _header.SystemType, GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE);
+    _header.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE-1] = '\0';
+
+    memcpy(_header.Printable.Copyright, _header.Copyright, GENESIS_HEADER_SIZE_OF_COPYRIGHT);
+    _header.Printable.Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT-1] = '\0';
+
+    memcpy(_header.Printable.DomesticName, _header.DomesticName, GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME);
+    _header.Printable.DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME-1] = '\0';
+
+    memcpy(_header.Printable.InternationalName, _header.InternationalName, GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME);
+    _header.Printable.InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME-1] = '\0';
+
+    memcpy(_header.Printable.SerialNumber, _header.SerialNumber, GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER);
+    _header.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER-1] = '\0';
+
     return true;
+}
+
+FlashInfo Genesis::getFlashInfo(){
+    FlashInfo info;
+    writePrgWord(0x00000555 << 1, 0x00AA);
+    writePrgWord(0x000002AA << 1, 0x0055);
+    writePrgWord(0x00000555 << 1, 0x0090);
+    info.Manufacturer = readPrgWord(0x00000000);
+    info.Device = readPrgWord(0x00000002);
+    writePrgWord(0x00000000, 0x00F0);
+    info.Size = getFlashSizeFromInfo(info);
+    return info;
 }
 
 bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     uint16_t checksum = 0;
     for(uint32_t i = start; i < end; i+=2){
-        checksum += readWord(i);
+        checksum += readPrgWord(i);
     }
     
     ActualChecksum = checksum;
@@ -80,19 +107,6 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     }else{
         return false;
     }
-}
-
-FlashInfo Genesis::getFlashInfo(){
-    FlashInfo info;
-
-    writeWord(0x00000555 << 1, 0x00AA);
-    writeWord(0x000002AA << 1, 0x0055);
-    writeWord(0x00000555 << 1, 0x0090);
-    info.Manufacturer = readWord(0x00000000);
-    info.Device = readWord(0x00000002);
-    writeWord(0x00000000, 0x00F0);
-    info.Size = getFlashSizeFromInfo(info);
-    return info;
 }
 
 std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
@@ -145,8 +159,17 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     return 0; // index of Main menu
                 case 2: // Header
                     validRom = readHeader();
-                    disp.printf(1, 5, "S/N: %s", _header.GetSerialNumber());
-                    disp.printf(1, 6, "%s", _header.GetCopryright());
+                    if(validRom){
+                        disp.printf(1, 0, " %s", _header.Printable.SystemType);
+                        disp.printf(1, 1, " %s", _header.Printable.Copyright);
+                        disp.printf(1, 2, " %s", _header.Printable.DomesticName);
+                        disp.printf(1, 3, " %s", _header.Printable.InternationalName);
+                        disp.printf(1, 4, " %s", _header.Printable.SerialNumber);
+                        disp.printf(1, 5, "Size: 0x%08X", _header.ROMEnd + 1);
+                        disp.printf(1, 6, "CRC : 0x%04X", _header.Checksum);
+                    }else{
+                        disp.printf(1, 6, "Invalid ROM");
+                    }
                     return -1; // stay in Read menu
                 case 3: // Flash ID
                     _flashInfo = getFlashInfo();
@@ -219,7 +242,7 @@ void Genesis::writeByte(uint16_t address, uint8_t data){
     dataSetToInputs(true);
 }
 
-uint16_t Genesis::readWord(uint32_t address){
+uint16_t Genesis::readPrgWord(uint32_t address){
 
     uint16_t result;
     addressWrite(address);
@@ -234,7 +257,7 @@ uint16_t Genesis::readWord(uint32_t address){
     return result;
 }
 
-void Genesis::writeWord(uint32_t address, uint16_t data){
+void Genesis::writePrgWord(uint32_t address, uint16_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWrite(data);
@@ -248,4 +271,20 @@ void Genesis::writeWord(uint32_t address, uint16_t data){
 
     // always leave on inputs by default
     dataSetToInputs(true);
+}
+
+void Genesis::readWords(uint32_t address, uint16_t *buffer, uint16_t size){
+
+    for(int i = 0; i < size; i++){
+        addressWrite(address);
+        clearCE();
+        clearAS();
+        clearRD();
+        wait200ns();
+        *(buffer++) = dataReadWord();
+        setRD();
+        setAS();
+        setCE();
+        address += 2;
+    }
 }

@@ -40,6 +40,7 @@ enum UMDState
 {
     TOPLEVEL,
     WAIT_FOR_INPUT,
+    WAIT_FOR_RELEASE,
     CARTRIDGE
 };
 
@@ -178,7 +179,7 @@ void loop()
     static UMDState umdState = TOPLEVEL;
     static uint32_t currentTicks;
     static Controls userInput;
-    static int menuIndex;
+    static int menuIndex, newAmountOfItems;
 
     // get the ticks
     currentTicks = HAL_GetTick();
@@ -191,10 +192,22 @@ void loop()
             if(userInput.Down >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(1, true);
+                umdState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Up >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(-1, true);
+                umdState = WAIT_FOR_RELEASE;
+            }
+            else if (userInput.Left >= userInput.PRESSED)
+            {
+                // scroll line left
+                umdState = WAIT_FOR_RELEASE;
+            }
+            else if (userInput.Right >= userInput.PRESSED)
+            {
+                // scroll line right
+                umdState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Ok >= userInput.PRESSED){
                 int menuItemIndex = umdDisplay.menuCurrentItem();
@@ -203,17 +216,24 @@ void loop()
                     auto [items, size] = cartridge->getMenu(menuIndex);
                     umdDisplay.initMenu(1, items, size);
                 }
+                umdState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Back >= userInput.PRESSED){
                 auto [items, size] = cartridge->getMenu(0);
                 umdDisplay.initMenu(1, items, size);
                 menuIndex = 0;
+                umdState = WAIT_FOR_RELEASE;
+            }
+            break;
+        case WAIT_FOR_RELEASE: // el-cheapo debounce
+            if(userInput.Ok == userInput.OFF && userInput.Back == userInput.OFF && userInput.Up == userInput.OFF && userInput.Down == userInput.OFF)
+            {
+                umdState = WAIT_FOR_INPUT;
             }
             break;
         case TOPLEVEL:
         default:
             auto [items, size] = cartridge->getMenu(0);
-            //umdDisplay.initMenu(1, cartridge->getMenuItems(0), cartridge->getMenuSize(0));
             umdDisplay.initMenu(1, items, size);
             menuIndex = 0;
             umdState = WAIT_FOR_INPUT;
@@ -222,8 +242,8 @@ void loop()
 
     umdDisplay.advanceClockAnimation();
     umdDisplay.redraw();
-    SerialUSB.println(F("Tick"));
-    delay(100);
+    // SerialUSB.println(F("Tick"));
+    // delay(100);
 }
 
 void scmdScanI2C(void)

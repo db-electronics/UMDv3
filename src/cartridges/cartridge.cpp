@@ -22,6 +22,18 @@ void Cartridge::testWait(void){
     setCE0();
 }
 
+FlashInfo Cartridge::getFlashInfo(){
+    FlashInfo info;
+    writeByte(0x00000555, 0x00AA);
+    writeByte(0x000002AA, 0x0055);
+    writeByte(0x00000555, 0x0090);
+    info.Manufacturer = (uint16_t)readByte((uint32_t)0x00000000);
+    info.Device = (uint16_t)readByte((uint32_t)0x00000001);
+    writeByte(0x00000000, 0x00F0);
+    info.Size = getFlashSizeFromInfo(info);
+    return info;
+}
+
 uint32_t Cartridge::getFlashSizeFromInfo(FlashInfo info){
     
     uint32_t size = 0;
@@ -68,8 +80,6 @@ uint32_t Cartridge::getFlashSizeFromInfo(FlashInfo info){
         case 0xC2:
             switch(info.Device)
             {
-                // chips which will be single per board
-                // 3.3V
                 case 0xC9: // MX29LV640ET
                 case 0xCB: // MX29LV640EB
                     size = 0x800000;
@@ -164,7 +174,7 @@ void Cartridge::writeByte(uint16_t address, uint8_t data){
     dataSetToInputs(true);
 }
 
-uint16_t Cartridge::readWord(uint32_t address){
+uint16_t Cartridge::readPrgWord(uint32_t address){
 
     uint16_t result;
     addressWrite(address);
@@ -177,15 +187,29 @@ uint16_t Cartridge::readWord(uint32_t address){
     return result;
 }
 
-void Cartridge::writeWord(uint32_t address, uint16_t data){
+void Cartridge::readWords(uint32_t address, uint16_t *buffer, uint16_t size){
+
+    for(int i = 0; i < size; i++){
+        addressWrite(address);
+        clearCE0();
+        clearRD();
+        wait250ns();
+        *(buffer++) = dataReadWord();
+        setRD();
+        setCE0();
+        address += 2;
+    }
+}
+
+void Cartridge::writePrgWord(uint32_t address, uint16_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWrite(data);
     clearCE0();
     clearWR();
     wait250ns();
-    setCE0();
     setWR();
+    setCE0();
 
     // always leave on inputs by default
     dataSetToInputs(true);

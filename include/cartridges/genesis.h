@@ -11,14 +11,21 @@
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
 #define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
 
+#define GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE 16
+#define GENESIS_HEADER_SIZE_OF_COPYRIGHT 16
+#define GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME 48
+#define GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME 48
+#define GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER 14
+
+
 struct GenesisHeader{
     union {
         struct{
-            char SystemType[16];
-            char Copyright[16];
-            char DomesticName[48];
-            char InternationalName[48];
-            char SerialNumber[14];
+            char SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE];
+            char Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT];
+            char DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME];
+            char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME];
+            char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER];
             uint16_t Checksum;
             char DeviceSupport[16];
             uint32_t ROMStart;
@@ -43,13 +50,13 @@ struct GenesisHeader{
         };
     };
 
-    String GetCopryright(){
-        return String(Copyright);
-    }
-
-    String GetSerialNumber(){
-        return String(SerialNumber);
-    }
+    struct {
+        char SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE+1];
+        char Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT+1];
+        char DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME+1];
+        char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME+1];
+        char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER+1];
+    } Printable;
 };
 
 class Genesis : public Cartridge {
@@ -63,19 +70,22 @@ class Genesis : public Cartridge {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
-        virtual bool calculateChecksum(uint32_t start, uint32_t end);
-        virtual FlashInfo getFlashInfo();
-
         virtual uint8_t readByte(uint32_t address);
         virtual void writeByte(uint16_t address, uint8_t data);
 
-        virtual uint16_t readWord(uint32_t address);
-        virtual void writeWord(uint32_t address, uint16_t data);
+        virtual uint16_t readPrgWord(uint32_t address);
+        virtual void writePrgWord(uint32_t address, uint16_t data);
+
+        virtual void readWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
 
         GenesisHeader _header;
 
+        virtual FlashInfo getFlashInfo();
+        virtual bool calculateChecksum(uint32_t start, uint32_t end);
+        
+    private:
         bool readHeader();
 
         // rename Genesis CE pins
