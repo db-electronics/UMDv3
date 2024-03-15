@@ -160,7 +160,11 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                 case 1: // RAM
                     // test the SRAM latch
                     enableSram(true);
+                    // read from SRAM range to test CE
+                    word = readPrgWord(0x200000);
                     enableSram(false);
+                    // read again, should be from ROM now
+                    word = readPrgWord(0x200000);
                     return 0; // index of Main menu
                 case 2: // Header
                     validRom = readHeader();
