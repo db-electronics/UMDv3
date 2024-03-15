@@ -37,6 +37,8 @@ void Genesis::initIO(){
 
     // MRES on IO8
     ioSetToInput(8, false);
+
+    enableSram(false);
 }
 
 const char* Genesis::getSystemName(){
@@ -65,19 +67,19 @@ bool Genesis::readHeader(){
     }
 
     memcpy(_header.Printable.SystemType, _header.SystemType, GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE);
-    _header.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE-1] = '\0';
+    _header.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE] = '\0';
 
     memcpy(_header.Printable.Copyright, _header.Copyright, GENESIS_HEADER_SIZE_OF_COPYRIGHT);
-    _header.Printable.Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT-1] = '\0';
+    _header.Printable.Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT] = '\0';
 
     memcpy(_header.Printable.DomesticName, _header.DomesticName, GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME);
-    _header.Printable.DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME-1] = '\0';
+    _header.Printable.DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME] = '\0';
 
     memcpy(_header.Printable.InternationalName, _header.InternationalName, GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME);
-    _header.Printable.InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME-1] = '\0';
+    _header.Printable.InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME] = '\0';
 
     memcpy(_header.Printable.SerialNumber, _header.SerialNumber, GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER);
-    _header.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER-1] = '\0';
+    _header.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER] = '\0';
 
     return true;
 }
@@ -156,6 +158,9 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     validChecksum = calculateChecksum(0x200, romSize);
                     return 0; // index of Main menu
                 case 1: // RAM
+                    // test the SRAM latch
+                    enableSram(true);
+                    enableSram(false);
                     return 0; // index of Main menu
                 case 2: // Header
                     validRom = readHeader();
@@ -211,6 +216,31 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             return 0;
             break;
     }
+}
+
+void Genesis::enableSram(bool enable){
+
+    addressWrite(_timeConfigAddr);
+    dataSetToOutputs();
+
+    if(enable){
+        // Write 0x01 to 0xA130F1
+        dataWriteLow(0x01);
+
+    }else{
+        // Write 0x00 to 0xA130F1
+        dataWriteLow(0x00);
+    }
+
+    clearCE();
+    clearTIME();
+    clearLWR();
+    wait200ns();
+    setLWR();
+    setTIME();
+    setCE();
+    // always leave on inputs by default
+    dataSetToInputs(true);
 }
 
 uint8_t Genesis::readByte(uint32_t address){

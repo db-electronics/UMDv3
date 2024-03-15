@@ -11,6 +11,8 @@
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
 #define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
 
+
+
 #define GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE 16
 #define GENESIS_HEADER_SIZE_OF_COPYRIGHT 16
 #define GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME 48
@@ -86,7 +88,12 @@ class Genesis : public Cartridge {
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
         
     private:
+
+        const uint32_t _timeConfigAddr = 0xA130F1;
+
         bool readHeader();
+
+        void enableSram(bool enable);
 
         // rename Genesis CE pins
         __attribute__((always_inline)) void setTIME() { setCE0(); }
