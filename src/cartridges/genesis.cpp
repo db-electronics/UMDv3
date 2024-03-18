@@ -66,6 +66,7 @@ bool Genesis::readHeader(){
         return false;
     }
 
+    // TODO: maybe trim whitespace on the Domestic and International names?
     memcpy(_header.Printable.SystemType, _header.SystemType, GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE);
     _header.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE] = '\0';
 
@@ -89,8 +90,8 @@ FlashInfo Genesis::getPrgFlashInfo(){
     writePrgWord(0x00000555 << 1, 0xAA00);
     writePrgWord(0x000002AA << 1, 0x5500);
     writePrgWord(0x00000555 << 1, 0x9000);
-    info.Manufacturer = readPrgWord(0x00000000);
-    info.Device = readPrgWord(0x00000002);
+    info.Manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
+    info.Device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
     writePrgWord(0x00000000, 0xF000);
     info.Size = getFlashSizeFromInfo(info);
     return info;
