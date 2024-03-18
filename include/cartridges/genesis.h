@@ -72,19 +72,22 @@ class Genesis : public Cartridge {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
-        virtual uint8_t readByte(uint32_t address);
-        virtual void writeByte(uint16_t address, uint8_t data);
+        virtual void erasePrgFlash(bool wait);
+        virtual uint8_t togglePrgBit(uint8_t attempts);
+
+        virtual uint8_t readPrgByte(uint32_t address);
+        virtual void writePrgByte(uint32_t address, uint8_t data);
 
         virtual uint16_t readPrgWord(uint32_t address);
         virtual void writePrgWord(uint32_t address, uint16_t data);
 
-        virtual void readWords(uint32_t address, uint16_t *buffer, uint16_t size);
+        virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
 
         GenesisHeader _header;
 
-        virtual FlashInfo getFlashInfo();
+        virtual FlashInfo getPrgFlashInfo();
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
         
     private:

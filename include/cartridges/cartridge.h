@@ -24,17 +24,19 @@ class Cartridge : public UMDPortsV3 {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
         
-        virtual uint8_t readByte(uint16_t address);
-        virtual uint8_t readByte(uint32_t address);
-        
-        virtual void readBytes(uint32_t address, uint8_t *buffer, uint16_t size);
+        virtual void erasePrgFlash(bool wait);
+        virtual uint8_t togglePrgBit(uint8_t attempts);
 
-        virtual void writeByte(uint16_t address, uint8_t data);
+        virtual uint8_t readPrgByte(uint32_t address);
+        
+        virtual void readPrgBytes(uint32_t address, uint8_t *buffer, uint16_t size);
+
+        virtual void writePrgByte(uint16_t address, uint8_t data);
 
         virtual uint16_t readPrgWord(uint32_t);
         virtual void writePrgWord(uint32_t, uint16_t);
 
-        virtual void readWords(uint32_t address, uint16_t *buffer, uint16_t size);
+        virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
 
@@ -42,7 +44,7 @@ class Cartridge : public UMDPortsV3 {
         uint16_t ExpectedChecksum;
         uint16_t ActualChecksum;
 
-        virtual FlashInfo getFlashInfo();
+        virtual FlashInfo getPrgFlashInfo();
         uint32_t getFlashSizeFromInfo(FlashInfo info);
         virtual bool calculateChecksum(uint32_t start, uint32_t end) = 0;
 

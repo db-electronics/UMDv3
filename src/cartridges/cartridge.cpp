@@ -22,14 +22,14 @@ void Cartridge::testWait(void){
     setCE0();
 }
 
-FlashInfo Cartridge::getFlashInfo(){
+FlashInfo Cartridge::getPrgFlashInfo(){
     FlashInfo info;
-    writeByte(0x00000555, 0x00AA);
-    writeByte(0x000002AA, 0x0055);
-    writeByte(0x00000555, 0x0090);
-    info.Manufacturer = (uint16_t)readByte((uint32_t)0x00000000);
-    info.Device = (uint16_t)readByte((uint32_t)0x00000001);
-    writeByte(0x00000000, 0x00F0);
+    writePrgByte(0x00000555, 0x00AA);
+    writePrgByte(0x000002AA, 0x0055);
+    writePrgByte(0x00000555, 0x0090);
+    info.Manufacturer = (uint16_t)readPrgByte(0x00000000);
+    info.Device = (uint16_t)readPrgByte(0x00000001);
+    writePrgByte(0x00000000, 0x00F0);
     info.Size = getFlashSizeFromInfo(info);
     return info;
 }
@@ -121,7 +121,40 @@ uint32_t Cartridge::getFlashSizeFromInfo(FlashInfo info){
     return size;
 }
 
-uint8_t Cartridge::readByte(uint16_t address){
+void Cartridge::erasePrgFlash(bool wait){
+    writePrgByte(0x00000AAA, 0xAA);
+    writePrgByte(0x00000555, 0x55);
+    writePrgByte(0x00000AAA, 0x80);
+    writePrgByte(0x00000AAA, 0xAA);
+    writePrgByte(0x00000555, 0x55);
+    writePrgByte(0x00000AAA, 0x10);
+    if(wait){
+        while(togglePrgBit(4) != 4);
+    }
+}
+
+uint8_t Cartridge::togglePrgBit(uint8_t attempts){
+    uint8_t retValue = 0;
+    uint8_t readValue, oldValue;
+    uint8_t i;
+
+    //first read should always be a 1 according to datasheet
+    oldValue = readPrgByte(0x00000000);
+
+    for(int i = 0; i < attempts; i++){
+        readValue = readPrgByte(0x00000000) & 0x40;
+        if(oldValue == readValue){
+			retValue += 1;
+		}else{
+			retValue = 0;
+		}
+		oldValue = readValue;
+	}
+    
+    return retValue;
+}
+
+uint8_t Cartridge::readPrgByte(uint32_t address){
 
     uint8_t result;
     addressWrite(address);
@@ -134,20 +167,7 @@ uint8_t Cartridge::readByte(uint16_t address){
     return result;
 }
 
-uint8_t Cartridge::readByte(uint32_t address){
-
-    uint8_t result;
-    addressWrite(address);
-    clearCE0();
-    clearRD();
-    wait250ns();
-    result = dataReadLow();
-    setRD();
-    setCE0();
-    return result;
-}
-
-void Cartridge::readBytes(uint32_t address, uint8_t *buffer, uint16_t size){
+void Cartridge::readPrgBytes(uint32_t address, uint8_t *buffer, uint16_t size){
 
     for(int i = 0; i < size; i++){
         addressWrite(address++);
@@ -160,7 +180,7 @@ void Cartridge::readBytes(uint32_t address, uint8_t *buffer, uint16_t size){
     }
 }
 
-void Cartridge::writeByte(uint16_t address, uint8_t data){
+void Cartridge::writePrgByte(uint16_t address, uint8_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWriteLow(data);
@@ -187,7 +207,7 @@ uint16_t Cartridge::readPrgWord(uint32_t address){
     return result;
 }
 
-void Cartridge::readWords(uint32_t address, uint16_t *buffer, uint16_t size){
+void Cartridge::readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size){
 
     for(int i = 0; i < size; i++){
         addressWrite(address);
