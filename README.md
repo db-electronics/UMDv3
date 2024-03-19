@@ -1,8 +1,30 @@
-# UMDv3-pio
-Universal Mega Dumper v3.
+# UMDv3
+The Universal Mega Dumper v2 project aims to be a complete open-sourced solution for cartridge dumping and writing. It includes a very performant MCU which has a direct memory connection to a generalized databus consisting of 24 address bits and 16 data lines. Along with a dozen or so control signals, it should be sufficient to interface with most cartridge types.
 
-# DFU
-https://dfu-util.sourceforge.net/
+## Firmware
+The firmware is designed to be as accessible as possible and is being developed using [PlatformIO](https://platformio.org/install/ide?install=vscode); a vscode extension which targets many different microcontroller architectures.
 
-https://sourceforge.net/projects/dfu-util/
+Please note that version 3.0 is in its absolute infancy, don't expect to find any working releases yet.
+
+### Uploading
+Firmware can be uploaded to the STM32F407 using an STLink programmer or using the built-in DFU bootloader:
+
+- https://dfu-util.sourceforge.net/
+- https://sourceforge.net/projects/dfu-util/
+
+## Mainboard
+The [UMDv3 Main PCB](https://github.com/db-electronics/UMDv3-kicad) project is a KiCad project PCB that is also fully open source.
+
+## Cartridge Adapters
+The UMDv3 by itself only includes a generalized connector with all its interfacing signals. Cartridge adapters must be used in order to interface to the physical media. All cartridge adapters are their own kicad projects in their repositories
+
+### Cartridge Adapter ID
+Each cartridge adapter has an MCP23008 on the I2C bus which identifies the console type for the adapter and thus prevents contention on IO.
+
+- 0x00 No Adapter / Reserved
+- [0x01 Sega Genesis](https://github.com/db-electronics/UMDv3-genesis-kicad)
+- [0x02 Sega Master System](https://github.com/db-electronics/UMDv3-sms-kicad)
+- [0x03 Super Nintendo](https://github.com/db-electronics/UMDv3-snes-kicad)
+- [0x04 Gameboy Advance](https://github.com/db-electronics/UMDv3-gba-kicad)
+- [0x05 Gameboy / Gameboy Color](https://github.com/db-electronics/UMDv3-gba-kicad)
 
