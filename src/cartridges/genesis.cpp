@@ -193,11 +193,11 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
 
-                    // romName = "/UMD/Genesis/" + String(_header.Printable.SerialNumber) + ".bin";
-                    // romPath = romName.c_str();
-                    // romFile = sd.open(romPath, FILE_WRITE);
+                    romName = "/UMD/Genesis/" + String(_header.Printable.SerialNumber) + ".bin";
+                    romPath = romName.c_str();
+                    romFile = sd.open(romPath, FILE_WRITE);
 
-                    romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
+                    // romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
 
                     if(!romFile){
                         disp.printf(1, 6, "Error opening file");
@@ -214,7 +214,7 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                         // readPrgWords(i, _dataBuffer.word, 256);
                         // romFile.write(_dataBuffer.byte, 512);
 
-                        // mix it up
+                        // mix it up, this also fails...
                         // readPrgWords(i, _dataBuffer.word, 256);
                         // for(int j = 0; j < 256; j++){
                         //     romFile.write((uint8_t*)&_dataBuffer.word[j], 2);
