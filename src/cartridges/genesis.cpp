@@ -165,7 +165,9 @@ std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
 int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
 {
     bool validRom, validChecksum;
-    
+    String romName;
+    const char* romPath;
+
     switch(menuIndex)
     {
         case 0: // Main menu
@@ -190,6 +192,38 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     validRom = readHeader();
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
+
+                    // romName = "/UMD/Genesis/" + String(_header.Printable.SerialNumber) + ".bin";
+                    // romPath = romName.c_str();
+                    // romFile = sd.open(romPath, FILE_WRITE);
+
+                    romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
+
+                    if(!romFile){
+                        disp.printf(1, 6, "Error opening file");
+                        return -1; // stay in Read menu
+                    }
+
+                    for(int i = 0; i < romSize; i+=2){
+                        
+                        // one by one works
+                        word = readPrgWord(i);
+                        romFile.write((uint8_t*)&word, 2);
+                        
+                        // this times out
+                        // readPrgWords(i, _dataBuffer.word, 256);
+                        // romFile.write(_dataBuffer.byte, 512);
+
+                        // mix it up
+                        // readPrgWords(i, _dataBuffer.word, 256);
+                        // for(int j = 0; j < 256; j++){
+                        //     romFile.write((uint8_t*)&_dataBuffer.word[j], 2);
+                        // }
+                        // romFile.flush();
+                    }
+
+                    romFile.close();
+
                     return 0; // index of Main menu
                 case 1: // RAM
                     // test the SRAM latch

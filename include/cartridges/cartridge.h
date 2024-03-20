@@ -1,6 +1,8 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
+#define DATA_BUFFER_SIZE_BYTES 512
+
 #include <STM32SD.h>
 #include "UMDPortsV3.h"
 #include "umdDisplay.h"
@@ -39,6 +41,12 @@ class Cartridge : public UMDPortsV3 {
         virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
+
+        File romFile;
+        union {
+            uint8_t byte[DATA_BUFFER_SIZE_BYTES];
+            uint16_t word[DATA_BUFFER_SIZE_BYTES/2];
+        } _dataBuffer;
 
         FlashInfo _flashInfo;
         uint16_t ExpectedChecksum;
