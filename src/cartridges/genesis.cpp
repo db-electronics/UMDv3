@@ -178,7 +178,19 @@ int Genesis::memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool r
     return 0;
 }
 
-int Genesis::flashErase(bool wait, uint8_t mem){
+int Genesis::flashErase(uint8_t mem){
+    switch(mem){
+        case PRG0:
+            writePrgWord(0x00000555 < 1, 0xAA00);
+            writePrgWord(0x000002AA < 1, 0x5500);
+            writePrgWord(0x00000555 < 1, 0x8000);
+            writePrgWord(0x00000555 < 1, 0xAA00);
+            writePrgWord(0x000002AA < 1, 0x5500);
+            writePrgWord(0x00000555 < 1, 0x1000);
+            break;
+        default:
+            return -1;
+    }
     return 0;
 }
 
@@ -186,8 +198,29 @@ int Genesis::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint
     return 0;
 }
 
-int Genesis::flashInfo(uint8_t mem){
-    return 0;
+FlashInfo Genesis::flashGetInfo(uint8_t mem){
+    FlashInfo info;
+    switch(mem){
+        case PRG0:
+            writePrgWord(0x00000555 << 1, 0xAA00);
+            writePrgWord(0x000002AA << 1, 0x5500);
+            writePrgWord(0x00000555 << 1, 0x9000);
+            info.Manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
+            info.Device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
+            writePrgWord(0x00000000, 0xF000);
+            info.Size = getFlashSizeFromInfo(info);
+            break;
+        default:
+            break;
+    }
+    return info;
+}
+
+bool Genesis::flashIsBusy(uint8_t mem){
+    if((togglePrgBit(4) != 4)) 
+        return false;
+    
+    return true;
 }
 
 bool Genesis::readHeader(){
@@ -483,9 +516,9 @@ void Genesis::writePrgByte(uint32_t address, uint8_t data){
     clearAS();
     clearWR();
     wait200ns();
-    setCE();
-    setAS();
     setWR();
+    setAS();
+    setCE();
 
     // always leave on inputs by default
     dataSetToInputs(true);
@@ -513,9 +546,9 @@ void Genesis::writePrgWord(uint32_t address, uint16_t data){
     clearAS();
     clearWR();
     wait200ns();
-    setCE();
-    setAS();
     setWR();
+    setAS();
+    setCE();
 
     // always leave on inputs by default
     dataSetToInputs(true);

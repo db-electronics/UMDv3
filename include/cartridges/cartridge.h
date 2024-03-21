@@ -57,9 +57,10 @@ class Cartridge : public UMDPortsV3 {
         virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
         virtual int memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset) = 0;
 
-        virtual int flashErase(bool wait, uint8_t mem) = 0;
+        virtual int flashErase(uint8_t mem) = 0;
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
-        virtual int flashInfo(uint8_t mem) = 0;
+        virtual FlashInfo flashGetInfo(uint8_t mem) = 0;
+        virtual bool flashIsBusy(uint8_t mem) = 0;
 
         virtual void erasePrgFlash(bool wait);
         virtual uint8_t togglePrgBit(uint8_t attempts);
