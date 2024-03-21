@@ -45,6 +45,151 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
+int Genesis::memoryGetCount(){
+    // Genesis has 2 memories
+    // 0 = Program ROM
+    // 1 = BRAM
+    return 2;
+}
+
+std::vector<Cartridge::MemoryType> Genesis::memoryGetSupportedTypes(){
+    return {PRG0, BRAM};
+}
+
+const char* Genesis::memoryGetName(uint8_t mem){
+    switch(mem){
+        case PRG0:
+            return "ROM";
+        case BRAM:
+            return "BRAM";
+        default:
+            return "";
+    }
+}
+
+// write a function which returns a list of uint8_t representing the memory types available: PRG0 and BRAM
+
+
+int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+    uint16_t *wordBuffer = (uint16_t*)buffer;
+    switch (mem)
+    {
+        case PRG0:
+            for(int i = 0; i < size; i+=2){
+                *(wordBuffer++) = readPrgWord(address);
+                address += 2;
+            }
+            break;
+        case BRAM:
+            enableSram(true);
+            for(int i = 0; i < size; i+=2){
+                *(wordBuffer++) = readPrgWord(address);
+                address += 2;
+            }
+            enableSram(false);
+            break;
+        default:
+            return -1;
+    }
+    return 0;
+}
+
+int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+    uint16_t *wordBuffer = (uint16_t*)buffer;
+    switch (mem)
+    {
+        case PRG0:
+            for(int i = 0; i < size; i+=2){
+                writePrgWord(address, *wordBuffer++);
+                address += 2;
+            }
+            break;
+        case BRAM:
+            enableSram(true);
+            for(int i = 0; i < size; i+=2){
+                writePrgWord(address, *wordBuffer++);
+                address += 2;
+            }
+            enableSram(false);
+            break;
+        default:
+            return -1;
+    }
+    return 0;
+}
+
+int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+    uint16_t *wordBuffer = (uint16_t*)buffer;
+    uint16_t dw;
+    switch (mem)
+    {
+        case PRG0:
+            for(int i = 0; i < size; i+=2){
+                dw = readPrgWord(address);
+                if(dw != *(wordBuffer++)){
+                    return address;
+                }
+                address += 2;
+            }
+            break;
+        case BRAM:
+            enableSram(true);
+            for(int i = 0; i < size; i+=2){
+                dw = readPrgWord(address);
+                if(dw != *(wordBuffer++)){
+                    return address;
+                }
+                address += 2;
+            }
+            enableSram(false);
+            break;
+        default:
+            return -1;
+    }
+    return 0;
+}
+
+int Genesis::memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset){
+    uint32_t dl;
+    uint16_t dw;
+    uint16_t checksum = 0;
+
+    if(reset){
+        _checksum.Clear();
+    }
+
+    switch (mem)
+    {
+        case PRG0:
+            for(uint32_t i = address; i < size; i+=4){
+                dw = readPrgWord(i);
+                _checksum.Actual16 += dw;
+                dl = (uint32_t)dw;
+                i += 2;
+                dw = readPrgWord(i);
+                _checksum.Actual16 += dw;
+                dl |= (uint32_t)(dw << 16);
+                _checksum.Actual32 += dl;
+            }
+            break;
+        default:
+            return -1;
+    }
+    return 0;
+}
+
+int Genesis::flashErase(bool wait, uint8_t mem){
+    return 0;
+}
+
+int Genesis::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+    return 0;
+}
+
+int Genesis::flashInfo(uint8_t mem){
+    return 0;
+}
+
 bool Genesis::readHeader(){
     for(int i = 0; i < GENESIS_HEADER_SIZE; i+=2){
         _header.words[i>>1] = readPrgWord(GENESIS_HEADER_START_ADDR + i);
@@ -111,7 +256,8 @@ void Genesis::erasePrgFlash(bool wait){
 
 uint8_t Genesis::togglePrgBit(uint8_t attempts){
     uint8_t retValue = 0;
-    uint8_t readValue, oldValue;
+    uint8_t readValue;
+    uint8_t oldValue;
     uint8_t i;
 
     //first read should always be a 1 according to datasheet
@@ -167,6 +313,8 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
     bool validRom, validChecksum;
     String romName;
     const char* romPath;
+    uint16_t data;
+    uint32_t romSize;
 
     switch(menuIndex)
     {
@@ -187,8 +335,7 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             switch(menuItemIndex)
             {
                 case 0: // ROM
-                    uint16_t word;
-                    uint32_t romSize;
+
                     validRom = readHeader();
                     romSize = _header.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
@@ -207,8 +354,8 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     for(int i = 0; i < romSize; i+=2){
                         
                         // one by one works
-                        word = readPrgWord(i);
-                        romFile.write((uint8_t*)&word, 2);
+                        data = readPrgWord(i);
+                        romFile.write((uint8_t*)&data, 2);
                         
                         // this times out
                         // readPrgWords(i, _dataBuffer.word, 256);
@@ -229,10 +376,10 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     // test the SRAM latch
                     enableSram(true);
                     // read from SRAM range to test CE
-                    word = readPrgWord(0x200000);
+                    data = readPrgWord(0x200000);
                     enableSram(false);
                     // read again, should be from ROM now
-                    word = readPrgWord(0x200000);
+                    data = readPrgWord(0x200000);
                     return 0; // index of Main menu
                 case 2: // Header
                     validRom = readHeader();

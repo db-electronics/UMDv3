@@ -72,6 +72,18 @@ class Genesis : public Cartridge {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
+        virtual int memoryGetCount();
+        virtual std::vector<Cartridge::MemoryType> memoryGetSupportedTypes();
+        virtual const char* memoryGetName(uint8_t mem);
+        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
+        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
+        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
+        virtual int memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset);
+
+        virtual int flashErase(bool wait, uint8_t mem);
+        virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
+        virtual int flashInfo(uint8_t mem);
+
         virtual void erasePrgFlash(bool wait);
         virtual uint8_t togglePrgBit(uint8_t attempts);
 
