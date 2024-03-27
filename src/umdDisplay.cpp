@@ -15,13 +15,15 @@ bool UMDDisplay::begin()
 
     _cursor.character = '*';
     //place cursor offscreen;
-    _cursor.x = -1;
-    _cursor.y = -1;
+    _cursor.x = 0;
+    _cursor.y = 0;
+    _cursor.visible = false;
     _menu.cursorVisible = false;
 
     _clock.framePointer = 0;
-    _clock.x = -1;
-    _clock.y = -1;
+    _clock.x = 0;
+    _clock.y = 0;
+    _clock.visible = false;
 
     if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
@@ -58,6 +60,12 @@ void UMDDisplay::setCursorChar(char c)
     _needsRedraw = true;
 }
 
+void UMDDisplay::setCursorVisible(bool visible)
+{
+    _cursor.visible = visible;
+    _needsRedraw = true;
+}
+
 void UMDDisplay::setCursorPosition(int x, int y)
 {
     if(x < OLED_MAX_CHARS_PER_LINE){
@@ -71,6 +79,12 @@ void UMDDisplay::setCursorPosition(int x, int y)
     }else{
         _cursor.y = -1;
     }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::setClockVisible(bool visible)
+{
+    _clock.visible = visible;
     _needsRedraw = true;
 }
 
@@ -216,6 +230,32 @@ void UMDDisplay::print(int layer, int number, int lineNumber)
     std::string tmp = std::to_string(number);
     const char *num_char = tmp.c_str();
     print(layer, num_char, lineNumber);
+}
+
+int UMDDisplay::showMenu(int layer, UMDMenuIndex menuIndex)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return -1;
+
+    _menu.index = menuIndex;
+    switch(menuIndex)
+    {
+        case UMD_MAIN:
+            initMenu(layer, _mainMenu.Items, _mainMenu.Size);
+            return _mainMenu.Size;
+        case UMD_READ:
+            initMenu(layer, _readMenu.Items, _readMenu.Size);
+            return _readMenu.Size;
+        case UMD_WRITE:
+            initMenu(layer, _writeMenu.Items, _writeMenu.Size);
+            return _writeMenu.Size;
+        case UMD_TEST:
+            initMenu(layer, _testMenu.Items, _testMenu.Size);
+            return _testMenu.Size;
+        default:
+            clearLayer(layer);
+            return 0;
+    }
 }
 
 void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
@@ -412,14 +452,14 @@ void UMDDisplay::redraw(void)
     }
 
     // draw the cursor if visible
-    if(this->_cursor.x >= 0 && this->_cursor.y >= 0)
+    if(_cursor.visible)
     {
         _display->setCursor(this->_cursor.x, this->_cursor.y);
         _display->print(this->_cursor.character);
     }
 
     // draw the clock if visible
-    if(_clock.x >= 0 && _clock.y >= 0){
+    if(_clock.visible){
         _display->drawBitmap(_clock.x, _clock.y, _clockAnimation[_clock.framePointer], 8, 8, SSD1306_WHITE);
     }
 

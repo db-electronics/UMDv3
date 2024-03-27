@@ -167,19 +167,23 @@ void setup()
     umdDisplay.setLayerLineLength(0, 1);
     umdDisplay.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
     umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
-    umdDisplay.setCursorPosition(-1, -1);
-    umdDisplay.setClockPosition(20, 7);
-    umdDisplay.redraw();
 
+    umdDisplay.setCursorPosition(0, 0);
+    umdDisplay.setCursorVisible(false);
+    umdDisplay.setClockPosition(20, 7);
+    umdDisplay.setClockVisible(true);
+    
+    umdDisplay.redraw();
 }
 
 void loop()
 {
-    // Reminder: when debugging ticks isn't accurate at all
+    // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static UMDState umdState = TOPLEVEL;
-    static uint32_t currentTicks;
+    static uint32_t currentTicks, previousTicks;
     static Controls userInput;
     static int menuIndex, newAmountOfItems;
+    UMDActionResult result;
 
     // get the ticks
     currentTicks = HAL_GetTick();
@@ -211,16 +215,37 @@ void loop()
             }
             else if (userInput.Ok >= userInput.PRESSED){
                 int menuItemIndex = umdDisplay.menuCurrentItem();
-                menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD, umdDisplay);
-                if(menuIndex >= 0){
-                    auto [items, size] = cartridge->getMenu(menuIndex);
-                    umdDisplay.initMenu(1, items, size);
+                // menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD, umdDisplay);
+                // if(menuIndex >= 0){
+                //     auto [items, size] = cartridge->getMenu(menuIndex);
+                //     umdDisplay.initMenu(1, items, size);
+                // }
+
+                result = cartridge->act(menuItemIndex);
+                switch(result.Code)
+                {
+                    case UMDResultCode::FAIL:
+                        umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 0, F("%s"), result.ErrorMessage);
+                        umdDisplay.redraw();
+                        break;
+                    case UMDResultCode::LOADMENU:
+                        umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);
+                        break;
+                    case UMDResultCode::DISPLAYRESULT:
+                        for(int i = result.ResultLines; i >= 0; i--)
+                        {
+                            umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, i, F("%s"), result.Result[i]);
+                        }
+                    default:
+                        break;
                 }
+
                 umdState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Back >= userInput.PRESSED){
-                auto [items, size] = cartridge->getMenu(0);
-                umdDisplay.initMenu(1, items, size);
+                // auto [items, size] = cartridge->getMenu(0);
+                // umdDisplay.initMenu(1, items, size);
+                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MAIN);
                 menuIndex = 0;
                 umdState = WAIT_FOR_RELEASE;
             }
@@ -233,8 +258,9 @@ void loop()
             break;
         case TOPLEVEL:
         default:
-            auto [items, size] = cartridge->getMenu(0);
-            umdDisplay.initMenu(1, items, size);
+            // auto [items, size] = cartridge->getMenu(0);
+            // umdDisplay.initMenu(1, items, size);
+            umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MAIN);
             menuIndex = 0;
             umdState = WAIT_FOR_INPUT;
             break;

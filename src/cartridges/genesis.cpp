@@ -341,6 +341,15 @@ std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
     }
 }
 
+UMDActionResult Genesis::act(uint16_t menuItemIndex)
+{
+    switch(menuItemIndex)
+    {
+        default: 
+            return UMDActionResult();
+    }
+} 
+
 int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
 {
     bool validRom, validChecksum;
@@ -484,7 +493,7 @@ void Genesis::enableSram(bool enable){
         dataWriteLow(0x00);
     }
 
-    clearCE();
+    clearCE();  // TODO remove CE when new cart is ready
     clearTIME();
     clearLWR();
     wait200ns();

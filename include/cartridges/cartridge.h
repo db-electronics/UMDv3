@@ -2,10 +2,13 @@
 #define CARTRIDGE_H
 
 #define DATA_BUFFER_SIZE_BYTES 512
+#define UMD_MAX_RESULT_LINES 8
+#define UMD_MAX_RESULT_LINE_LENGTH 32
 
 #include <STM32SD.h>
 #include "UMDPortsV3.h"
 #include "umdDisplay.h"
+#include "Menu.h"
 #include <tuple>
 
 struct FlashInfo{
@@ -29,6 +32,33 @@ struct Checksum{
     }
 };
 
+enum UMDResultCode: int{
+    FAIL = -1,
+    OK,
+    DISPLAYRESULT,
+    LOADMENU,
+    WAITING,
+    GETFILELIST
+};
+
+struct UMDActionResult{
+    UMDMenuIndex NextMenu;
+    UMDResultCode Code;
+    const char * ErrorMessage;
+    uint16_t ResultLines;
+    char Result[UMD_MAX_RESULT_LINES][UMD_MAX_RESULT_LINE_LENGTH+1];
+
+    UMDActionResult(){
+        NextMenu = UMDMenuIndex::UMD_NOCHANGE;
+        Code = UMDResultCode::OK;
+        ErrorMessage = nullptr;
+        ResultLines = 0;
+        for(int i = 0; i < UMD_MAX_RESULT_LINES; i++){
+            Result[i][0] = '\0';
+        }
+    }
+};
+
 class Cartridge : public UMDPortsV3 {
     public:
 
@@ -41,6 +71,8 @@ class Cartridge : public UMDPortsV3 {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
         
+        virtual UMDActionResult act(uint16_t menuItemIndex) = 0;
+
         enum MemoryType : uint8_t{
             PRG0 = 0, PRG1, PRG2, PRG3,
             CHR0, CHR1,
@@ -93,6 +125,5 @@ class Cartridge : public UMDPortsV3 {
         // const int menuTopLevelSize = 3;
 
 };
-
 
 #endif

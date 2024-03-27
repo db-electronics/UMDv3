@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <Adafruit_SSD1306.h>
+#include "Menu.h"
 
 #define OLED_RESET -1 
 #define OLED_SCREEN_WIDTH 128
@@ -22,32 +23,10 @@
 #define UMD_DISPLAY_BUFFER_TOTAL_LINES      16
 #define UMD_DISPLAY_LAYERS                  2
 #define UMD_DISPLAY_LAYER_FG                0
-#define UMD_DISPLAY_LAYER_BG                1
+#define UMD_DISPLAY_LAYER_MENU              1
 
 #define UMD_DISPLAY_SCROLL_LINE             0
 #define UMD_DISPLAY_SCROLL_CHAR             1
-
-// template <size_t menuSize>
-// class UMDMenu{
-//     public:
-//         const char* menuItems[menuSize]
-//         size_t count;
-
-//         UMDMenu() : itemCount(0){}
-
-//         UMDMenu(const char* items[], size_t count) : itemCount(0) {
-//             for(size_t i = 0; i < count && i < menuSize; i++){
-//                 menuItems[i] = items[i];
-//                 itemCount++;
-//             }
-//         }
-// };
-
-// UMDMenu topLevelMenu{
-
-// };
-
-// const __FlashStringHelper * menuTopLevel[] = {F("Read Cartridge"), F("Write Cartridge")};
 
 class UMDDisplay
 {
@@ -58,7 +37,9 @@ class UMDDisplay
         bool begin();
         void setCursorChar(char c);
         void setCursorPosition(int x, int y);
+        void setCursorVisible(bool visible);
         void setClockPosition(int x, int y);
+        void setClockVisible(bool visible);
         void advanceClockAnimation();
         void setLayerLineLength(int layer, int length);
         void clear(void);
@@ -71,8 +52,10 @@ class UMDDisplay
         void print(int layer, int number, int lineNumber);
         void redraw(void);
 
+        int showMenu(int layer, UMDMenuIndex menuIndex);
         void initMenu(int layer, const char *menuItems[], int size);
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
+
         void menuCursorUpdate(int delta, bool visible);
         int menuCurrentItem();
 
@@ -81,12 +64,40 @@ class UMDDisplay
 
     private:
         
-        struct Menu
+        static Adafruit_SSD1306 *_display;
+        bool _needsRedraw;
+        int _layerLength[UMD_DISPLAY_LAYERS];
+        int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
+        char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+        int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
+
+        // 0 - MAIN MENU
+        #define UMD_MAIN_MENU_SIZE 3
+        const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Read"), F("Write"), F("Test")};
+        Menu<UMD_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
+
+        // 1 - READ MENU
+        #define UMD_READ_MENU_SIZE 4
+        const __FlashStringHelper* _readMenuItems[UMD_READ_MENU_SIZE] = {F("Dump ROM"), F("Dump RAM"), F("Header"), F("Flash ID")};
+        Menu<UMD_READ_MENU_SIZE> _readMenu = _readMenuItems;
+
+        // 2 - WRITE MENU
+        #define UMD_WRITE_MENU_SIZE 2
+        const __FlashStringHelper* _writeMenuItems[UMD_WRITE_MENU_SIZE] = {F("Write ROM"), F("Write RAM")};
+        Menu<UMD_WRITE_MENU_SIZE> _writeMenu = _writeMenuItems;
+
+        // 3 - Test MENU
+        #define UMD_TEST_MENU_SIZE 1
+        const __FlashStringHelper* _testMenuItems[UMD_TEST_MENU_SIZE] = {F("Verify Checksum")};
+        Menu<UMD_TEST_MENU_SIZE> _testMenu = _testMenuItems;
+
+        struct MenuMetadata
         {
             std::vector<const char *> items;
             bool cursorVisible;
-            int scrollRequired;
+            UMDMenuIndex index;
             int currentItem;
+            int scrollRequired;
             int startLine;
             int windowStart;
             int windowEnd;
@@ -94,14 +105,17 @@ class UMDDisplay
             int layer;
         }_menu;
 
-        static Adafruit_SSD1306 *_display;
-        bool _needsRedraw;
+        void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
+        void scrollMenu(int delta);
+        void initMenuCursor(int layer);
+        void setCursorMenuPosition();
 
         struct Cursor
         {
             int x;
             int y;
             char character;
+            bool visible;
         }_cursor;
 
         #define UMD_CLOCK_ANIMATION_FRAMES 4
@@ -110,6 +124,7 @@ class UMDDisplay
             int framePointer;
             int x;
             int y;
+            bool visible;
         }_clock;
 
         const uint8_t _clockAnimation[UMD_CLOCK_ANIMATION_FRAMES][8] = {
@@ -154,16 +169,6 @@ class UMDDisplay
                 0b00000000
             },
         };
-
-        void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
-        void scrollMenu(int delta);
-        void initMenuCursor(int layer);
-        void setCursorMenuPosition();
-
-        int _layerLength[UMD_DISPLAY_LAYERS];
-        int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
-        char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-        int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 };
 
 

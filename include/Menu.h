@@ -16,4 +16,11 @@ class Menu
         }
 };
 
+enum UMDMenuIndex : int{
+        UMD_NOCHANGE = -1,
+        UMD_MAIN = 0,
+        UMD_READ,
+        UMD_WRITE,
+        UMD_TEST
+    };
 #endif
