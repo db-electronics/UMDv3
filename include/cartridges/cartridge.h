@@ -49,7 +49,7 @@ struct UMDActionResult{
     char Result[UMD_MAX_RESULT_LINES][UMD_MAX_RESULT_LINE_LENGTH+1];
 
     UMDActionResult(){
-        NextMenu = UMDMenuIndex::UMD_NOCHANGE;
+        NextMenu = UMDMenuIndex::UMD_MENU_MAIN;
         Code = UMDResultCode::OK;
         ErrorMessage = nullptr;
         ResultLines = 0;
@@ -71,7 +71,7 @@ class Cartridge : public UMDPortsV3 {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
         
-        virtual UMDActionResult act(uint16_t menuItemIndex) = 0;
+        virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex) = 0;
 
         enum MemoryType : uint8_t{
             PRG0 = 0, PRG1, PRG2, PRG3,

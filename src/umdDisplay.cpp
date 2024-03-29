@@ -240,16 +240,16 @@ int UMDDisplay::showMenu(int layer, UMDMenuIndex menuIndex)
     _menu.index = menuIndex;
     switch(menuIndex)
     {
-        case UMD_MAIN:
+        case UMD_MENU_MAIN:
             initMenu(layer, _mainMenu.Items, _mainMenu.Size);
             return _mainMenu.Size;
-        case UMD_READ:
+        case UMD_MENU_READ:
             initMenu(layer, _readMenu.Items, _readMenu.Size);
             return _readMenu.Size;
-        case UMD_WRITE:
+        case UMD_MENU_WRITE:
             initMenu(layer, _writeMenu.Items, _writeMenu.Size);
             return _writeMenu.Size;
-        case UMD_TEST:
+        case UMD_MENU_TEST:
             initMenu(layer, _testMenu.Items, _testMenu.Size);
             return _testMenu.Size;
         default:

@@ -341,7 +341,7 @@ std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
     }
 }
 
-UMDActionResult Genesis::act(uint16_t menuItemIndex)
+UMDActionResult Genesis::act(UMDMenuIndex menuIndex, uint16_t menuItemIndex)
 {
     switch(menuItemIndex)
     {

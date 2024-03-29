@@ -72,7 +72,7 @@ class Genesis : public Cartridge {
         virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id);
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
-        virtual UMDActionResult act(uint16_t menuItemIndex);
+        virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex);
 
         virtual int memoryGetCount();
         virtual std::vector<Cartridge::MemoryType> memoryGetSupportedTypes();
