@@ -182,6 +182,7 @@ void loop()
     static UMDState umdState = TOPLEVEL;
     static uint32_t currentTicks, previousTicks;
     static Controls userInput;
+    static UMDMenuIndex currentMenu;
     static int menuIndex, newAmountOfItems;
     UMDActionResult result;
 
@@ -221,7 +222,7 @@ void loop()
                 //     umdDisplay.initMenu(1, items, size);
                 // }
 
-                result = cartridge->act(menuItemIndex);
+                result = cartridge->act(currentMenu, menuItemIndex);
                 switch(result.Code)
                 {
                     case UMDResultCode::FAIL:
@@ -230,6 +231,7 @@ void loop()
                         break;
                     case UMDResultCode::LOADMENU:
                         umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);
+                        currentMenu = result.NextMenu;
                         break;
                     case UMDResultCode::DISPLAYRESULT:
                         for(int i = result.ResultLines; i >= 0; i--)
@@ -245,8 +247,8 @@ void loop()
             else if (userInput.Back >= userInput.PRESSED){
                 // auto [items, size] = cartridge->getMenu(0);
                 // umdDisplay.initMenu(1, items, size);
-                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MAIN);
-                menuIndex = 0;
+                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
+                currentMenu = UMD_MENU_MAIN;
                 umdState = WAIT_FOR_RELEASE;
             }
             break;
@@ -260,7 +262,7 @@ void loop()
         default:
             // auto [items, size] = cartridge->getMenu(0);
             // umdDisplay.initMenu(1, items, size);
-            umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MAIN);
+            umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
             menuIndex = 0;
             umdState = WAIT_FOR_INPUT;
             break;
