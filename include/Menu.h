@@ -18,6 +18,7 @@ class Menu
 
 enum UMDMenuIndex : int{
         UMD_MENU_MAIN = 0,
+        UMD_MENU_MEMORIES,
         UMD_MENU_READ,
         UMD_MENU_WRITE,
         UMD_MENU_TEST

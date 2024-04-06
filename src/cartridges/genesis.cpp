@@ -2,6 +2,9 @@
 
 Genesis::Genesis(){
     initIO();
+    memTypes[PRG0] = "ROM";
+    memTypes[RAM0] = "Save RAM";
+    memTypes[BRAM] = "SCD Backup RAM";
 }
 
 Genesis::~Genesis(){}
@@ -52,23 +55,9 @@ int Genesis::memoryGetCount(){
     return 2;
 }
 
-std::vector<Cartridge::MemoryType> Genesis::memoryGetSupportedTypes(){
-    return {PRG0, BRAM};
+std::map<Cartridge::MemoryType, const char *> Genesis::memoryGetSupportedTypes(){
+    return memTypes;
 }
-
-const char* Genesis::memoryGetName(uint8_t mem){
-    switch(mem){
-        case PRG0:
-            return "ROM";
-        case BRAM:
-            return "BRAM";
-        default:
-            return "";
-    }
-}
-
-// write a function which returns a list of uint8_t representing the memory types available: PRG0 and BRAM
-
 
 int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
     uint16_t *wordBuffer = (uint16_t*)buffer;
@@ -80,7 +69,7 @@ int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_
                 address += 2;
             }
             break;
-        case BRAM:
+        case RAM0:
             enableSram(true);
             for(int i = 0; i < size; i+=2){
                 *(wordBuffer++) = readPrgWord(address);
@@ -104,7 +93,7 @@ int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8
                 address += 2;
             }
             break;
-        case BRAM:
+        case RAM0:
             enableSram(true);
             for(int i = 0; i < size; i+=2){
                 writePrgWord(address, *wordBuffer++);
@@ -132,7 +121,7 @@ int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint
                 address += 2;
             }
             break;
-        case BRAM:
+        case RAM0:
             enableSram(true);
             for(int i = 0; i < size; i+=2){
                 dw = readPrgWord(address);
@@ -321,23 +310,6 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
         return true;
     }else{
         return false;
-    }
-}
-
-std::tuple<const __FlashStringHelper**, uint16_t> Genesis::getMenu(uint16_t id)
-{
-    switch(id)
-    {
-        case 0: 
-            return std::make_tuple(_mainMenu.Items, _mainMenu.Size);
-        case 1: 
-            return std::make_tuple(_readMenu.Items, _readMenu.Size);
-        case 2: 
-            return std::make_tuple(_writeMenu.Items, _writeMenu.Size);
-        case 3: 
-            return std::make_tuple(_checksumMenu.Items, _checksumMenu.Size);
-        default: 
-            return std::make_tuple(_mainMenu.Items, _mainMenu.Size);
     }
 }
 

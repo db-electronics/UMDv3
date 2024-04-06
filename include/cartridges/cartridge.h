@@ -10,6 +10,7 @@
 #include "umdDisplay.h"
 #include "Menu.h"
 #include <tuple>
+#include <map>
 
 struct FlashInfo{
     uint16_t Manufacturer;
@@ -68,7 +69,6 @@ class Cartridge : public UMDPortsV3 {
 
         virtual void initIO() = 0;
         virtual const char* getSystemName() = 0;
-        virtual std::tuple<const __FlashStringHelper**, uint16_t> getMenu(uint16_t id) = 0;
         virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
         
         virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex) = 0;
@@ -82,8 +82,7 @@ class Cartridge : public UMDPortsV3 {
         };
 
         virtual int memoryGetCount() = 0;
-        virtual std::vector<MemoryType> memoryGetSupportedTypes() = 0;
-        virtual const char* memoryGetName(uint8_t mem) = 0;
+        virtual std::map<MemoryType, const char *> memoryGetSupportedTypes() = 0;
         virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
         virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
         virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
@@ -116,14 +115,11 @@ class Cartridge : public UMDPortsV3 {
         Checksum _checksum;
         uint16_t ExpectedChecksum;
         uint16_t ActualChecksum;
+        std::map<Cartridge::MemoryType, const char *> memTypes;
 
         virtual FlashInfo getPrgFlashInfo();
         uint32_t getFlashSizeFromInfo(FlashInfo info);
         virtual bool calculateChecksum(uint32_t start, uint32_t end) = 0;
-
-        // const __FlashStringHelper * menuTopLevel[3] = {F("Read Cartridge"), F("Write Cartridge"), F("Checksum")};
-        // const int menuTopLevelSize = 3;
-
 };
 
 #endif

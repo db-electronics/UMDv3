@@ -30,6 +30,7 @@ UMDDisplay umdDisplay;
 
 CartridgeFactory cartFactory;
 std::unique_ptr<Cartridge> cartridge;
+std::map<Cartridge::MemoryType, const char *> memoryTypes;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
@@ -168,6 +169,9 @@ void setup()
     umdDisplay.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
     umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
 
+    // get the supported memory types for this cartridge
+    memoryTypes = cartridge->memoryGetSupportedTypes();
+
     umdDisplay.setCursorPosition(0, 0);
     umdDisplay.setCursorVisible(false);
     umdDisplay.setClockPosition(20, 7);
@@ -180,14 +184,17 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static UMDState umdState = TOPLEVEL;
-    static uint32_t currentTicks, previousTicks;
+    static uint32_t currentTicks=0, previousTicks;
     static Controls userInput;
     static UMDMenuIndex currentMenu;
     static int menuIndex, newAmountOfItems;
     UMDActionResult result;
 
     // get the ticks
+    previousTicks = currentTicks;
     currentTicks = HAL_GetTick();
+
+    // process inputs
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
 
