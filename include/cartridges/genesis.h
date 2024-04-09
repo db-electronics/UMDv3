@@ -73,8 +73,7 @@ class Genesis : public Cartridge {
 
         virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex);
 
-        virtual int memoryGetCount();
-        virtual std::map<MemoryType, const char *> memoryGetSupportedTypes();
+        virtual std::vector<const char *>& memoryGetNames();
         virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
         virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
         virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);

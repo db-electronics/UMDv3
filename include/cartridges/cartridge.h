@@ -37,6 +37,7 @@ enum UMDResultCode: int{
     FAIL = -1,
     OK,
     DISPLAYRESULT,
+    DISPLAYMEMORIES,
     LOADMENU,
     WAITING,
     GETFILELIST
@@ -81,8 +82,7 @@ class Cartridge : public UMDPortsV3 {
             EXT0, EXT1
         };
 
-        virtual int memoryGetCount() = 0;
-        virtual std::map<MemoryType, const char *> memoryGetSupportedTypes() = 0;
+        virtual std::vector<const char *>& memoryGetNames() = 0;
         virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
         virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
         virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
@@ -115,7 +115,9 @@ class Cartridge : public UMDPortsV3 {
         Checksum _checksum;
         uint16_t ExpectedChecksum;
         uint16_t ActualChecksum;
-        std::map<Cartridge::MemoryType, const char *> memTypes;
+
+        std::map<uint8_t, Cartridge::MemoryType> _memIndex;
+        std::vector<const char *> _memNames;
 
         virtual FlashInfo getPrgFlashInfo();
         uint32_t getFlashSizeFromInfo(FlashInfo info);

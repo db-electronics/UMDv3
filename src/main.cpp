@@ -30,7 +30,7 @@ UMDDisplay umdDisplay;
 
 CartridgeFactory cartFactory;
 std::unique_ptr<Cartridge> cartridge;
-std::map<Cartridge::MemoryType, const char *> memoryTypes;
+std::vector<const char*> memoryNames;
 
 void scmdScanI2C(void);
 void inputInterrupt(void);
@@ -170,7 +170,7 @@ void setup()
     umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
 
     // get the supported memory types for this cartridge
-    memoryTypes = cartridge->memoryGetSupportedTypes();
+    memoryNames = cartridge->memoryGetNames();
 
     umdDisplay.setCursorPosition(0, 0);
     umdDisplay.setCursorVisible(false);
@@ -234,7 +234,10 @@ void loop()
                 {
                     case UMDResultCode::FAIL:
                         umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 0, F("%s"), result.ErrorMessage);
-                        umdDisplay.redraw();
+                        break;
+                    case UMDResultCode::DISPLAYMEMORIES:
+                        umdDisplay.initMenu(UMD_DISPLAY_LAYER_MENU, memoryNames.data(), memoryNames.size());
+                        currentMenu = UMD_MENU_MEMORIES;
                         break;
                     case UMDResultCode::LOADMENU:
                         umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);

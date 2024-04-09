@@ -2,9 +2,15 @@
 
 Genesis::Genesis(){
     initIO();
-    memTypes[PRG0] = "ROM";
-    memTypes[RAM0] = "Save RAM";
-    memTypes[BRAM] = "SCD Backup RAM";
+
+    _memIndex[0] = PRG0;
+    _memNames.push_back("ROM");
+
+    _memIndex[1] = RAM0;
+    _memNames.push_back("Save RAM");
+
+    _memIndex[2] = BRAM;
+    _memNames.push_back("SCD Backup RAM");
 }
 
 Genesis::~Genesis(){}
@@ -48,15 +54,8 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
-int Genesis::memoryGetCount(){
-    // Genesis has 2 memories
-    // 0 = Program ROM
-    // 1 = BRAM
-    return 2;
-}
-
-std::map<Cartridge::MemoryType, const char *> Genesis::memoryGetSupportedTypes(){
-    return memTypes;
+std::vector<const char *>& Genesis::memoryGetNames(){
+    return _memNames;
 }
 
 int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
