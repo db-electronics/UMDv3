@@ -53,6 +53,7 @@ class UMDDisplay
         void redraw(void);
 
         int showMenu(int layer, UMDMenuIndex menuIndex);
+        void showMenu(int layer, std::vector<const char *> items);
         void initMenu(int layer, const char *menuItems[], int size);
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
 
@@ -73,7 +74,7 @@ class UMDDisplay
 
         // 0 - MAIN MENU
         #define UMD_MAIN_MENU_SIZE 3
-        const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Read"), F("Write"), F("Test")};
+        const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Identify"), F("Read"), F("Write")};
         Menu<UMD_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
 
         // 1 - READ MENU

@@ -258,6 +258,23 @@ int UMDDisplay::showMenu(int layer, UMDMenuIndex menuIndex)
     }
 }
 
+void UMDDisplay::showMenu(int layer, std::vector<const char *> items)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
+    // TODO there's surely an std way to copy a vector to another vector
+    _menu.items.clear();
+    for(int i = 0; i < items.size(); i++)
+    {
+        _menu.items.push_back(items[i]);
+    }
+
+    fillLayerFromMenu(layer, 0, 0);
+    initMenuCursor(layer);
+    _needsRedraw = true;
+}
+
 void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
 {
     if(layer >= UMD_DISPLAY_LAYERS)

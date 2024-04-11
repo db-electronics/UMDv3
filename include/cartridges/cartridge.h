@@ -76,14 +76,11 @@ class Cartridge : public UMDPortsV3 {
             EXT0, EXT1
         };
 
-        enum CartridgeState : uint8_t{
-            IDLE,
+        enum CartridgeState : int8_t{
+            IDLE=-1,
+            IDENTIFY=0,
             READ,
-            WRITE,
-            PROGRAM,
-            VERIFY,
-            ERASE,
-            CHECKSUM
+            WRITE
         };
 
         virtual void initIO() = 0;

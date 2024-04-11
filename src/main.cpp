@@ -37,12 +37,11 @@ void inputInterrupt(void);
 
 bool newInputs;
 
-enum UMDState
+enum UMDUxState
 {
-    TOPLEVEL,
+    INIT_MAIN_MENU,
     WAIT_FOR_INPUT,
-    WAIT_FOR_RELEASE,
-    CARTRIDGE
+    WAIT_FOR_RELEASE
 };
 
 // const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
@@ -183,8 +182,8 @@ void setup()
 void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
-    static UMDState umdState = TOPLEVEL;
-    static Cartridge::CartridgeState cartridgeState = Cartridge::IDLE;
+    static UMDUxState umdUxState = INIT_MAIN_MENU;
+    static Cartridge::CartridgeState umdCartState = Cartridge::IDLE;
     static uint32_t currentTicks=0, previousTicks;
     static Controls userInput;
     static UMDMenuIndex currentMenu;
@@ -199,78 +198,115 @@ void loop()
     uint8_t inputs = onboardMCP23008.readGPIO();
     userInput.process(inputs, currentTicks);
 
-    switch(umdState)
+    switch(umdUxState)
     {
         case WAIT_FOR_INPUT:
             if(userInput.Down >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(1, true);
-                umdState = WAIT_FOR_RELEASE;
+                umdUxState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Up >= userInput.PRESSED)
             {
                 umdDisplay.menuCursorUpdate(-1, true);
-                umdState = WAIT_FOR_RELEASE;
+                umdUxState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Left >= userInput.PRESSED)
             {
                 // scroll line left
-                umdState = WAIT_FOR_RELEASE;
+                umdUxState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Right >= userInput.PRESSED)
             {
                 // scroll line right
-                umdState = WAIT_FOR_RELEASE;
+                umdUxState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Ok >= userInput.PRESSED){
+                // what item is selected?
                 int menuItemIndex = umdDisplay.menuCurrentItem();
                 
-                result = cartridge->act(cartridgeState, menuItemIndex);
-                switch(result.Code)
+                switch(umdCartState)
                 {
-                    case UMDResultCode::FAIL:
-                        umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 0, F("%s"), result.ErrorMessage);
-                        break;
-                    case UMDResultCode::DISPLAYMEMORIES:
-                        umdDisplay.initMenu(UMD_DISPLAY_LAYER_MENU, memoryNames.data(), memoryNames.size());
-                        currentMenu = UMD_MENU_MEMORIES;
-                        break;
-                    case UMDResultCode::LOADMENU:
-                        umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);
-                        currentMenu = result.NextMenu;
-                        break;
-                    case UMDResultCode::DISPLAYRESULT:
-                        for(int i = result.ResultLines; i >= 0; i--)
+                    // At the main menu, offer top level choices
+                    case Cartridge::IDLE:
+                        switch(menuItemIndex)
                         {
-                            umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, i, F("%s"), result.Result[i]);
+                            // these must match the index of the menu items currently displayed
+                            case Cartridge::IDENTIFY:
+                                // update state to IDENTIFY and offer choice of memory to identify
+                                umdCartState = Cartridge::IDENTIFY;
+                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                break;
+                            case Cartridge::READ: 
+                                // update state to READ and offer choice of memory to read from
+                                umdCartState = Cartridge::READ;
+                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                break;
+                            case Cartridge::WRITE:
+                                // update state to WRITE and offer choice of memory to write to
+                                umdCartState = Cartridge::WRITE;
+                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                break;
+                            default:
+                                umdCartState = Cartridge::IDLE;
+                                break;
                         }
+                    case Cartridge::IDENTIFY:
+                    case Cartridge::READ:
+                    case Cartridge::WRITE:
+                        // act on the menu item selected
+                        result = cartridge->act(umdCartState, menuItemIndex);
+                        switch(result.Code)
+                        {
+                            case UMDResultCode::FAIL:
+                                umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 0, F("%s"), result.ErrorMessage);
+                                break;
+                            case UMDResultCode::DISPLAYMEMORIES:
+                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                currentMenu = UMD_MENU_MEMORIES;
+                                break;
+                            case UMDResultCode::LOADMENU:
+                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);
+                                currentMenu = result.NextMenu;
+                                break;
+                            case UMDResultCode::DISPLAYRESULT:
+                                for(int i = result.ResultLines; i >= 0; i--)
+                                {
+                                    umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, i, F("%s"), result.Result[i]);
+                                }
+                            default:
+                                break;
+                        }
+                        break;
                     default:
                         break;
                 }
-
-                umdState = WAIT_FOR_RELEASE;
+                // shitty debounce
+                umdUxState = WAIT_FOR_RELEASE;
             }
             else if (userInput.Back >= userInput.PRESSED){
                 // auto [items, size] = cartridge->getMenu(0);
                 // umdDisplay.initMenu(1, items, size);
                 umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
                 currentMenu = UMD_MENU_MAIN;
-                umdState = WAIT_FOR_RELEASE;
+                umdUxState = WAIT_FOR_RELEASE;
             }
             break;
         case WAIT_FOR_RELEASE: // el-cheapo debounce
             if(userInput.Ok == userInput.OFF && userInput.Back == userInput.OFF && userInput.Up == userInput.OFF && userInput.Down == userInput.OFF)
             {
-                umdState = WAIT_FOR_INPUT;
+                umdUxState = WAIT_FOR_INPUT;
             }
             break;
-        case TOPLEVEL:
+        case INIT_MAIN_MENU:
         default:
             // auto [items, size] = cartridge->getMenu(0);
             // umdDisplay.initMenu(1, items, size);
             umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
+            currentMenu = UMD_MENU_MAIN;
+            umdCartState = Cartridge::IDLE;
             menuIndex = 0;
-            umdState = WAIT_FOR_INPUT;
+            umdUxState = WAIT_FOR_INPUT;
             break;
     }
 
