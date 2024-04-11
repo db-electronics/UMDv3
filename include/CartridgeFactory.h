@@ -8,8 +8,6 @@
 #include "cartridges/cartridge.h"
 #include "cartridges/genesis.h"
 
-// Hardware abstraction for ports
-
 class CartridgeFactory
 {
     public:
@@ -22,6 +20,5 @@ class CartridgeFactory
         std::unique_ptr<Cartridge> getCart(uint8_t adapterId);
 };
 
-//IUMDPorts* CartridgeFactory::_ports = new UMDPortsV3();
 
 #endif

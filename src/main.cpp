@@ -184,6 +184,7 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static UMDState umdState = TOPLEVEL;
+    static Cartridge::CartridgeState cartridgeState = Cartridge::IDLE;
     static uint32_t currentTicks=0, previousTicks;
     static Controls userInput;
     static UMDMenuIndex currentMenu;
@@ -223,13 +224,8 @@ void loop()
             }
             else if (userInput.Ok >= userInput.PRESSED){
                 int menuItemIndex = umdDisplay.menuCurrentItem();
-                // menuIndex = cartridge->doAction(menuIndex, menuItemIndex, SD, umdDisplay);
-                // if(menuIndex >= 0){
-                //     auto [items, size] = cartridge->getMenu(menuIndex);
-                //     umdDisplay.initMenu(1, items, size);
-                // }
-
-                result = cartridge->act(currentMenu, menuItemIndex);
+                
+                result = cartridge->act(cartridgeState, menuItemIndex);
                 switch(result.Code)
                 {
                     case UMDResultCode::FAIL:

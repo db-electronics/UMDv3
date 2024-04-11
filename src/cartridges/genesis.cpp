@@ -3,6 +3,8 @@
 Genesis::Genesis(){
     initIO();
 
+    // display will show these memory names in order
+    // so here we store an index to the memory enum
     _memIndex[0] = PRG0;
     _memNames.push_back("ROM");
 
@@ -312,7 +314,7 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     }
 }
 
-UMDActionResult Genesis::act(UMDMenuIndex menuIndex, uint16_t menuItemIndex)
+UMDActionResult Genesis::act(CartridgeState state, uint16_t menuItemIndex)
 {
     switch(menuItemIndex)
     {

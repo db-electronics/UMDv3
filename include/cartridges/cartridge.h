@@ -38,9 +38,9 @@ enum UMDResultCode: int{
     OK,
     DISPLAYRESULT,
     DISPLAYMEMORIES,
+    DISPLAYFILELIST,
     LOADMENU,
-    WAITING,
-    GETFILELIST
+    WAITING
 };
 
 struct UMDActionResult{
@@ -68,12 +68,6 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
         void testWait(void);
 
-        virtual void initIO() = 0;
-        virtual const char* getSystemName() = 0;
-        virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp) = 0;
-        
-        virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex) = 0;
-
         enum MemoryType : uint8_t{
             PRG0 = 0, PRG1, PRG2, PRG3,
             CHR0, CHR1,
@@ -81,6 +75,21 @@ class Cartridge : public UMDPortsV3 {
             BRAM,
             EXT0, EXT1
         };
+
+        enum CartridgeState : uint8_t{
+            IDLE,
+            READ,
+            WRITE,
+            PROGRAM,
+            VERIFY,
+            ERASE,
+            CHECKSUM
+        };
+
+        virtual void initIO() = 0;
+        virtual const char* getSystemName() = 0;
+
+        virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex) = 0;
 
         virtual std::vector<const char *>& memoryGetNames() = 0;
         virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;

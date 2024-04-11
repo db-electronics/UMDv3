@@ -1,7 +1,6 @@
 #ifndef GENESIS_H
 #define GENESIS_H
 
-#include "IUMDPorts.h"
 #include "cartridge.h"
 #include "Menu.h"
 #include <string>
@@ -69,9 +68,11 @@ class Genesis : public Cartridge {
 
         virtual void initIO();
         virtual const char* getSystemName();
-        virtual int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
+        
+        // TODO REMOVE THIS METHOD
+        int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
-        virtual UMDActionResult act(UMDMenuIndex menuIndex, uint16_t menuItemIndex);
+        virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
 
         virtual std::vector<const char *>& memoryGetNames();
         virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);

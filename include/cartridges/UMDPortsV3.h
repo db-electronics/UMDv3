@@ -1,7 +1,6 @@
 #ifndef UMDPORTSV3_H
 #define UMDPORTSV3_H
 
-#include "IUMDPorts.h"
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
 
