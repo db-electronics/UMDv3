@@ -6,6 +6,7 @@
 #include <USBSerial.h>
 #include <Wire.h>
 #include <stm32f4xx_hal.h>
+#include <stm32f4xx_hal_crc.h>
 #include <stm32f4xx_hal_gpio.h>
 
 #include "CartridgeFactory.h"
@@ -19,6 +20,7 @@
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
 #endif
+
 #define SD_CLK_DIV  8
 
 //SdFatFs fatFs;
@@ -32,10 +34,17 @@ CartridgeFactory cartFactory;
 std::unique_ptr<Cartridge> cartridge;
 std::vector<const char*> memoryNames;
 
-void scmdScanI2C(void);
-void inputInterrupt(void);
+// CRC stuff
+CRC_HandleTypeDef hcrc;
+void crc32Mpeg2Init(void);
+void crc32Mpeg2Reset(void);
+uint32_t crc32Mpeg2Caclulate();
 
-bool newInputs;
+// SD stuff
+int verifySdCard(int& line);
+int verifySdCardSystemSetup(int& line, const char* systemName);
+
+void scmdScanI2C(void);
 
 enum UMDUxState
 {
@@ -44,11 +53,13 @@ enum UMDUxState
     WAIT_FOR_RELEASE
 };
 
-// const __FlashStringHelper * menuTopLevel[] = {F(" Read Cartridge"), F(" Write Cartridge"), F(" Checksum")};
-// const int menuTopLevelSize = 3;
+#define UMD_DATA_BUFFER_SIZE_BYTES 512
+union DataBuffer{
+    uint8_t bytes[UMD_DATA_BUFFER_SIZE_BYTES];
+    uint16_t words[UMD_DATA_BUFFER_SIZE_BYTES/2];
+    uint32_t dwords[UMD_DATA_BUFFER_SIZE_BYTES/4];
+}dataBuffer;
 
-int verifySdCard(int& line);
-int verifySdCardSystemSetup(int& line, const char* systemName);
 
 void setup()
 {
@@ -61,6 +72,9 @@ void setup()
     delay(10);
     digitalWrite(PA10, HIGH);
     SerialUSB.println(F("UMDv3"));
+
+    // enable CRC unit
+    crc32Mpeg2Init();
 
     // setup I2C
     // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#i2c
@@ -116,12 +130,6 @@ void setup()
     onboardMCP23008.setInterruptControl(UMD_BOARD_PUSHBUTTONS, onboardMCP23008.PREVIOUS);
     onboardMCP23008.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
     onboardMCP23008.digitalWrite(UMD_BOARD_LEDS, LOW);
-    newInputs = false;
-
-    // interrupt line tied to PD1
-    // pinMode(UMD_MCP23008_INTERRUPT_PIN, INPUT);
-    // attachInterrupt(digitalPinToInterrupt(UMD_MCP23008_INTERRUPT_PIN),
-    // inputInterrupt, FALLING);
 
     // setup adapter mcp23008, read adapter id
     umdDisplay.printf(0, line++, F("init cart MCP23008"));
@@ -179,12 +187,14 @@ void setup()
     umdDisplay.redraw();
 }
 
+//MARK: Main loop
 void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static UMDUxState umdUxState = INIT_MAIN_MENU;
     static Cartridge::CartridgeState umdCartState = Cartridge::IDLE;
     static uint32_t currentTicks=0, previousTicks;
+    static uint32_t crc32 = 0;
     static Controls userInput;
     static UMDMenuIndex currentMenu;
     static int menuIndex, newAmountOfItems;
@@ -232,10 +242,12 @@ void loop()
                         switch(menuItemIndex)
                         {
                             // these must match the index of the menu items currently displayed
+                            // Identify the connected cartridge by calculating the CRC32 of the ROM and comparing against the database
                             case Cartridge::IDENTIFY:
-                                // update state to IDENTIFY and offer choice of memory to identify
+                                // update state to IDENTIFY,
                                 umdCartState = Cartridge::IDENTIFY;
-                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                crc32 = crc32Mpeg2Caclulate();
+                                // TODO search for this crc32 in the database
                                 break;
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
@@ -325,11 +337,7 @@ void scmdScanI2C(void)
     for (uint8_t address : addresses) { SerialUSB.println(address, HEX); }
 }
 
-void inputInterrupt(void)
-{
-    newInputs = true;
-}
-
+//MARK: SD card functions
 int verifySdCard(int& line)
 {
     sdFile = SD.open("/UMD");
@@ -375,4 +383,53 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     sdFile.close();
 
     return 0;
+}
+
+//MARK: CRC32 functions
+void crc32Mpeg2Init(void){
+    // enable CRC unit
+    __HAL_RCC_CRC_CLK_ENABLE();
+}
+
+void crc32Mpeg2Reset(void){
+    __HAL_CRC_DR_RESET(&hcrc);
+}
+
+// copied from HAL lib because this is disabled in platformio libs :(
+uint32_t crc32Mpeg2Accumulate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)
+{
+  uint32_t index;      /* CRC input data buffer index */
+  uint32_t temp = 0U;  /* CRC output (read from hcrc->Instance->DR register) */
+
+  /* Change CRC peripheral state */
+  hcrc->State = HAL_CRC_STATE_BUSY;
+
+  /* Enter Data to the CRC calculator */
+  for (index = 0U; index < BufferLength; index++)
+  {
+    hcrc->Instance->DR = pBuffer[index];
+  }
+  temp = hcrc->Instance->DR;
+
+  /* Change CRC peripheral state */
+  hcrc->State = HAL_CRC_STATE_READY;
+
+  /* Return the CRC computed value */
+  return temp;
+}
+
+uint32_t crc32Mpeg2Caclulate(){
+    // get cartridge size and compute crc32
+    uint32_t result;
+    uint32_t crcSize = cartridge->getSize();
+    uint32_t remainingBytes = crcSize;
+    crc32Mpeg2Reset();
+    while(remainingBytes > 0)
+    {
+        uint16_t readSize = remainingBytes > UMD_DATA_BUFFER_SIZE_BYTES ? UMD_DATA_BUFFER_SIZE_BYTES : remainingBytes;
+        cartridge->romRead(crcSize - remainingBytes, dataBuffer.bytes, readSize);
+        result = crc32Mpeg2Accumulate(&hcrc, dataBuffer.dwords, readSize/4);
+        remainingBytes -= readSize;
+    }
+    return result;
 }

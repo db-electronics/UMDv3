@@ -56,11 +56,25 @@ const char* Genesis::getSystemName(){
     return "Genesis";
 }
 
+uint32_t Genesis::getSize(){
+    readHeader();
+
+    return _header.ROMEnd + 1;
+}
+
+void Genesis::romRead(uint32_t address, uint8_t *buffer, uint16_t size){
+    for(int i = 0; i < size; i+=2){
+        *(uint16_t*)buffer = readPrgWord(address);
+        buffer += 2;
+        address += 2;
+    }
+}
+
 std::vector<const char *>& Genesis::memoryGetNames(){
     return _memNames;
 }
 
-int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
     uint16_t *wordBuffer = (uint16_t*)buffer;
     switch (mem)
     {
@@ -84,7 +98,7 @@ int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_
     return 0;
 }
 
-int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
     uint16_t *wordBuffer = (uint16_t*)buffer;
     switch (mem)
     {
@@ -108,7 +122,7 @@ int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8
     return 0;
 }
 
-int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
     uint16_t *wordBuffer = (uint16_t*)buffer;
     uint16_t dw;
     switch (mem)
@@ -139,7 +153,7 @@ int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint
     return 0;
 }
 
-int Genesis::memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset){
+int Genesis::memoryChecksum(uint32_t address, uint32_t size, MemoryType mem, bool reset){
     uint32_t dl;
     uint16_t dw;
     uint16_t checksum = 0;

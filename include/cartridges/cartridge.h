@@ -33,6 +33,11 @@ struct Checksum{
     }
 };
 
+struct CartridgeInfo{
+    const char * Name;
+    uint32_t Size;
+};
+
 enum UMDResultCode: int{
     FAIL = -1,
     OK,
@@ -85,14 +90,16 @@ class Cartridge : public UMDPortsV3 {
 
         virtual void initIO() = 0;
         virtual const char* getSystemName() = 0;
+        virtual uint32_t getSize() = 0;
+        virtual void romRead(uint32_t address, uint8_t *buffer, uint16_t size) = 0;
 
         virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex) = 0;
 
         virtual std::vector<const char *>& memoryGetNames() = 0;
-        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
-        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
-        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
-        virtual int memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset) = 0;
+        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem) = 0;
+        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem) = 0;
+        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem) = 0;
+        virtual int memoryChecksum(uint32_t address, uint32_t size, MemoryType mem, bool reset) = 0;
 
         virtual int flashErase(uint8_t mem) = 0;
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;

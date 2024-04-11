@@ -68,17 +68,19 @@ class Genesis : public Cartridge {
 
         virtual void initIO();
         virtual const char* getSystemName();
-        
+        virtual uint32_t getSize();
+        virtual void romRead(uint32_t address, uint8_t *buffer, uint16_t size);
+
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
         virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
 
         virtual std::vector<const char *>& memoryGetNames();
-        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
-        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
-        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
-        virtual int memoryChecksum(uint32_t address, uint32_t size, uint8_t mem, bool reset);
+        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
+        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
+        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
+        virtual int memoryChecksum(uint32_t address, uint32_t size, MemoryType mem, bool reset);
 
         virtual int flashErase(uint8_t mem);
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
