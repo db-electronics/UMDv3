@@ -36,12 +36,6 @@ Crc32Calculator crc32Calculator;
 std::unique_ptr<Cartridge> cartridge;
 std::vector<const char*> memoryNames;
 
-// CRC stuff
-CRC_HandleTypeDef hcrc;
-void crc32Mpeg2Init(void);
-void crc32Mpeg2Reset(void);
-uint32_t crc32Mpeg2Caclulate();
-
 // SD stuff
 int verifySdCard(int& line);
 int verifySdCardSystemSetup(int& line, const char* systemName);
@@ -75,8 +69,7 @@ void setup()
     digitalWrite(PA10, HIGH);
     SerialUSB.println(F("UMDv3"));
 
-    // enable CRC unit
-    crc32Mpeg2Init();
+
 
     // setup I2C
     // https://github.com/stm32duino/Arduino_Core_STM32/wiki/API#i2c
@@ -250,7 +243,13 @@ void loop()
                                 umdCartState = Cartridge::IDENTIFY;
                                 cartridge->ResetChecksumCalculator();
                                 cartSize = cartridge->GetSize();
-                                crc32 = cartridge->ReadRom(0, dataBuffer.bytes, 512, Cartridge::ReadOptions::HW_CHECKSUM);
+
+                                for(int addr = 0; addr < cartSize-1; addr += UMD_DATA_BUFFER_SIZE_BYTES)
+                                {
+                                    crc32 = cartridge->ReadRom(addr, dataBuffer.bytes, UMD_DATA_BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
+                                }
+                                umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 5, F(" SIZE : %08X"), cartSize);
+                                umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 6, F(" CRC32: %08X"), crc32);
 
                                 // crc32 = crc32Mpeg2Caclulate();
                                 // TODO search for this crc32 in the database
@@ -390,53 +389,4 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     sdFile.close();
 
     return 0;
-}
-
-//MARK: CRC32 functions
-void crc32Mpeg2Init(void){
-    // enable CRC unit
-    __HAL_RCC_CRC_CLK_ENABLE();
-}
-
-void crc32Mpeg2Reset(void){
-    __HAL_CRC_DR_RESET(&hcrc);
-}
-
-// copied from HAL lib because this is disabled in platformio libs :(
-uint32_t crc32Mpeg2Accumulate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint32_t BufferLength)
-{
-  uint32_t index;      /* CRC input data buffer index */
-  uint32_t temp = 0U;  /* CRC output (read from hcrc->Instance->DR register) */
-
-  /* Change CRC peripheral state */
-  hcrc->State = HAL_CRC_STATE_BUSY;
-
-  /* Enter Data to the CRC calculator */
-  for (index = 0U; index < BufferLength; index++)
-  {
-    hcrc->Instance->DR = pBuffer[index];
-  }
-  temp = hcrc->Instance->DR;
-
-  /* Change CRC peripheral state */
-  hcrc->State = HAL_CRC_STATE_READY;
-
-  /* Return the CRC computed value */
-  return temp;
-}
-
-uint32_t crc32Mpeg2Caclulate(){
-    // get cartridge size and compute crc32
-    uint32_t result;
-    uint32_t crcSize = cartridge->GetSize();
-    uint32_t remainingBytes = crcSize;
-    crc32Mpeg2Reset();
-    while(remainingBytes > 0)
-    {
-        uint16_t readSize = remainingBytes > UMD_DATA_BUFFER_SIZE_BYTES ? UMD_DATA_BUFFER_SIZE_BYTES : remainingBytes;
-        cartridge->ReadRom(crcSize - remainingBytes, dataBuffer.bytes, readSize, Cartridge::ReadOptions::NONE);
-        result = crc32Mpeg2Accumulate(&hcrc, dataBuffer.dwords, readSize/4);
-        remainingBytes -= readSize;
-    }
-    return result;
 }

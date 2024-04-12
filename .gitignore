@@ -7,3 +7,6 @@
 /cubemx/.mxproject
 /cubemx/.project
 /cubemx/*.ld
+
+/scripts/**/*.bin
+/scripts/**/*.md
