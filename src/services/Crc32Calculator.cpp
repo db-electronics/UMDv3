@@ -19,24 +19,37 @@ void Crc32Calculator::Reset()
     CRC->CR = CRC_CR_RESET;
 }
 
-// copied from HAL lib because this is disabled in platformio libs :(
 uint32_t Crc32Calculator::Accumulate(uint32_t pBuffer[], uint32_t length)
 {
-    uint32_t crc = 0U;  /* CRC output (read from hcrc->Instance->DR register) */
+    uint32_t crc = 0U;
     for (int i = 0; i < length; i++)
     {
         CRC->DR = pBuffer[i];
     }
     crc = CRC->DR;
 
-    /* Return the CRC computed value */
+    // equivalent C code (with reset to 0xFFFFFFFF at the beginning)
+    // uint32_t poly = 0x04C11DB7;
+    // uint32_t crcVerify = 0xFFFFFFFF;
+    // for (int i = 0; i < length; i++)
+    // {
+    //     crcVerify ^= pBuffer[i];
+    //     for (int j = 0; j < 32; j++)
+    //     {
+    //         if (crcVerify & 0x80000000)
+    //         {
+    //             crcVerify = (crcVerify << 1) ^ poly;
+    //         }
+    //         else
+    //         {
+    //             crcVerify = (crcVerify << 1);
+    //         }
+    //     }
+    // }
+
     return crc;
 
-    // Pat Riley GM MK-1201 -00 HW CRC32 calculation = 38E025EB
+    // Pat Riley GM MK-1201 -00 HW CRC32 calculation = FA1AC95B
+    // Pat Riley CRC on first 512 bytes = E6CF6C16
     // Uses CRC-32 (Ethernet) polynomial: 0x4C11DB7
-    // https://community.st.com/t5/stm32-mcus/how-is-crc-value-calculated-how-to-determine-crc-algorithm-in/ta-p/49719
-    // CRC_CR: 0x0000 0000; POLYSIZE is 32, no REV_IN and no REV_OUT
-    // CRC_INIT: 0XFFFF FFFF
-    // CRC_POLY: 0X04D11 CDB7
-    // https://community.st.com/t5/stm32-mcus/how-is-crc-value-calculated-how-to-determine-crc-algorithm-in/ta-p/49719#_msocom_1
 }

@@ -65,10 +65,9 @@ uint32_t Genesis::GetSize(){
 }
 
 uint32_t Genesis::ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
-    // fill the buffer
+    // fill the buffer, but don't modify its value because we may need it for checksum
     for(int i = 0; i < size; i+=2){
-        *(uint16_t*)buffer = readPrgWord(address);
-        buffer += 2;
+        *(uint16_t*)(buffer + i) = readPrgWord(address);
         address += 2;
     }
 
