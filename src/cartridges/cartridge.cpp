@@ -1,6 +1,7 @@
 #include "cartridges/cartridge.h"
 
-Cartridge::Cartridge(){
+Cartridge::Cartridge(IChecksumCalculator& checksumCalculator)
+    : _checksumCalculator(checksumCalculator) {
     setDefaults();
 }
 
@@ -20,6 +21,10 @@ void Cartridge::testWait(void){
     clearCE0();
     wait250ns();
     setCE0();
+}
+
+void Cartridge::ResetChecksumCalculator(){
+    _checksumCalculator.Reset();
 }
 
 FlashInfo Cartridge::getPrgFlashInfo(){

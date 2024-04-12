@@ -16,6 +16,7 @@
 #include "pinRemap.h"
 #include "umdBoardDefinitions.h"
 #include "umdDisplay.h"
+#include "services/Crc32Calculator.h"
 
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
@@ -31,6 +32,7 @@ MCP23008 adapterMCP23008;
 UMDDisplay umdDisplay;
 
 CartridgeFactory cartFactory;
+Crc32Calculator crc32Calculator;
 std::unique_ptr<Cartridge> cartridge;
 std::vector<const char*> memoryNames;
 
@@ -143,7 +145,7 @@ void setup()
 
     adapterMCP23008.pinMode(0xFF, INPUT);
     uint8_t adapterId = adapterMCP23008.readGPIO();
-    cartridge = cartFactory.getCart(adapterId);
+    cartridge = cartFactory.GetCart(adapterId, crc32Calculator);
     if (cartridge == nullptr)
     {
         umdDisplay.printf(0, line++, F("  unknown adapter"));
@@ -152,7 +154,7 @@ void setup()
     }
 
     //umdDisplay.printf(0, line++, F("  adapter id = %d"), adapterId);
-    auto systemName = cartridge->getSystemName();
+    auto systemName = cartridge->GetSystemName();
     umdDisplay.printf(0, line++, F("  %s"), systemName);
     umdDisplay.redraw();
 
@@ -180,9 +182,9 @@ void setup()
     memoryNames = cartridge->memoryGetNames();
 
     umdDisplay.setCursorPosition(0, 0);
-    umdDisplay.setCursorVisible(false);
+    umdDisplay.setCursorVisible(true);
     umdDisplay.setClockPosition(20, 7);
-    umdDisplay.setClockVisible(true);
+    umdDisplay.setClockVisible(false);
     
     umdDisplay.redraw();
 }
@@ -194,7 +196,7 @@ void loop()
     static UMDUxState umdUxState = INIT_MAIN_MENU;
     static Cartridge::CartridgeState umdCartState = Cartridge::IDLE;
     static uint32_t currentTicks=0, previousTicks;
-    static uint32_t crc32 = 0;
+    static uint32_t crc32, cartSize;
     static Controls userInput;
     static UMDMenuIndex currentMenu;
     static int menuIndex, newAmountOfItems;
@@ -246,7 +248,11 @@ void loop()
                             case Cartridge::IDENTIFY:
                                 // update state to IDENTIFY,
                                 umdCartState = Cartridge::IDENTIFY;
-                                crc32 = crc32Mpeg2Caclulate();
+                                cartridge->ResetChecksumCalculator();
+                                cartSize = cartridge->GetSize();
+                                crc32 = cartridge->ReadRom(0, dataBuffer.bytes, 512, Cartridge::ReadOptions::HW_CHECKSUM);
+
+                                // crc32 = crc32Mpeg2Caclulate();
                                 // TODO search for this crc32 in the database
                                 break;
                             case Cartridge::READ: 
@@ -263,6 +269,7 @@ void loop()
                                 umdCartState = Cartridge::IDLE;
                                 break;
                         }
+                        break;
                     case Cartridge::IDENTIFY:
                     case Cartridge::READ:
                     case Cartridge::WRITE:
@@ -421,13 +428,13 @@ uint32_t crc32Mpeg2Accumulate(CRC_HandleTypeDef *hcrc, uint32_t pBuffer[], uint3
 uint32_t crc32Mpeg2Caclulate(){
     // get cartridge size and compute crc32
     uint32_t result;
-    uint32_t crcSize = cartridge->getSize();
+    uint32_t crcSize = cartridge->GetSize();
     uint32_t remainingBytes = crcSize;
     crc32Mpeg2Reset();
     while(remainingBytes > 0)
     {
         uint16_t readSize = remainingBytes > UMD_DATA_BUFFER_SIZE_BYTES ? UMD_DATA_BUFFER_SIZE_BYTES : remainingBytes;
-        cartridge->romRead(crcSize - remainingBytes, dataBuffer.bytes, readSize);
+        cartridge->ReadRom(crcSize - remainingBytes, dataBuffer.bytes, readSize, Cartridge::ReadOptions::NONE);
         result = crc32Mpeg2Accumulate(&hcrc, dataBuffer.dwords, readSize/4);
         remainingBytes -= readSize;
     }

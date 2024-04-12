@@ -63,13 +63,13 @@ struct GenesisHeader{
 class Genesis : public Cartridge {
     public:
 
-        Genesis();
+        Genesis(IChecksumCalculator& checksumCalculator);
         virtual ~Genesis();
 
-        virtual void initIO();
-        virtual const char* getSystemName();
-        virtual uint32_t getSize();
-        virtual void romRead(uint32_t address, uint8_t *buffer, uint16_t size);
+        virtual void InitIO() override;
+        virtual const char* GetSystemName() override;
+        virtual uint32_t GetSize() override;
+        virtual uint32_t ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
 
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);

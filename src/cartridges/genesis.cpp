@@ -1,7 +1,9 @@
 #include "cartridges/genesis.h"
 
-Genesis::Genesis(){
-    initIO();
+Genesis::Genesis(IChecksumCalculator& checksumCalculator)
+    : Cartridge(checksumCalculator) {
+
+    InitIO();
 
     // display will show these memory names in order
     // so here we store an index to the memory enum
@@ -17,7 +19,7 @@ Genesis::Genesis(){
 
 Genesis::~Genesis(){}
 
-void Genesis::initIO(){
+void Genesis::InitIO(){
     setDefaults();
 
     // set pins to high
@@ -52,21 +54,33 @@ void Genesis::initIO(){
     enableSram(false);
 }
 
-const char* Genesis::getSystemName(){
+const char* Genesis::GetSystemName(){
     return "Genesis";
 }
 
-uint32_t Genesis::getSize(){
+uint32_t Genesis::GetSize(){
     readHeader();
 
     return _header.ROMEnd + 1;
 }
 
-void Genesis::romRead(uint32_t address, uint8_t *buffer, uint16_t size){
+uint32_t Genesis::ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
+    // fill the buffer
     for(int i = 0; i < size; i+=2){
         *(uint16_t*)buffer = readPrgWord(address);
         buffer += 2;
         address += 2;
+    }
+
+    switch(opt){
+        case HW_CHECKSUM:
+            return _checksumCalculator.Accumulate((uint32_t*)buffer, size/4);
+            break;
+        case SYSTEM_CHECKUM:
+            return 0;
+        default:
+            return 0;
+            break;
     }
 }
 

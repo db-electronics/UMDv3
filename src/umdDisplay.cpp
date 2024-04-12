@@ -106,6 +106,9 @@ void UMDDisplay::setClockPosition(int x, int y)
 
 void UMDDisplay::advanceClockAnimation()
 {
+    if(!_clock.visible)
+        return;
+        
     if(++_clock.framePointer == UMD_CLOCK_ANIMATION_FRAMES)
         _clock.framePointer = 0;
     _needsRedraw = true;

@@ -6,6 +6,7 @@
 #define UMD_MAX_RESULT_LINE_LENGTH 32
 
 #include <STM32SD.h>
+#include "services/IChecksumCalculator.h"
 #include "UMDPortsV3.h"
 #include "umdDisplay.h"
 #include "Menu.h"
@@ -69,7 +70,7 @@ struct UMDActionResult{
 class Cartridge : public UMDPortsV3 {
     public:
 
-        Cartridge();
+        Cartridge(IChecksumCalculator& checksumCalculator);
         virtual ~Cartridge();
         void testWait(void);
 
@@ -88,10 +89,20 @@ class Cartridge : public UMDPortsV3 {
             WRITE
         };
 
-        virtual void initIO() = 0;
-        virtual const char* getSystemName() = 0;
-        virtual uint32_t getSize() = 0;
-        virtual void romRead(uint32_t address, uint8_t *buffer, uint16_t size) = 0;
+        enum ReadOptions : uint8_t{
+            NONE = 0,
+            HW_CHECKSUM,
+            SYSTEM_CHECKUM
+        };
+
+        // Base functionality
+        virtual void ResetChecksumCalculator();
+
+        // Pure virtual functionality
+        virtual void InitIO () = 0;
+        virtual const char* GetSystemName() = 0;
+        virtual uint32_t GetSize() = 0;
+        virtual uint32_t ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
 
         virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex) = 0;
 
@@ -117,6 +128,8 @@ class Cartridge : public UMDPortsV3 {
         virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
+
+        IChecksumCalculator& _checksumCalculator;
 
         File romFile;
         union {
