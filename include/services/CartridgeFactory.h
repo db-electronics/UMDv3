@@ -1,11 +1,10 @@
-#ifndef CARTRIDGEFACTORY_H
-#define CARTRIDGEFACTORY_H
+#pragma once
 
 #include <Arduino.h>
 #include <memory>
 
-#include "cartridges/cartridge.h"
-#include "cartridges/genesis.h"
+#include "cartridges/Cartridge.h"
+#include "cartridges/Genesis.h"
 
 class CartridgeFactory
 {
@@ -18,6 +17,3 @@ class CartridgeFactory
 
         std::unique_ptr<Cartridge> GetCart(uint8_t adapterId, IChecksumCalculator& checksumCalculator);
 };
-
-
-#endif

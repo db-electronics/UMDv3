@@ -1,7 +1,7 @@
 
-#include "i2cScanner.h"
+#include "services/I2cScanner.h"
 
-std::vector<uint8_t> I2CScanner::findDevices(TwoWire *wire)
+std::vector<uint8_t> I2cScanner::FindDevices(TwoWire *wire)
 {
     std::vector<uint8_t> addresses;
     uint8_t error;

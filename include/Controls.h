@@ -1,9 +1,8 @@
-#ifndef CONTROLS_H
-#define CONTROLS_H
+#pragma once
 
 #include <Arduino.h>
 #include <vector>
-#include "umdBoardDefinitions.h"
+#include "config/UMDBoardDefinitions.h"
 
 class Controls{
     public:
@@ -44,5 +43,3 @@ class Controls{
         const uint32_t _pressedToHeldTicks = 500;
         const uint32_t _releasedToOffTicks = 200;
 };
-
-#endif

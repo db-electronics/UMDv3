@@ -1,5 +1,4 @@
-#ifndef MCP23008_H
-#define MCP23008_H
+#pragma once
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -69,5 +68,3 @@ class MCP23008
         bool _writeDeviceRegister(uint8_t registerAddress, uint8_t val);
         uint8_t _readDeviceRegister(uint8_t registerAddress);
 };
-
-#endif

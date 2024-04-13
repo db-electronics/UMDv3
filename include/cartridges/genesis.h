@@ -1,7 +1,6 @@
-#ifndef GENESIS_H
-#define GENESIS_H
+#pragma once
 
-#include "cartridge.h"
+#include "Cartridge.h"
 #include "Menu.h"
 #include <string>
 
@@ -9,8 +8,6 @@
 #define GENESIS_HEADER_START_ADDR       0x00000100
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
 #define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
-
-
 
 #define GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE 16
 #define GENESIS_HEADER_SIZE_OF_COPYRIGHT 16
@@ -58,6 +55,8 @@ struct GenesisHeader{
         char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME+1];
         char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER+1];
     } Printable;
+
+    bool HasData;
 };
 
 class Genesis : public Cartridge {
@@ -68,23 +67,18 @@ class Genesis : public Cartridge {
 
         virtual void InitIO() override;
         virtual const char* GetSystemName() override;
-        virtual uint32_t GetSize() override;
-        virtual uint32_t ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
+        virtual const char* GetCartridgeName() override;
+        virtual uint32_t GetCartridgeSize() override;
+        virtual FlashInfo GetFlashInfo(MemoryType mem) override;
+        virtual int EraseFlash(MemoryType mem) override;
+        virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
 
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
         virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
 
-        virtual std::vector<const char *>& memoryGetNames();
-        virtual int memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
-        virtual int memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
-        virtual int memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem);
-        virtual int memoryChecksum(uint32_t address, uint32_t size, MemoryType mem, bool reset);
-
-        virtual int flashErase(uint8_t mem);
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
-        virtual FlashInfo flashGetInfo(uint8_t mem);
         virtual bool flashIsBusy(uint8_t mem);
 
         virtual void erasePrgFlash(bool wait);
@@ -100,16 +94,14 @@ class Genesis : public Cartridge {
 
     protected:
 
-        GenesisHeader _header;
-
-        virtual FlashInfo getPrgFlashInfo();
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
         
     private:
 
+        GenesisHeader mHeader;
         const uint32_t _timeConfigAddr = 0xA130F1;
 
-        bool readHeader();
+        void ReadHeader();
 
         void enableSram(bool enable);
 
@@ -143,5 +135,3 @@ class Genesis : public Cartridge {
         __attribute__((always_inline)) void readMRES() { ioRead(8); }
 
 };
-
-#endif

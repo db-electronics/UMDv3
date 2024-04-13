@@ -1,5 +1,6 @@
-#include "cartridges/genesis.h"
+#include "cartridges/Genesis.h"
 
+// MARK: Constructor
 Genesis::Genesis(IChecksumCalculator& checksumCalculator)
     : Cartridge(checksumCalculator) {
 
@@ -7,18 +8,22 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
 
     // display will show these memory names in order
     // so here we store an index to the memory enum
-    _memIndex[0] = PRG0;
-    _memNames.push_back("ROM");
+    mMemoryIndexToType[0] = PRG0;
+    mMemoryNames.push_back("ROM");
 
-    _memIndex[1] = RAM0;
-    _memNames.push_back("Save RAM");
+    mMemoryIndexToType[1] = RAM0;
+    mMemoryNames.push_back("Save RAM");
 
-    _memIndex[2] = BRAM;
-    _memNames.push_back("SCD Backup RAM");
+    mMemoryIndexToType[2] = BRAM;
+    mMemoryNames.push_back("SCD Backup RAM");
+
+    mHeader.HasData = false;
 }
 
+// MARK: Destructor
 Genesis::~Genesis(){}
 
+// MARK: InitIO()
 void Genesis::InitIO(){
     setDefaults();
 
@@ -54,17 +59,43 @@ void Genesis::InitIO(){
     enableSram(false);
 }
 
+// MARK: GetSystemName()
 const char* Genesis::GetSystemName(){
     return "Genesis";
 }
 
-uint32_t Genesis::GetSize(){
-    readHeader();
-
-    return _header.ROMEnd + 1;
+// MARK: GetCartridgeName()
+const char* Genesis::GetCartridgeName(){
+    ReadHeader();
+    return mHeader.Printable.DomesticName;
 }
 
-uint32_t Genesis::ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
+uint32_t Genesis::GetCartridgeSize(){
+    ReadHeader();
+    return mHeader.ROMEnd + 1;
+}
+
+FlashInfo Genesis::GetFlashInfo(MemoryType mem){
+    uint16_t manufacturer, device;
+
+    switch(mem){
+    case PRG0:
+        writePrgWord(0x00000555 << 1, 0xAA00);
+        writePrgWord(0x000002AA << 1, 0x5500);
+        writePrgWord(0x00000555 << 1, 0x9000);
+        manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
+        device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
+        writePrgWord(0x00000000, 0xF000);
+        break;
+    default:
+        return FlashInfo(0, 0);
+    }
+    
+    FlashInfo info(manufacturer, device);
+    return info;
+}
+
+uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
     // fill the buffer, but don't modify its value because we may need it for checksum
     for(int i = 0; i < size; i+=2){
         *(uint16_t*)(buffer + i) = readPrgWord(address);
@@ -73,129 +104,14 @@ uint32_t Genesis::ReadRom(uint32_t address, uint8_t *buffer, uint16_t size, Read
 
     switch(opt){
         case HW_CHECKSUM:
-            return _checksumCalculator.Accumulate((uint32_t*)buffer, size/4);
-            break;
-        case SYSTEM_CHECKUM:
-            return 0;
+            return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
         default:
             return 0;
-            break;
     }
 }
 
-std::vector<const char *>& Genesis::memoryGetNames(){
-    return _memNames;
-}
-
-int Genesis::memoryRead(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
-    uint16_t *wordBuffer = (uint16_t*)buffer;
-    switch (mem)
-    {
-        case PRG0:
-            for(int i = 0; i < size; i+=2){
-                *(wordBuffer++) = readPrgWord(address);
-                address += 2;
-            }
-            break;
-        case RAM0:
-            enableSram(true);
-            for(int i = 0; i < size; i+=2){
-                *(wordBuffer++) = readPrgWord(address);
-                address += 2;
-            }
-            enableSram(false);
-            break;
-        default:
-            return -1;
-    }
-    return 0;
-}
-
-int Genesis::memoryWrite(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
-    uint16_t *wordBuffer = (uint16_t*)buffer;
-    switch (mem)
-    {
-        case PRG0:
-            for(int i = 0; i < size; i+=2){
-                writePrgWord(address, *wordBuffer++);
-                address += 2;
-            }
-            break;
-        case RAM0:
-            enableSram(true);
-            for(int i = 0; i < size; i+=2){
-                writePrgWord(address, *wordBuffer++);
-                address += 2;
-            }
-            enableSram(false);
-            break;
-        default:
-            return -1;
-    }
-    return 0;
-}
-
-int Genesis::memoryVerify(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem){
-    uint16_t *wordBuffer = (uint16_t*)buffer;
-    uint16_t dw;
-    switch (mem)
-    {
-        case PRG0:
-            for(int i = 0; i < size; i+=2){
-                dw = readPrgWord(address);
-                if(dw != *(wordBuffer++)){
-                    return address;
-                }
-                address += 2;
-            }
-            break;
-        case RAM0:
-            enableSram(true);
-            for(int i = 0; i < size; i+=2){
-                dw = readPrgWord(address);
-                if(dw != *(wordBuffer++)){
-                    return address;
-                }
-                address += 2;
-            }
-            enableSram(false);
-            break;
-        default:
-            return -1;
-    }
-    return 0;
-}
-
-int Genesis::memoryChecksum(uint32_t address, uint32_t size, MemoryType mem, bool reset){
-    uint32_t dl;
-    uint16_t dw;
-    uint16_t checksum = 0;
-
-    if(reset){
-        _checksum.Clear();
-    }
-
-    switch (mem)
-    {
-        case PRG0:
-            for(uint32_t i = address; i < size; i+=4){
-                dw = readPrgWord(i);
-                _checksum.Actual16 += dw;
-                dl = (uint32_t)dw;
-                i += 2;
-                dw = readPrgWord(i);
-                _checksum.Actual16 += dw;
-                dl |= (uint32_t)(dw << 16);
-                _checksum.Actual32 += dl;
-            }
-            break;
-        default:
-            return -1;
-    }
-    return 0;
-}
-
-int Genesis::flashErase(uint8_t mem){
+// MARK: EraseFlash()
+int Genesis::EraseFlash(MemoryType mem){
     switch(mem){
         case PRG0:
             writePrgWord(0x00000555 < 1, 0xAA00);
@@ -215,24 +131,6 @@ int Genesis::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint
     return 0;
 }
 
-FlashInfo Genesis::flashGetInfo(uint8_t mem){
-    FlashInfo info;
-    switch(mem){
-        case PRG0:
-            writePrgWord(0x00000555 << 1, 0xAA00);
-            writePrgWord(0x000002AA << 1, 0x5500);
-            writePrgWord(0x00000555 << 1, 0x9000);
-            info.Manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
-            info.Device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
-            writePrgWord(0x00000000, 0xF000);
-            info.Size = getFlashSizeFromInfo(info);
-            break;
-        default:
-            break;
-    }
-    return info;
-}
-
 bool Genesis::flashIsBusy(uint8_t mem){
     if((togglePrgBit(4) != 4)) 
         return false;
@@ -240,56 +138,50 @@ bool Genesis::flashIsBusy(uint8_t mem){
     return true;
 }
 
-bool Genesis::readHeader(){
+// MARK: ReadHeader
+void Genesis::ReadHeader(){
+
+    if(mHeader.HasData){
+        return;
+    }
+
     for(int i = 0; i < GENESIS_HEADER_SIZE; i+=2){
-        _header.words[i>>1] = readPrgWord(GENESIS_HEADER_START_ADDR + i);
+        mHeader.words[i>>1] = readPrgWord(GENESIS_HEADER_START_ADDR + i);
     }
 
     // the numeric values need additional work
-    _header.ROMStart = UMD_SWAP_BYTES_32(_header.ROMStart);
-    _header.ROMEnd = UMD_SWAP_BYTES_32(_header.ROMEnd);
-    _header.RAMStart = UMD_SWAP_BYTES_32(_header.RAMStart);
-    _header.RAMEnd = UMD_SWAP_BYTES_32(_header.RAMEnd);
-    _header.SRAMStart = UMD_SWAP_BYTES_32(_header.SRAMStart);
-    _header.SRAMEnd = UMD_SWAP_BYTES_32(_header.SRAMEnd);
-    _header.Checksum = UMD_SWAP_BYTES_16(_header.Checksum);
+    mHeader.ROMStart = UMD_SWAP_BYTES_32(mHeader.ROMStart);
+    mHeader.ROMEnd = UMD_SWAP_BYTES_32(mHeader.ROMEnd);
+    mHeader.RAMStart = UMD_SWAP_BYTES_32(mHeader.RAMStart);
+    mHeader.RAMEnd = UMD_SWAP_BYTES_32(mHeader.RAMEnd);
+    mHeader.SRAMStart = UMD_SWAP_BYTES_32(mHeader.SRAMStart);
+    mHeader.SRAMEnd = UMD_SWAP_BYTES_32(mHeader.SRAMEnd);
+    mHeader.Checksum = UMD_SWAP_BYTES_16(mHeader.Checksum);
 
-    ExpectedChecksum = _header.Checksum;
+    ExpectedChecksum = mHeader.Checksum;
 
-    // check if the first 4 character of _header.SystemType are "SEGA"
-    if(_header.SystemType[0] != 'S' || _header.SystemType[1] != 'E' || _header.SystemType[2] != 'G' || _header.SystemType[3] != 'A'){
-        return false;
-    }
+    // check if the first 4 character of mHeader.SystemType are "SEGA"
+    // if(mHeader.SystemType[0] != 'S' || mHeader.SystemType[1] != 'E' || mHeader.SystemType[2] != 'G' || mHeader.SystemType[3] != 'A'){
+    //     return false;
+    // }
 
     // TODO: maybe trim whitespace on the Domestic and International names?
-    memcpy(_header.Printable.SystemType, _header.SystemType, GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE);
-    _header.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE] = '\0';
+    memcpy(mHeader.Printable.SystemType, mHeader.SystemType, GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE);
+    mHeader.Printable.SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE] = '\0';
 
-    memcpy(_header.Printable.Copyright, _header.Copyright, GENESIS_HEADER_SIZE_OF_COPYRIGHT);
-    _header.Printable.Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT] = '\0';
+    memcpy(mHeader.Printable.Copyright, mHeader.Copyright, GENESIS_HEADER_SIZE_OF_COPYRIGHT);
+    mHeader.Printable.Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT] = '\0';
 
-    memcpy(_header.Printable.DomesticName, _header.DomesticName, GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME);
-    _header.Printable.DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME] = '\0';
+    memcpy(mHeader.Printable.DomesticName, mHeader.DomesticName, GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME);
+    mHeader.Printable.DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME] = '\0';
 
-    memcpy(_header.Printable.InternationalName, _header.InternationalName, GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME);
-    _header.Printable.InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME] = '\0';
+    memcpy(mHeader.Printable.InternationalName, mHeader.InternationalName, GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME);
+    mHeader.Printable.InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME] = '\0';
 
-    memcpy(_header.Printable.SerialNumber, _header.SerialNumber, GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER);
-    _header.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER] = '\0';
+    memcpy(mHeader.Printable.SerialNumber, mHeader.SerialNumber, GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER);
+    mHeader.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER] = '\0';
 
-    return true;
-}
-
-FlashInfo Genesis::getPrgFlashInfo(){
-    FlashInfo info;
-    writePrgWord(0x00000555 << 1, 0xAA00);
-    writePrgWord(0x000002AA << 1, 0x5500);
-    writePrgWord(0x00000555 << 1, 0x9000);
-    info.Manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
-    info.Device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
-    writePrgWord(0x00000000, 0xF000);
-    info.Size = getFlashSizeFromInfo(info);
-    return info;
+    mHeader.HasData = true;
 }
 
 void Genesis::erasePrgFlash(bool wait){
@@ -334,7 +226,7 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     
     ActualChecksum = checksum;
 
-    if(checksum == _header.Checksum){
+    if(checksum == mHeader.Checksum){
         return true;
     }else{
         return false;
@@ -378,11 +270,11 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             {
                 case 0: // ROM
 
-                    validRom = readHeader();
-                    romSize = _header.ROMEnd + 1;
+                    ReadHeader();
+                    romSize = mHeader.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
 
-                    romName = "/UMD/Genesis/" + String(_header.Printable.SerialNumber) + ".bin";
+                    romName = "/UMD/Genesis/" + String(mHeader.Printable.SerialNumber) + ".bin";
                     romPath = romName.c_str();
                     romFile = sd.open(romPath, FILE_WRITE);
 
@@ -424,23 +316,18 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     data = readPrgWord(0x200000);
                     return 0; // index of Main menu
                 case 2: // Header
-                    validRom = readHeader();
+                    ReadHeader();
                     if(validRom){
-                        disp.printf(1, 0, " %s", _header.Printable.SystemType);
-                        disp.printf(1, 1, " %s", _header.Printable.Copyright);
-                        disp.printf(1, 2, " %s", _header.Printable.DomesticName);
-                        disp.printf(1, 3, " %s", _header.Printable.InternationalName);
-                        disp.printf(1, 4, " %s", _header.Printable.SerialNumber);
-                        disp.printf(1, 5, "Size: 0x%06X", _header.ROMEnd + 1);
-                        disp.printf(1, 6, "CRC : 0x%04X", _header.Checksum);
+                        disp.printf(1, 0, " %s", mHeader.Printable.SystemType);
+                        disp.printf(1, 1, " %s", mHeader.Printable.Copyright);
+                        disp.printf(1, 2, " %s", mHeader.Printable.DomesticName);
+                        disp.printf(1, 3, " %s", mHeader.Printable.InternationalName);
+                        disp.printf(1, 4, " %s", mHeader.Printable.SerialNumber);
+                        disp.printf(1, 5, "Size: 0x%06X", mHeader.ROMEnd + 1);
+                        disp.printf(1, 6, "CRC : 0x%04X", mHeader.Checksum);
                     }else{
                         disp.printf(1, 6, "Invalid ROM");
                     }
-                    return -1; // stay in Read menu
-                case 3: // Flash ID
-                    _flashInfo = getPrgFlashInfo();
-                    disp.printf(1, 5, "Manufacturer: %04X", _flashInfo.Manufacturer);
-                    disp.printf(1, 6, "Device:       %04X", _flashInfo.Device);
                     return -1; // stay in Read menu
                 default:
                     return 0;
@@ -462,8 +349,8 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
             {
                 case 0: // Verify Checksum
                     uint32_t romSize;
-                    validRom = readHeader();
-                    romSize = _header.ROMEnd + 1;
+                    ReadHeader();
+                    romSize = mHeader.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
                     // show results
                     disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);

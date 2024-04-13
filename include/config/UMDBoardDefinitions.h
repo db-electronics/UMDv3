@@ -1,8 +1,7 @@
-#ifndef UMDBOARDDEFINITIONS_H
-#define UMDBOARDDEFINITIONS_H
+#pragma once
 
 #include <Arduino.h>
-#include "mcp23008.h"
+#include "services/MCP23008.h"
 
 #define UMD_BOARD_MCP23008_ADDRESS      0x27
 #define UMD_ADAPTER_MCP23008_ADDRESS    0x20
@@ -17,5 +16,3 @@
 #define UMD_BACK_PUSHBUTTON             MCP23008_GP5
 #define UMD_LED_0                       MCP23008_GP6
 #define UMD_LED_1                       MCP23008_GP7
-
-#endif

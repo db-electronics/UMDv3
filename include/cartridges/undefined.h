@@ -1,5 +1,4 @@
-#ifndef UNDEFINED_H
-#define UNDEFINED_h
+#pragma once
 
 #include "cartridge.h"
 
@@ -9,5 +8,3 @@ class Undefined : public Cartridge
         Undefined();
         virtual void begin(void);
 };
-
-#endif

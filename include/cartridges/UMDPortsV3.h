@@ -1,5 +1,4 @@
-#ifndef UMDPORTSV3_H
-#define UMDPORTSV3_H
+#pragma once
 
 #include <stm32f4xx_hal.h>
 #include <stm32f4xx_hal_gpio.h>
@@ -365,5 +364,3 @@ class UMDPortsV3
             GPIOx->MODER = 0x55555555; // 0b01 per pin group for General Purpose Output Mode
         }
 };
-
-#endif

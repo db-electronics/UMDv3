@@ -9,12 +9,12 @@
 #include <stm32f4xx_hal_crc.h>
 #include <stm32f4xx_hal_gpio.h>
 
-#include "CartridgeFactory.h"
+#include "config/RemapPins.h"
+#include "config/UMDBoardDefinitions.h"
+#include "services/CartridgeFactory.h"
 #include "Controls.h"
-#include "i2cScanner.h"
-#include "mcp23008.h"
-#include "pinRemap.h"
-#include "umdBoardDefinitions.h"
+#include "services/I2cScanner.h"
+#include "services/MCP23008.h"
 #include "umdDisplay.h"
 #include "services/Crc32Calculator.h"
 
@@ -172,7 +172,7 @@ void setup()
     umdDisplay.printf(0, 0, F("UMDv3/%s"), systemName);
 
     // get the supported memory types for this cartridge
-    memoryNames = cartridge->memoryGetNames();
+    memoryNames = cartridge->GetMemoryNames();
 
     umdDisplay.setCursorPosition(0, 0);
     umdDisplay.setCursorVisible(true);
@@ -242,16 +242,15 @@ void loop()
                                 // update state to IDENTIFY,
                                 umdCartState = Cartridge::IDENTIFY;
                                 cartridge->ResetChecksumCalculator();
-                                cartSize = cartridge->GetSize();
+                                cartSize = cartridge->GetCartridgeSize();
 
                                 for(int addr = 0; addr < cartSize-1; addr += UMD_DATA_BUFFER_SIZE_BYTES)
                                 {
-                                    crc32 = cartridge->ReadRom(addr, dataBuffer.bytes, UMD_DATA_BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
+                                    crc32 = cartridge->Identify(addr, dataBuffer.bytes, UMD_DATA_BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
                                 }
                                 umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 5, F(" SIZE : %08X"), cartSize);
                                 umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 6, F(" CRC32: %08X"), crc32);
 
-                                // crc32 = crc32Mpeg2Caclulate();
                                 // TODO search for this crc32 in the database
                                 break;
                             case Cartridge::READ: 
@@ -273,28 +272,6 @@ void loop()
                     case Cartridge::READ:
                     case Cartridge::WRITE:
                         // act on the menu item selected
-                        result = cartridge->act(umdCartState, menuItemIndex);
-                        switch(result.Code)
-                        {
-                            case UMDResultCode::FAIL:
-                                umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, 0, F("%s"), result.ErrorMessage);
-                                break;
-                            case UMDResultCode::DISPLAYMEMORIES:
-                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
-                                currentMenu = UMD_MENU_MEMORIES;
-                                break;
-                            case UMDResultCode::LOADMENU:
-                                umdDisplay.showMenu(UMD_DISPLAY_LAYER_MENU, result.NextMenu);
-                                currentMenu = result.NextMenu;
-                                break;
-                            case UMDResultCode::DISPLAYRESULT:
-                                for(int i = result.ResultLines; i >= 0; i--)
-                                {
-                                    umdDisplay.printf(UMD_DISPLAY_LAYER_MENU, i, F("%s"), result.Result[i]);
-                                }
-                            default:
-                                break;
-                        }
                         break;
                     default:
                         break;
@@ -336,9 +313,9 @@ void loop()
 
 void scmdScanI2C(void)
 {
-    I2CScanner scanner;
+    I2cScanner scanner;
     std::vector<uint8_t> addresses;
-    addresses = scanner.findDevices(&Wire);
+    addresses = scanner.FindDevices(&Wire);
 
     for (uint8_t address : addresses) { SerialUSB.println(address, HEX); }
 }
