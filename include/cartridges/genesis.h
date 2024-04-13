@@ -69,6 +69,7 @@ class Genesis : public Cartridge {
         virtual const char* GetSystemName() override;
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
+
         virtual FlashInfo GetFlashInfo(MemoryType mem) override;
         virtual int EraseFlash(MemoryType mem) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;

@@ -1,5 +1,4 @@
-#ifndef UMD_DISPLAY_H
-#define UMD_DISPLAY_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -171,6 +170,3 @@ class UMDDisplay
             },
         };
 };
-
-
-#endif

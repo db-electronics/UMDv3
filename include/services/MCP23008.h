@@ -59,9 +59,9 @@ class MCP23008
         uint8_t readGPIO();
 
     private:
-        uint8_t _deviceAddress;
-        TwoWire *_wire;
-        uint8_t _registers[MCP23008_NUM_OF_SHADOW_REGISTERS];
+        uint8_t mDeviceAddress;
+        TwoWire *pWire;
+        uint8_t mRegisters[MCP23008_NUM_OF_SHADOW_REGISTERS];
 
         bool _initAllPOR(void);
         bool _updateRegister(uint8_t registerAddress, uint8_t bitMask, bool set);

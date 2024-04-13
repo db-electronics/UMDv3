@@ -181,6 +181,10 @@ void Genesis::ReadHeader(){
     memcpy(mHeader.Printable.SerialNumber, mHeader.SerialNumber, GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER);
     mHeader.Printable.SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER] = '\0';
 
+    mMetadata.clear();
+    mMetadata.push_back(mHeader.Printable.DomesticName);
+    mMetadata.push_back(mHeader.Printable.SerialNumber);
+
     mHeader.HasData = true;
 }
 

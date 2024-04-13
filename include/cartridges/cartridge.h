@@ -73,6 +73,8 @@ class Cartridge : public UMDPortsV3 {
 
         /// @brief Reset the checksum calculator
         virtual void ResetChecksumCalculator();
+        virtual std::vector<const char *>& GetMemoryNames() { return mMemoryNames; };
+        virtual std::vector<const char *>& GetMetadata() { return mMetadata; };
 
         /// @brief Initialize the IO for the system
         virtual void InitIO () = 0;
@@ -86,8 +88,7 @@ class Cartridge : public UMDPortsV3 {
         /// @brief Get the size of the cartridge currently connected, if it is knowable via the header
         virtual uint32_t GetCartridgeSize() = 0;
 
-        virtual std::vector<const char *> GetMemoryNames() { return mMemoryNames; };
-
+        
         virtual FlashInfo GetFlashInfo(MemoryType mem) = 0;
         virtual int EraseFlash(MemoryType mem) = 0;
 
@@ -110,6 +111,7 @@ class Cartridge : public UMDPortsV3 {
         IChecksumCalculator& mChecksumCalculator;
         std::map<uint8_t, Cartridge::MemoryType> mMemoryIndexToType;
         std::vector<const char *> mMemoryNames;
+        std::vector<const char *> mMetadata;
 
         File romFile;
         union {

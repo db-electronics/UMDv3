@@ -5,22 +5,22 @@ bool MCP23008::begin(uint8_t address, TwoWire *wire)
     // keep address in range
     if ((address >= MCP23008_BASE_ADDRESS) && (address <= MCP23008_MAX_ADDRESS))
     {
-        _deviceAddress = address;
+        mDeviceAddress = address;
     }
     else if (address <= 0x07)
     {
-        _deviceAddress = MCP23008_BASE_ADDRESS + address;
+        mDeviceAddress = MCP23008_BASE_ADDRESS + address;
     }
     else
     {
-        _deviceAddress = MCP23008_MAX_ADDRESS;
+        mDeviceAddress = MCP23008_MAX_ADDRESS;
     }
 
-    _wire = wire;
+    pWire = wire;
 
     // check if device is actually there
-    _wire->beginTransmission(_deviceAddress);
-    error = _wire->endTransmission();
+    pWire->beginTransmission(mDeviceAddress);
+    error = pWire->endTransmission();
 
     if (error != 0)
     {
@@ -33,16 +33,16 @@ bool MCP23008::begin(uint8_t address, TwoWire *wire)
 bool MCP23008::_initAllPOR(void)
 {
     // these should be the POR values in the device
-    _registers[MCP23008_IODIR] = 0xFF;
+    mRegisters[MCP23008_IODIR] = 0xFF;
     for (int i = 1; i < MCP23008_NUM_OF_SHADOW_REGISTERS; i++)
     {
-        _registers[i] = 0;
+        mRegisters[i] = 0;
     }
 
-    _wire->beginTransmission(_deviceAddress);
-    _wire->write(MCP23008_IODIR);
-    _wire->write(_registers, MCP23008_NUM_OF_SHADOW_REGISTERS);
-    error = _wire->endTransmission();
+    pWire->beginTransmission(mDeviceAddress);
+    pWire->write(MCP23008_IODIR);
+    pWire->write(mRegisters, MCP23008_NUM_OF_SHADOW_REGISTERS);
+    error = pWire->endTransmission();
     if (error == 0)
     {
         return true;
@@ -52,10 +52,10 @@ bool MCP23008::_initAllPOR(void)
 
 bool MCP23008::_writeDeviceRegister(uint8_t registerAddress, uint8_t val)
 {
-    _wire->beginTransmission(_deviceAddress);
-    _wire->write(registerAddress);
-    _wire->write(val);
-    error = _wire->endTransmission();
+    pWire->beginTransmission(mDeviceAddress);
+    pWire->write(registerAddress);
+    pWire->write(val);
+    error = pWire->endTransmission();
     if (error == 0)
     {
         return true;
@@ -67,26 +67,26 @@ bool MCP23008::_updateRegister(uint8_t registerAddress, uint8_t bitMask, bool se
 {
     if (set)
     {
-        _registers[registerAddress] |= bitMask;
+        mRegisters[registerAddress] |= bitMask;
     }
     else
     {
-        _registers[registerAddress] &= ~bitMask;
+        mRegisters[registerAddress] &= ~bitMask;
     }
 
-    return _writeDeviceRegister(registerAddress, _registers[registerAddress]);
+    return _writeDeviceRegister(registerAddress, mRegisters[registerAddress]);
 }
 
 uint8_t MCP23008::_readDeviceRegister(uint8_t registerAddress)
 {
     uint8_t readValue;
 
-    _wire->beginTransmission(_deviceAddress);
-    _wire->write(registerAddress);
-    _wire->endTransmission(false);
-    _wire->requestFrom(_deviceAddress, 1, true);
-    readValue = _wire->read();
-    error = _wire->endTransmission();
+    pWire->beginTransmission(mDeviceAddress);
+    pWire->write(registerAddress);
+    pWire->endTransmission(false);
+    pWire->requestFrom(mDeviceAddress, 1, true);
+    readValue = pWire->read();
+    error = pWire->endTransmission();
     return readValue;
 }
 
@@ -106,8 +106,8 @@ bool MCP23008::digitalWrite(uint8_t pins, uint8_t value)
 bool MCP23008::tooglePins(uint8_t pins)
 {
     // only toggle the output pins, so we don't create garbage data in the shadow registers
-    _registers[MCP23008_OLAT] ^= (pins & ~_registers[MCP23008_IODIR]);
-    return _writeDeviceRegister(MCP23008_OLAT, _registers[MCP23008_OLAT]);
+    mRegisters[MCP23008_OLAT] ^= (pins & ~mRegisters[MCP23008_IODIR]);
+    return _writeDeviceRegister(MCP23008_OLAT, mRegisters[MCP23008_OLAT]);
 }
 
 bool MCP23008::setPinPolarity(uint8_t pins, bool invert)
