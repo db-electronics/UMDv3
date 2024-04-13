@@ -55,6 +55,8 @@ class UMDDisplay
         void showMenu(int layer, std::vector<const char *> items);
         void initMenu(int layer, const char *menuItems[], int size);
         void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
+        void AddMenuItem(const char *format, ...);
+        void AddMenuItem(const __FlashStringHelper *format, ...);
 
         void menuCursorUpdate(int delta, bool visible);
         int menuCurrentItem();
@@ -75,21 +77,6 @@ class UMDDisplay
         #define UMD_MAIN_MENU_SIZE 3
         const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Identify"), F("Read"), F("Write")};
         Menu<UMD_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
-
-        // 1 - READ MENU
-        #define UMD_READ_MENU_SIZE 4
-        const __FlashStringHelper* _readMenuItems[UMD_READ_MENU_SIZE] = {F("Dump ROM"), F("Dump RAM"), F("Header"), F("Flash ID")};
-        Menu<UMD_READ_MENU_SIZE> _readMenu = _readMenuItems;
-
-        // 2 - WRITE MENU
-        #define UMD_WRITE_MENU_SIZE 2
-        const __FlashStringHelper* _writeMenuItems[UMD_WRITE_MENU_SIZE] = {F("Write ROM"), F("Write RAM")};
-        Menu<UMD_WRITE_MENU_SIZE> _writeMenu = _writeMenuItems;
-
-        // 3 - Test MENU
-        #define UMD_TEST_MENU_SIZE 1
-        const __FlashStringHelper* _testMenuItems[UMD_TEST_MENU_SIZE] = {F("Verify Checksum")};
-        Menu<UMD_TEST_MENU_SIZE> _testMenu = _testMenuItems;
 
         struct MenuMetadata
         {

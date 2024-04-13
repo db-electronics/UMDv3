@@ -9,12 +9,10 @@
 #include <stm32f4xx_hal_crc.h>
 #include <stm32f4xx_hal_gpio.h>
 
-#include "UMD.h"
+#include "Umd.h"
 #include "config/RemapPins.h"
 #include "config/UMDBoardDefinitions.h"
-#include "Controls.h"
 #include "services/I2cScanner.h"
-#include "services/MCP23008.h"
 #include "services/Crc32Calculator.h"
 
 #ifndef SD_DETECT_PIN
@@ -26,16 +24,9 @@
 //SdFatFs fatFs;
 File sdFile;
 SerialCommand SCmd;
-MCP23008 onboardMCP23008;
-MCP23008 adapterMCP23008;
-
 
 // TODO move all this to UMD.h
-//CartridgeFactory cartFactory;
-//UMDDisplay UMD::Display;
 Crc32Calculator crc32Calculator;
-std::unique_ptr<Cartridge> cartridge;
-std::vector<const char*> memoryNames;
 
 // SD stuff
 int verifySdCard(int& line);
@@ -62,22 +53,22 @@ void setup()
     // Wire.setSDA(PB9);
     Wire.begin();
 
-    if (!UMD::Display.begin())
+    if (!Umd::Display.begin())
     {
         SerialUSB.println(F("display init failure"));
         while (1);
     }
 
     // sd card
-    UMD::Display.printf(0, line++, F("init SD card"));
-    UMD::Display.redraw();
+    Umd::Display.printf(0, line++, F("init SD card"));
+    Umd::Display.redraw();
     // SD.setDx(PC8, PC9, PC10, PC11);
     // SD.setCMD(PD2);
     // SD.setCK(PC12);
     if (!SD.begin(SD_DETECT_PIN, PC8, PC9, PC10, PC11, PD2, PC12))
     {
-        UMD::Display.printf(0, line, F("  no card"));
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line, F("  no card"));
+        Umd::Display.redraw();
         while (1);
     }
 
@@ -88,61 +79,61 @@ void setup()
     int sdVerify = verifySdCard(line);
     if(sdVerify != 0)
     {
-        UMD::Display.printf(0, line, F("  SD error %d"), sdVerify);
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line, F("  SD error %d"), sdVerify);
+        Umd::Display.redraw();
         while (1);
     }
 
     // setup onboard mcp23008, GP6 and GP7 LED outputs
-    UMD::Display.printf(0, line++, F("init umd MCP23008"));
-    UMD::Display.redraw();
+    Umd::Display.printf(0, line++, F("init umd MCP23008"));
+    Umd::Display.redraw();
 
-    if (!onboardMCP23008.begin(UMD_BOARD_MCP23008_ADDRESS))
+    if (!Umd::IoExpander.begin(UMD_BOARD_MCP23008_ADDRESS))
     {
-        UMD::Display.printf(0, line, F("  failed"));
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line, F("  failed"));
+        Umd::Display.redraw();
         while (1);
     }
 
-    onboardMCP23008.pinMode(UMD_BOARD_LEDS, OUTPUT);
-    onboardMCP23008.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
-    onboardMCP23008.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
-    onboardMCP23008.setInterruptControl(UMD_BOARD_PUSHBUTTONS, onboardMCP23008.PREVIOUS);
-    onboardMCP23008.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
-    onboardMCP23008.digitalWrite(UMD_BOARD_LEDS, LOW);
+    Umd::IoExpander.pinMode(UMD_BOARD_LEDS, OUTPUT);
+    Umd::IoExpander.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
+    Umd::IoExpander.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
+    Umd::IoExpander.setInterruptControl(UMD_BOARD_PUSHBUTTONS, Umd::IoExpander.PREVIOUS);
+    Umd::IoExpander.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
+    Umd::IoExpander.digitalWrite(UMD_BOARD_LEDS, LOW);
 
     // setup adapter mcp23008, read adapter id
-    UMD::Display.printf(0, line++, F("init cart MCP23008"));
-    UMD::Display.redraw();
-    if (!adapterMCP23008.begin(UMD_ADAPTER_MCP23008_ADDRESS))
+    Umd::Display.printf(0, line++, F("init cart MCP23008"));
+    Umd::Display.redraw();
+    if (!Umd::Cart::IoExpander.begin(UMD_ADAPTER_MCP23008_ADDRESS))
     {
-        UMD::Display.printf(0, line, F("  no adapter found"));
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line, F("  no adapter found"));
+        Umd::Display.redraw();
         while (1);
     }
 
-    adapterMCP23008.pinMode(0xFF, INPUT);
-    uint8_t adapterId = adapterMCP23008.readGPIO();
-    //cartridge = cartFactory.GetCart(adapterId, crc32Calculator);
-    cartridge = UMD::CartFactory.GetCart(adapterId, crc32Calculator);
-    if (cartridge == nullptr)
+    Umd::Cart::IoExpander.pinMode(0xFF, INPUT);
+    uint8_t adapterId = Umd::Cart::IoExpander.readGPIO();
+
+    Umd::Cart::pCartridge = Umd::Cart::Factory.GetCart(adapterId, crc32Calculator);
+    if (Umd::Cart::pCartridge == nullptr)
     {
-        UMD::Display.printf(0, line++, F("  unknown adapter"));
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line++, F("  unknown adapter"));
+        Umd::Display.redraw();
         while (1);
     }
 
-    //UMD::Display.printf(0, line++, F("  adapter id = %d"), adapterId);
-    auto systemName = cartridge->GetSystemName();
-    UMD::Display.printf(0, line++, F("  %s"), systemName);
-    UMD::Display.redraw();
+    //Umd::Display.printf(0, line++, F("  adapter id = %d"), adapterId);
+    auto systemName = Umd::Cart::pCartridge->GetSystemName();
+    Umd::Display.printf(0, line++, F("  %s"), systemName);
+    Umd::Display.redraw();
 
     // check if the sdcard has a _db.txt file containing rom checksums for this system
     sdVerify = verifySdCardSystemSetup(line, systemName);
     if(sdVerify != 0)
     {
-        UMD::Display.printf(0, line, F("  SD error %d"), sdVerify);
-        UMD::Display.redraw();
+        Umd::Display.printf(0, line, F("  SD error %d"), sdVerify);
+        Umd::Display.redraw();
         while (1);
     }
 
@@ -152,33 +143,33 @@ void setup()
     delay(2000);
 
     // setup the display with 2 layers, having the UMDv3/... static on the first line
-    UMD::Display.clear();
-    UMD::Display.setLayerLineLength(0, 1);
-    UMD::Display.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
-    UMD::Display.printf(0, 0, F("UMDv3/%s"), systemName);
+    Umd::Display.clear();
+    Umd::Display.setLayerLineLength(0, 1);
+    Umd::Display.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
+    Umd::Display.printf(0, 0, F("UMDv3/%s"), systemName);
 
     // get the supported memory types for this cartridge
-    memoryNames = cartridge->GetMemoryNames();
+    Umd::Cart::MemoryNames = Umd::Cart::pCartridge->GetMemoryNames();
 
-    UMD::Display.setCursorPosition(0, 0);
-    UMD::Display.setCursorVisible(true);
-    UMD::Display.setClockPosition(20, 7);
-    UMD::Display.setClockVisible(false);
+    Umd::Display.setCursorPosition(0, 0);
+    Umd::Display.setCursorVisible(true);
+    Umd::Display.setClockPosition(20, 7);
+    Umd::Display.setClockVisible(false);
     
-    UMD::Display.redraw();
+    Umd::Display.redraw();
+
+    Umd::Ux::State = Umd::Ux::INIT_MAIN_MENU;
+    Umd::Cart::State = Cartridge::IDLE;
 }
 
 //MARK: Main loop
 void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
-    static UMD::UxState umdUxState = UMD::INIT_MAIN_MENU;
-    static Cartridge::CartridgeState umdCartState = Cartridge::IDLE;
     static uint32_t currentTicks=0, previousTicks;
     static uint32_t crc32, cartSize;
-    static Controls userInput;
+
     static UMDMenuIndex currentMenu;
-    static int menuIndex, newAmountOfItems;
     UMDActionResult result;
 
     // get the ticks
@@ -186,37 +177,37 @@ void loop()
     currentTicks = HAL_GetTick();
 
     // process inputs
-    uint8_t inputs = onboardMCP23008.readGPIO();
-    userInput.process(inputs, currentTicks);
+    uint8_t inputs = Umd::IoExpander.readGPIO();
+    Umd::Ux::UserInput.process(inputs, currentTicks);
 
-    switch(umdUxState)
+    switch(Umd::Ux::State)
     {
-        case UMD::WAIT_FOR_INPUT:
-            if(userInput.Down >= userInput.PRESSED)
+        case Umd::Ux::WAIT_FOR_INPUT:
+            if(Umd::Ux::UserInput.Down >= Umd::Ux::UserInput.PRESSED)
             {
-                UMD::Display.menuCursorUpdate(1, true);
-                umdUxState = UMD::WAIT_FOR_RELEASE;
+                Umd::Display.menuCursorUpdate(1, true);
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
             }
-            else if (userInput.Up >= userInput.PRESSED)
+            else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
             {
-                UMD::Display.menuCursorUpdate(-1, true);
-                umdUxState = UMD::WAIT_FOR_RELEASE;
+                Umd::Display.menuCursorUpdate(-1, true);
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
             }
-            else if (userInput.Left >= userInput.PRESSED)
+            else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
-                // scroll line left
-                umdUxState = UMD::WAIT_FOR_RELEASE;
+                // TODO scroll line left
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
             }
-            else if (userInput.Right >= userInput.PRESSED)
+            else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
-                // scroll line right
-                umdUxState = UMD::WAIT_FOR_RELEASE;
+                // TODO scroll line right
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
             }
-            else if (userInput.Ok >= userInput.PRESSED){
+            else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
                 // what item is selected?
-                int menuItemIndex = UMD::Display.menuCurrentItem();
+                int menuItemIndex = Umd::Display.menuCurrentItem();
                 
-                switch(umdCartState)
+                switch(Umd::Cart::State)
                 {
                     // At the main menu, offer top level choices
                     case Cartridge::IDLE:
@@ -226,75 +217,99 @@ void loop()
                             // Identify the connected cartridge by calculating the CRC32 of the ROM and comparing against the database
                             case Cartridge::IDENTIFY:
                                 // update state to IDENTIFY,
-                                umdCartState = Cartridge::IDENTIFY;
-                                cartridge->ResetChecksumCalculator();
-                                cartSize = cartridge->GetCartridgeSize();
+                                Umd::Cart::State = Cartridge::IDENTIFY;
+                                Umd::Cart::pCartridge->ResetChecksumCalculator();
+                                cartSize = Umd::Cart::pCartridge->GetCartridgeSize();
 
-                                for(int addr = 0; addr < cartSize-1; addr += UMD::BUFFER_SIZE_BYTES)
+                                for(int addr = 0; addr < cartSize-1; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
-                                    crc32 = cartridge->Identify(addr, UMD::DataBuffer.bytes, UMD::BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
+                                    crc32 = Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, Umd::BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
                                 }
 
                                 // ask cartridge for some metadata about the ROM
-                                UMD::Display.printf(UMD_DISPLAY_LAYER_MENU, 5, F(" SIZE : %08X"), cartSize);
-                                UMD::Display.printf(UMD_DISPLAY_LAYER_MENU, 6, F(" CRC32: %08X"), crc32);
+                                Umd::Cart::Metadata.clear();
+                                Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
+
+                                Umd::Display.clearLine(0 ,0);
+                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Id"));
+                                Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
+                                Umd::Display.AddMenuItem(F("Size : %08X"), cartSize);
+                                Umd::Display.AddMenuItem(F("CRC32: %08X"), crc32);
+                                // TODO join metadata and crc32 result in a single menu screen
+                                // Umd::Display.printf(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata.size(), F(" SIZE : %08X"), cartSize);
+                                // Umd::Display.printf(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata.size()+1, F(" CRC32: %08X"), crc32);
 
                                 // TODO search for this crc32 in the database
+                                Umd::Cart::State = Cartridge::IDLE;
+                                Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
                                 break;
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
-                                umdCartState = Cartridge::READ;
-                                UMD::Display.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                Umd::Cart::State = Cartridge::READ;
+                                Umd::Display.clearLine(0 ,0);
+                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Read"));
+                                Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
                                 break;
                             case Cartridge::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
-                                umdCartState = Cartridge::WRITE;
-                                UMD::Display.showMenu(UMD_DISPLAY_LAYER_MENU, memoryNames);
+                                Umd::Cart::State = Cartridge::WRITE;
+                                Umd::Display.clearLine(0 ,0);
+                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Write"));
+                                Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
                                 break;
                             default:
-                                umdCartState = Cartridge::IDLE;
+                                Umd::Cart::State = Cartridge::IDLE;
+                                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
                                 break;
                         }
                         break;
-                    case Cartridge::IDENTIFY:
                     case Cartridge::READ:
+                        // keep on reading
+                        // finished the read
+                        Umd::Cart::State = Cartridge::IDLE;
+                        Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
+                        break;
                     case Cartridge::WRITE:
-                        // act on the menu item selected
+                        // keep on writing
+                        // finished the write
+                        Umd::Cart::State = Cartridge::IDLE;
+                        Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
                         break;
                     default:
+                        Umd::Cart::State = Cartridge::IDLE;
+                        Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
                         break;
                 }
-                // shitty debounce
-                umdUxState = UMD::WAIT_FOR_RELEASE;
             }
-            else if (userInput.Back >= userInput.PRESSED){
-                // auto [items, size] = cartridge->getMenu(0);
-                // UMD::Display.initMenu(1, items, size);
-                UMD::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
+            else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
+                Umd::Display.clearLine(0 ,0);
+                Umd::Display.printf(0, 0, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+                Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
                 currentMenu = UMD_MENU_MAIN;
-                umdUxState = UMD::WAIT_FOR_RELEASE;
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
             }
             break;
-        case UMD::WAIT_FOR_RELEASE: // el-cheapo debounce
-            if(userInput.Ok == userInput.OFF && userInput.Back == userInput.OFF && userInput.Up == userInput.OFF && userInput.Down == userInput.OFF)
+        case Umd::Ux::WAIT_FOR_RELEASE: // el-cheapo debounce
+            if(Umd::Ux::UserInput.Ok == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Back == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Up == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Down == Umd::Ux::UserInput.OFF)
             {
-                umdUxState = UMD::WAIT_FOR_INPUT;
+                Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
             }
             break;
-        case UMD::INIT_MAIN_MENU:
+        case Umd::Ux::INIT_MAIN_MENU:
         default:
-            // auto [items, size] = cartridge->getMenu(0);
-            // UMD::Display.initMenu(1, items, size);
-            UMD::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
+            Umd::Display.clearLine(0 ,0);
+            Umd::Display.printf(0, 0, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+            Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
             currentMenu = UMD_MENU_MAIN;
-            umdCartState = Cartridge::IDLE;
-            menuIndex = 0;
-            umdUxState = UMD::WAIT_FOR_INPUT;
+            Umd::Cart::State = Cartridge::IDLE;
+            Umd::Ux::State = Umd::Ux::WAIT_FOR_INPUT;
             break;
     }
 
-    UMD::Display.advanceClockAnimation();
-    UMD::Display.redraw();
+    Umd::Display.advanceClockAnimation();
+    Umd::Display.redraw();
     // SerialUSB.println(F("Tick"));
     // delay(100);
 }
@@ -319,8 +334,8 @@ int verifySdCard(int& line)
     }
 
     auto fileName = sdFile.fullname();
-    UMD::Display.printf(0, line++, F("  %s"), fileName);
-    UMD::Display.redraw();
+    Umd::Display.printf(0, line++, F("  %s"), fileName);
+    Umd::Display.redraw();
     sdFile.close();
 
     return 0;
@@ -339,8 +354,8 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     }
 
     auto fileName = sdFile.fullname();
-    UMD::Display.printf(0, line++, F("  %s"), fileName);
-    UMD::Display.redraw();
+    Umd::Display.printf(0, line++, F("  %s"), fileName);
+    Umd::Display.redraw();
 
     // test read file contents
     char c[16];

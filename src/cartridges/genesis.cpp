@@ -17,6 +17,7 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
     mMemoryIndexToType[2] = BRAM;
     mMemoryNames.push_back("SCD Backup RAM");
 
+    mMetadata.clear();
     mHeader.HasData = false;
 }
 
@@ -61,7 +62,7 @@ void Genesis::InitIO(){
 
 // MARK: GetSystemName()
 const char* Genesis::GetSystemName(){
-    return "Genesis";
+    return "MD";
 }
 
 // MARK: GetCartridgeName()

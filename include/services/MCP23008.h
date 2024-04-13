@@ -29,7 +29,7 @@
 #define MCP23008_GP6                     0b01000000
 #define MCP23008_GP7                     0b10000000
 
-class MCP23008
+class Mcp23008
 {
     public:
         /// @brief the last error

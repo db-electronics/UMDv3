@@ -1,19 +1,42 @@
 #pragma once
-#include "services/CartridgeFactory.h"
-#include "umdDisplay.h"
 
-namespace UMD
+#include <vector>
+#include <memory>
+#include "cartridges/Cartridge.h"
+#include "services/CartridgeFactory.h"
+#include "services/Controls.h"
+#include "services/UmdDisplay.h"
+#include "services/Mcp23008.h"
+
+namespace Umd
 {
-    enum UxState
-    {
-        INIT_MAIN_MENU,
-        WAIT_FOR_INPUT,
-        WAIT_FOR_RELEASE
+    
+    namespace Ux{
+        enum UxState
+        {
+            INIT_MAIN_MENU,
+            WAIT_FOR_INPUT,
+            WAIT_FOR_RELEASE
+        };
+
+        UxState State = INIT_MAIN_MENU;
+        UxState NextState = INIT_MAIN_MENU;
+
+        Controls UserInput;
     };
 
-    CartridgeFactory CartFactory;
+    namespace Cart{
+        std::unique_ptr<Cartridge> pCartridge;
+        Mcp23008 IoExpander;
+        std::vector<const char *> MemoryNames;
+        std::vector<const char *> Metadata;
+        CartridgeFactory Factory;
+        Cartridge::CartridgeState State = Cartridge::CartridgeState::IDLE;
+    }
+
     UMDDisplay Display;
-    
+    Mcp23008 IoExpander;
+
     const uint16_t BUFFER_SIZE_BYTES = 512;
     /// @brief Data buffer for the UMD, must be a multiple of 4 bytes
     union DataBuffer{

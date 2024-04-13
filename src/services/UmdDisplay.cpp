@@ -1,5 +1,5 @@
 
-#include "umdDisplay.h"
+#include "services/UmdDisplay.h"
 
 Adafruit_SSD1306* UMDDisplay::_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -246,15 +246,6 @@ int UMDDisplay::showMenu(int layer, UMDMenuIndex menuIndex)
         case UMD_MENU_MAIN:
             initMenu(layer, _mainMenu.Items, _mainMenu.Size);
             return _mainMenu.Size;
-        case UMD_MENU_READ:
-            initMenu(layer, _readMenu.Items, _readMenu.Size);
-            return _readMenu.Size;
-        case UMD_MENU_WRITE:
-            initMenu(layer, _writeMenu.Items, _writeMenu.Size);
-            return _writeMenu.Size;
-        case UMD_MENU_TEST:
-            initMenu(layer, _testMenu.Items, _testMenu.Size);
-            return _testMenu.Size;
         default:
             clearLayer(layer);
             return 0;
@@ -308,6 +299,28 @@ void UMDDisplay::initMenu(int layer, const __FlashStringHelper *menuItems[], int
     fillLayerFromMenu(layer, 0, 0);
     initMenuCursor(layer);
     _needsRedraw = true;
+}
+
+void UMDDisplay::AddMenuItem(const char *format, ...){
+    va_list args;
+    va_start(args, format);
+    char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+    vsnprintf(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
+    _menu.items.push_back(buffer);
+    va_end(args);
+    // TODO don't guess the layer
+    fillLayerFromMenu(1, 0, 0);
+}
+
+void UMDDisplay::AddMenuItem(const __FlashStringHelper *format, ...){
+    va_list args;
+    va_start(args, format);
+    char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+    vsnprintf(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
+    _menu.items.push_back(buffer);
+    va_end(args);
+    // TODO don't guess the layer
+    fillLayerFromMenu(1, 0, 0);
 }
 
 void UMDDisplay::menuCursorUpdate(int delta, bool visible)
