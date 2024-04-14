@@ -12,9 +12,8 @@
 #include "services/UmdDisplay.h"
 #include "memory/FlashInfo.h"
 #include "UMDPortsV3.h"
-#include "Menu.h"
 
-enum UMDResultCode: int{
+enum CartridgeResultCode: int{
     FAIL = -1,
     OK,
     DISPLAYRESULT,
@@ -24,16 +23,14 @@ enum UMDResultCode: int{
     WAITING
 };
 
-struct UMDActionResult{
-    UMDMenuIndex NextMenu;
-    UMDResultCode Code;
+struct CartridgeActionResult{
+    CartridgeResultCode Code;
     const char * ErrorMessage;
     uint16_t ResultLines;
     char Result[UMD_MAX_RESULT_LINES][UMD_MAX_RESULT_LINE_LENGTH+1];
 
-    UMDActionResult(){
-        NextMenu = UMDMenuIndex::UMD_MENU_MAIN;
-        Code = UMDResultCode::OK;
+    CartridgeActionResult(){
+        Code = CartridgeResultCode::OK;
         ErrorMessage = nullptr;
         ResultLines = 0;
         for(int i = 0; i < UMD_MAX_RESULT_LINES; i++){
@@ -72,9 +69,10 @@ class Cartridge : public UMDPortsV3 {
         };
 
         /// @brief Reset the checksum calculator
-        virtual void ResetChecksumCalculator();
-        virtual std::vector<const char *>& GetMemoryNames() { return mMemoryNames; };
-        virtual std::vector<const char *>& GetMetadata() { return mMetadata; };
+        void ResetChecksumCalculator();
+        std::vector<const char *>& GetMemoryNames() { return mMemoryNames; };
+        std::vector<const char *>& GetMetadata() { return mMetadata; };
+        uint32_t GetAccumulatedChecksum() { return mChecksumCalculator.Get(); };
 
         /// @brief Initialize the IO for the system
         virtual void InitIO () = 0;

@@ -11,7 +11,5 @@ public:
     virtual ~Crc32Calculator();
     void Reset() override;
     uint32_t Accumulate(uint32_t pBuffer[], uint32_t length) override;
-    
-private:
-    CRC_HandleTypeDef hcrc;
+    uint32_t Get() override;
 };

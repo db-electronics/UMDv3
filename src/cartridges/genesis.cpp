@@ -80,16 +80,16 @@ FlashInfo Genesis::GetFlashInfo(MemoryType mem){
     uint16_t manufacturer, device;
 
     switch(mem){
-    case PRG0:
-        writePrgWord(0x00000555 << 1, 0xAA00);
-        writePrgWord(0x000002AA << 1, 0x5500);
-        writePrgWord(0x00000555 << 1, 0x9000);
-        manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
-        device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
-        writePrgWord(0x00000000, 0xF000);
-        break;
-    default:
-        return FlashInfo(0, 0);
+        case PRG0:
+            writePrgWord(0x00000555 << 1, 0xAA00);
+            writePrgWord(0x000002AA << 1, 0x5500);
+            writePrgWord(0x00000555 << 1, 0x9000);
+            manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
+            device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
+            writePrgWord(0x00000000, 0xF000);
+            break;
+        default:
+            return FlashInfo(0, 0);
     }
     
     FlashInfo info(manufacturer, device);
@@ -238,12 +238,12 @@ bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     }
 }
 
-UMDActionResult Genesis::act(CartridgeState state, uint16_t menuItemIndex)
+CartridgeActionResult Genesis::act(CartridgeState state, uint16_t menuItemIndex)
 {
     switch(menuItemIndex)
     {
         default: 
-            return UMDActionResult();
+            return CartridgeActionResult();
     }
 } 
 

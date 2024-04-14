@@ -77,7 +77,7 @@ class Genesis : public Cartridge {
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
-        virtual UMDActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
+        virtual CartridgeActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
 
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
         virtual bool flashIsBusy(uint8_t mem);

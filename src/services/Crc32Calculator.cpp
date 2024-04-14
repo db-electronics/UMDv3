@@ -19,6 +19,11 @@ void Crc32Calculator::Reset()
     CRC->CR = CRC_CR_RESET;
 }
 
+uint32_t Crc32Calculator::Get()
+{
+    return CRC->DR;
+}
+
 uint32_t Crc32Calculator::Accumulate(uint32_t pBuffer[], uint32_t length)
 {
     uint32_t crc = 0U;

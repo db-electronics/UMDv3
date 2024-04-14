@@ -32,10 +32,21 @@ namespace Umd
         std::vector<const char *> Metadata;
         CartridgeFactory Factory;
         Cartridge::CartridgeState State = Cartridge::CartridgeState::IDLE;
+        CartridgeActionResult Result;
     }
 
-    UMDDisplay Display;
     Mcp23008 IoExpander;
+    UMDDisplay Display;
+
+    void UpdateDisplayPathAddressBar(const char *path){
+        Display.clearLine(0 ,0);
+        Display.printf(0, 0, F("UMDv3/%s/%s"), Cart::pCartridge->GetSystemName(), path);
+    }
+
+    uint32_t OperationTime;
+    void ShowOperationTime(){
+        Display.printf(1, 0, F("%d ms"), OperationTime);
+    }
 
     const uint16_t BUFFER_SIZE_BYTES = 512;
     /// @brief Data buffer for the UMD, must be a multiple of 4 bytes

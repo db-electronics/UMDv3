@@ -34,7 +34,7 @@ int verifySdCardSystemSetup(int& line, const char* systemName);
 
 void scmdScanI2C(void);
 
-
+// MARK: Setup
 void setup()
 {
     int line = 0;
@@ -167,10 +167,9 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static uint32_t currentTicks=0, previousTicks;
-    static uint32_t crc32, cartSize;
+    static uint32_t cartSize;
 
     static UMDMenuIndex currentMenu;
-    UMDActionResult result;
 
     // get the ticks
     previousTicks = currentTicks;
@@ -218,26 +217,25 @@ void loop()
                             case Cartridge::IDENTIFY:
                                 // update state to IDENTIFY,
                                 Umd::Cart::State = Cartridge::IDENTIFY;
+                                currentTicks = HAL_GetTick();
                                 Umd::Cart::pCartridge->ResetChecksumCalculator();
                                 cartSize = Umd::Cart::pCartridge->GetCartridgeSize();
 
                                 for(int addr = 0; addr < cartSize-1; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
-                                    crc32 = Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, Umd::BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
+                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, Umd::BUFFER_SIZE_BYTES, Cartridge::ReadOptions::HW_CHECKSUM);
                                 }
+
+                                Umd::OperationTime = HAL_GetTick() - currentTicks;
 
                                 // ask cartridge for some metadata about the ROM
                                 Umd::Cart::Metadata.clear();
                                 Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
 
-                                Umd::Display.clearLine(0 ,0);
-                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Id"));
+                                Umd::UpdateDisplayPathAddressBar("Id");
                                 Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
                                 Umd::Display.AddMenuItem(F("Size : %08X"), cartSize);
-                                Umd::Display.AddMenuItem(F("CRC32: %08X"), crc32);
-                                // TODO join metadata and crc32 result in a single menu screen
-                                // Umd::Display.printf(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata.size(), F(" SIZE : %08X"), cartSize);
-                                // Umd::Display.printf(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata.size()+1, F(" CRC32: %08X"), crc32);
+                                Umd::Display.AddMenuItem(F("CRC32: %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
 
                                 // TODO search for this crc32 in the database
                                 Umd::Cart::State = Cartridge::IDLE;
@@ -246,16 +244,14 @@ void loop()
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
                                 Umd::Cart::State = Cartridge::READ;
-                                Umd::Display.clearLine(0 ,0);
-                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Read"));
+                                Umd::UpdateDisplayPathAddressBar("Read");
                                 Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
                                 break;
                             case Cartridge::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
                                 Umd::Cart::State = Cartridge::WRITE;
-                                Umd::Display.clearLine(0 ,0);
-                                Umd::Display.printf(0, 0, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), F("Write"));
+                                Umd::UpdateDisplayPathAddressBar("Write");
                                 Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
                                 break;
@@ -284,8 +280,7 @@ void loop()
                 }
             }
             else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
-                Umd::Display.clearLine(0 ,0);
-                Umd::Display.printf(0, 0, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+                Umd::UpdateDisplayPathAddressBar("");
                 Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
                 currentMenu = UMD_MENU_MAIN;
                 Umd::Ux::State = Umd::Ux::WAIT_FOR_RELEASE;
@@ -299,8 +294,7 @@ void loop()
             break;
         case Umd::Ux::INIT_MAIN_MENU:
         default:
-            Umd::Display.clearLine(0 ,0);
-            Umd::Display.printf(0, 0, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+            Umd::UpdateDisplayPathAddressBar("Id");
             Umd::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
             currentMenu = UMD_MENU_MAIN;
             Umd::Cart::State = Cartridge::IDLE;
