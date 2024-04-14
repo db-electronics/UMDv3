@@ -12,17 +12,31 @@ namespace Umd
 {
     
     namespace Ux{
-        enum UxState
-        {
+        enum UxUserInputState : uint8_t{
             INIT_MAIN_MENU,
             WAIT_FOR_INPUT,
             WAIT_FOR_RELEASE
         };
 
-        UxState State = INIT_MAIN_MENU;
-        UxState NextState = INIT_MAIN_MENU;
+        enum UxState : uint8_t{
+            INIT,
+            SELECT_MODE,
+            SELECT_MEMORY
+        };
+
+        UxState State = INIT;
+        UxUserInputState UserInputState = INIT_MAIN_MENU;
 
         Controls UserInput;
+
+        UMDDisplay Display;
+        void UpdateDisplayPathAddressBar(const char* system, const char *path){
+            Display.clearLine(0 ,0);
+            Display.printf(0, 0, F("UMDv3/%s/%s"), system, path);
+        }
+        // void PrintOperationTime(){
+        //     Display.printf(1, 0, F("%d ms"), Umd::OperationTime);
+        // }
     };
 
     namespace Cart{
@@ -33,20 +47,40 @@ namespace Umd
         CartridgeFactory Factory;
         Cartridge::CartridgeState State = Cartridge::CartridgeState::IDLE;
         CartridgeActionResult Result;
+
+        class BatchSizeCalculator{
+            public:
+                BatchSizeCalculator(){};
+
+                void Init(uint32_t totalBytes, uint16_t batchSize){
+                    mTotalBytes = totalBytes;
+                    mBytesLeft = totalBytes;
+                    mMBatchSize = batchSize;
+                }
+
+                uint16_t TotalBytes(){
+                    return mTotalBytes;
+                }
+
+                uint16_t Next(){
+                    if(mBytesLeft >= mMBatchSize){
+                        mBytesLeft -= mMBatchSize;
+                        return mMBatchSize;
+                    }
+                    else{
+                        return mBytesLeft;
+                    }
+                };
+
+            private:
+                uint32_t mTotalBytes;
+                uint32_t mBytesLeft;
+                uint32_t mMBatchSize;
+        } BatchSizeCalc;
     }
 
     Mcp23008 IoExpander;
-    UMDDisplay Display;
-
-    void UpdateDisplayPathAddressBar(const char *path){
-        Display.clearLine(0 ,0);
-        Display.printf(0, 0, F("UMDv3/%s/%s"), Cart::pCartridge->GetSystemName(), path);
-    }
-
     uint32_t OperationTime;
-    void ShowOperationTime(){
-        Display.printf(1, 0, F("%d ms"), OperationTime);
-    }
 
     const uint16_t BUFFER_SIZE_BYTES = 512;
     /// @brief Data buffer for the UMD, must be a multiple of 4 bytes

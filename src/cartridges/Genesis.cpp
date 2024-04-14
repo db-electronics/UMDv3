@@ -96,6 +96,7 @@ FlashInfo Genesis::GetFlashInfo(MemoryType mem){
     return info;
 }
 
+// MARK: Identify()
 uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
     // fill the buffer, but don't modify its value because we may need it for checksum
     for(int i = 0; i < size; i+=2){
@@ -108,6 +109,20 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
             return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
         default:
             return 0;
+    }
+}
+
+// MARK: ReadMemory()
+void Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt){
+    switch(mem){
+        case PRG0:
+            for(int i = 0; i < size; i+=2){
+                *(uint16_t*)(buffer + i) = readPrgWord(address);
+                address += 2;
+            }
+            break;
+        default:
+            break;
     }
 }
 

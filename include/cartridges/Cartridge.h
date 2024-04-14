@@ -86,7 +86,6 @@ class Cartridge : public UMDPortsV3 {
         /// @brief Get the size of the cartridge currently connected, if it is knowable via the header
         virtual uint32_t GetCartridgeSize() = 0;
 
-        
         virtual FlashInfo GetFlashInfo(MemoryType mem) = 0;
         virtual int EraseFlash(MemoryType mem) = 0;
 
@@ -98,7 +97,8 @@ class Cartridge : public UMDPortsV3 {
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
 
-        
+        virtual void ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) = 0;
+
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
     
         virtual bool flashIsBusy(uint8_t mem) = 0;

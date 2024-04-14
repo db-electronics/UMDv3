@@ -74,6 +74,8 @@ class Genesis : public Cartridge {
         virtual int EraseFlash(MemoryType mem) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
 
+        virtual void ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) override;
+
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
 
