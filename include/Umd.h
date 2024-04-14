@@ -13,19 +13,19 @@ namespace Umd
     
     namespace Ux{
         enum UxUserInputState : uint8_t{
-            INIT_MAIN_MENU,
-            WAIT_FOR_INPUT,
-            WAIT_FOR_RELEASE
+            UX_INPUT_INIT,
+            UX_INPUT_WAIT_FOR_PRESSED,
+            UX_INPUT_WAIT_FOR_RELEASED
         };
 
         enum UxState : uint8_t{
-            INIT,
-            SELECT_MODE,
-            SELECT_MEMORY
+            UX_MAIN_MENU,
+            UX_OPERATION_COMPLETE,
+            UX_SELECT_MEMORY
         };
 
-        UxState State = INIT;
-        UxUserInputState UserInputState = INIT_MAIN_MENU;
+        UxState State = UX_MAIN_MENU;
+        UxUserInputState UserInputState = UX_INPUT_INIT;
 
         Controls UserInput;
 
@@ -37,6 +37,12 @@ namespace Umd
         // void PrintOperationTime(){
         //     Display.printf(1, 0, F("%d ms"), Umd::OperationTime);
         // }
+
+        std::vector<const char *> MAIN_MENU_ITEMS = {
+            "Identify",
+            "Read",
+            "Write"
+        };
     };
 
     namespace Cart{
@@ -46,20 +52,22 @@ namespace Umd
         std::vector<const char *> Metadata;
         CartridgeFactory Factory;
         Cartridge::CartridgeState State = Cartridge::CartridgeState::IDLE;
-        CartridgeActionResult Result;
+        CartridgeActionResult Result;        
+
+        void ClearMetadata(){
+            for(auto item : Metadata){
+                free((void *)item);
+            }
+            Metadata.clear();
+        }
 
         class BatchSizeCalculator{
             public:
                 BatchSizeCalculator(){};
 
                 void Init(uint32_t totalBytes, uint16_t batchSize){
-                    mTotalBytes = totalBytes;
                     mBytesLeft = totalBytes;
                     mMBatchSize = batchSize;
-                }
-
-                uint16_t TotalBytes(){
-                    return mTotalBytes;
                 }
 
                 uint16_t Next(){
@@ -73,7 +81,6 @@ namespace Umd
                 };
 
             private:
-                uint32_t mTotalBytes;
                 uint32_t mBytesLeft;
                 uint32_t mMBatchSize;
         } BatchSizeCalc;

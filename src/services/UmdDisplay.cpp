@@ -169,6 +169,14 @@ void UMDDisplay::clearLine(int layer, int lineNumber)
     _needsRedraw = true;
 }
 
+void UMDDisplay::ClearScratchBufferLine(int lineNumber)
+{
+    for(int i = 0; i < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; i++)
+    {
+        ScratchBuffer[lineNumber][i] = ' ';
+    }
+}
+
 void UMDDisplay::printf(int layer, int lineNumber, const char *format, ...)
 {
     if(layer >= UMD_DISPLAY_LAYERS)
@@ -235,92 +243,16 @@ void UMDDisplay::print(int layer, int number, int lineNumber)
     print(layer, num_char, lineNumber);
 }
 
-int UMDDisplay::showMenu(int layer, UMDMenuIndex menuIndex)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return -1;
-
-    _menu.index = menuIndex;
-    switch(menuIndex)
-    {
-        case UMD_MENU_MAIN:
-            initMenu(layer, _mainMenu.Items, _mainMenu.Size);
-            return _mainMenu.Size;
-        default:
-            clearLayer(layer);
-            return 0;
-    }
-}
-
-void UMDDisplay::showMenu(int layer, std::vector<const char *> items)
+void UMDDisplay::LoadMenuItems(int layer, std::vector<const char *>& items)
 {
     if(layer >= UMD_DISPLAY_LAYERS)
         return;
 
-    // TODO there's surely an std way to copy a vector to another vector
-    _menu.items.clear();
-    for(int i = 0; i < items.size(); i++)
-    {
-        _menu.items.push_back(items[i]);
-    }
+    _menu.items.assign(items.begin(), items.end());
 
     fillLayerFromMenu(layer, 0, 0);
     initMenuCursor(layer);
     _needsRedraw = true;
-}
-
-void UMDDisplay::initMenu(int layer, const char *menuItems[], int size)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    _menu.items.clear();
-    for(int i = 0; i < size; i++)
-    {
-        _menu.items.push_back(menuItems[i]);
-    }
-
-    fillLayerFromMenu(layer, 0, 0);
-    initMenuCursor(layer);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::initMenu(int layer, const __FlashStringHelper *menuItems[], int size)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    _menu.items.clear();
-    for(int i = 0; i < size; i++)
-    {
-        _menu.items.push_back((const char *)menuItems[i]);
-    }
-
-    fillLayerFromMenu(layer, 0, 0);
-    initMenuCursor(layer);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::AddMenuItem(const char *format, ...){
-    va_list args;
-    va_start(args, format);
-    char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-    vsnprintf(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
-    _menu.items.push_back(buffer);
-    va_end(args);
-    // TODO don't guess the layer
-    fillLayerFromMenu(1, 0, 0);
-}
-
-void UMDDisplay::AddMenuItem(const __FlashStringHelper *format, ...){
-    va_list args;
-    va_start(args, format);
-    char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-    vsnprintf(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
-    _menu.items.push_back(buffer);
-    va_end(args);
-    // TODO don't guess the layer
-    fillLayerFromMenu(1, 0, 0);
 }
 
 void UMDDisplay::menuCursorUpdate(int delta, bool visible)
@@ -551,6 +483,18 @@ void UMDDisplay::scrollY(int layer, int delta)
         {
             _scroll[layer][lineNumber][0] = UMD_DISPLAY_BUFFER_TOTAL_LINES-1;
         }
+    }
+    _needsRedraw = true;
+}
+
+void UMDDisplay::ResetScrollX(int layer)
+{
+    if(layer >= UMD_DISPLAY_LAYERS)
+        return;
+
+    for(int lineNumber = 0; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++)
+    {
+        _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] = 0;
     }
     _needsRedraw = true;
 }

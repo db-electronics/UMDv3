@@ -158,7 +158,8 @@ void setup()
     
     Umd::Ux::Display.redraw();
 
-    Umd::Ux::UserInputState = Umd::Ux::INIT_MAIN_MENU;
+    Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+    Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_INIT;
     Umd::Cart::State = Cartridge::IDLE;
 }
 
@@ -167,6 +168,9 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static uint32_t currentTicks=0, previousTicks;
+    int selectedItemIndex;
+    uint32_t totalBytes;
+    uint16_t batchSize;
 
     // get the ticks
     previousTicks = currentTicks;
@@ -178,36 +182,38 @@ void loop()
 
     switch(Umd::Ux::UserInputState)
     {
-        case Umd::Ux::WAIT_FOR_INPUT:
+        case Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
             if(Umd::Ux::UserInput.Down >= Umd::Ux::UserInput.PRESSED)
             {
                 Umd::Ux::Display.menuCursorUpdate(1, true);
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
             {
                 Umd::Ux::Display.menuCursorUpdate(-1, true);
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
-                // TODO scroll line left
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                // TODO don't needlessly scroll menus
+                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, -1);
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
-                // TODO scroll line right
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                // TODO don't needlessly scroll menus
+                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, 1);
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
+            // USER PRESSED OK
             else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
-                // what item is selected?
-                int menuItemIndex = Umd::Ux::Display.menuCurrentItem();
-                
-                switch(Umd::Cart::State)
-                {
-                    // At the main menu, offer top level choices
-                    case Cartridge::IDLE:
-                        switch(menuItemIndex)
+
+                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                switch(Umd::Ux::State){
+                    case Umd::Ux::UX_MAIN_MENU:
+                        switch(selectedItemIndex)
                         {
                             // these must match the index of the menu items currently displayed
                             // Identify the connected cartridge by calculating the CRC32 of the ROM and comparing against the database
@@ -217,10 +223,14 @@ void loop()
                                 currentTicks = HAL_GetTick();
                                 Umd::Cart::pCartridge->ResetChecksumCalculator();
 
+                                totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
                                 Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::BUFFER_SIZE_BYTES);
-                                for(int addr = 0; addr < Umd::Cart::BatchSizeCalc.TotalBytes(); addr += Umd::BUFFER_SIZE_BYTES)
+
+                                // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
+                                for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
-                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, Umd::Cart::BatchSizeCalc.Next(), Cartridge::ReadOptions::HW_CHECKSUM);
+                                    batchSize = Umd::Cart::BatchSizeCalc.Next();
+                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, batchSize, Cartridge::ReadOptions::HW_CHECKSUM);
                                 }
 
                                 Umd::OperationTime = HAL_GetTick() - currentTicks;
@@ -229,71 +239,107 @@ void loop()
                                 Umd::Cart::Metadata.clear();
                                 Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
 
+                                // TODO this is ugly, but it works for now, and really who cares because we have tons of RAM
+                                Umd::Ux::Display.ClearScratchBufferLine(0);
+                                sprintf(Umd::Ux::Display.ScratchBuffer[0], "Size : %08X", totalBytes);
+                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[0]);
+                                Umd::Ux::Display.ClearScratchBufferLine(1);
+                                sprintf(Umd::Ux::Display.ScratchBuffer[1], "CRC  : %08X", Umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[1]);
+                                Umd::Ux::Display.ClearScratchBufferLine(2);
+                                sprintf(Umd::Ux::Display.ScratchBuffer[2], "Time : %d ms", Umd::OperationTime);
+                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[2]);
+
                                 Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Id");
-                                Umd::Ux::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
-                                Umd::Ux::Display.AddMenuItem(F("Size : %08X"), Umd::Cart::BatchSizeCalc.TotalBytes());
-                                Umd::Ux::Display.AddMenuItem(F("CRC32: %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                // Umd::Cart::AddMetadataItem(F("Size : %08X"), totalBytes);
+                                // Umd::Cart::AddMetadataItem(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                // Umd::Cart::AddMetadataItem(F("Time : %d ms"), Umd::OperationTime);
+
+                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
 
                                 // TODO search for this crc32 in the database
+
+                                // all done, return to main menu
                                 Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
+                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
                                 Umd::Cart::State = Cartridge::READ;
                                 Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Read");
-                                Umd::Ux::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
-                                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             case Cartridge::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
                                 Umd::Cart::State = Cartridge::WRITE;
                                 Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Write");
-                                Umd::Ux::Display.showMenu(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
-                                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             default:
                                 Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                         }
                         break;
-                    case Cartridge::READ:
-                        // keep on reading
-                        // finished the read
-                        Umd::Cart::State = Cartridge::IDLE;
-                        Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
-                        break;
-                    case Cartridge::WRITE:
-                        // keep on writing
-                        // finished the write
-                        Umd::Cart::State = Cartridge::IDLE;
-                        Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
+                    case Umd::Ux::UX_SELECT_MEMORY:
+                        switch(Umd::Cart::State)
+                        {
+                            case Cartridge::READ:
+                                // selected index indicates the memory to read from
+
+                                // all done, return to main menu
+                                Umd::Cart::State = Cartridge::IDLE;
+                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                break;
+                            case Cartridge::WRITE:
+                                // selected index indicates the memory to write to
+                                
+                                // all done, return to main menu
+                                Umd::Cart::State = Cartridge::IDLE;
+                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                break;
+                            default:
+                                Umd::Cart::State = Cartridge::IDLE;
+                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                break;
+                        }
                         break;
                     default:
+                        // debounce and return to main menu
                         Umd::Cart::State = Cartridge::IDLE;
-                        Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
+                        Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
+                        Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                         break;
                 }
             }
+            // user pressed back, always return to main menu
             else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
                 Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "");
-                Umd::Ux::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_RELEASE;
+                Umd::Ux::Display.ResetScrollX(UMD_DISPLAY_LAYER_MENU);
+                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             break;
-        case Umd::Ux::WAIT_FOR_RELEASE: // el-cheapo debounce
+        case Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED:
             if(Umd::Ux::UserInput.Ok == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Back == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Up == Umd::Ux::UserInput.OFF && Umd::Ux::UserInput.Down == Umd::Ux::UserInput.OFF)
             {
-                Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
+                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             }
             break;
-        case Umd::Ux::INIT_MAIN_MENU:
+        case Umd::Ux::UX_INPUT_INIT:
         default:
             Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "");
-            Umd::Ux::Display.showMenu(UMD_DISPLAY_LAYER_MENU, UMD_MENU_MAIN);
+            Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
             Umd::Cart::State = Cartridge::IDLE;
-            Umd::Ux::UserInputState = Umd::Ux::WAIT_FOR_INPUT;
+            Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             break;
     }
 

@@ -30,7 +30,6 @@
 class UMDDisplay
 {
     public:
-        // scroll[lineIndex][charIndex]
 
         UMDDisplay();
         bool begin();
@@ -51,18 +50,24 @@ class UMDDisplay
         void print(int layer, int number, int lineNumber);
         void redraw(void);
 
-        int showMenu(int layer, UMDMenuIndex menuIndex);
-        void showMenu(int layer, std::vector<const char *> items);
-        void initMenu(int layer, const char *menuItems[], int size);
-        void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
-        void AddMenuItem(const char *format, ...);
-        void AddMenuItem(const __FlashStringHelper *format, ...);
+        // int showMenu(int layer, UMDMenuIndex menuIndex);
+        // void showMenu(int layer, std::vector<const char *> items);
+        // void initMenu(int layer, const char *menuItems[], int size);
+        // void initMenu(int layer, const __FlashStringHelper *menuItems[], int size);
+
+        void LoadMenuItems(int layer, std::vector<const char *>& items);
+        void LoadMenuItems(int layer, const char *items[], int size);
 
         void menuCursorUpdate(int delta, bool visible);
         int menuCurrentItem();
 
+        void ResetScrollX(int layer);
         void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
         void scrollY(int layer, int delta); // increment all line numbers by delta
+
+        // persistent buffer to add to the display
+        void ClearScratchBufferLine(int lineNumber);
+        char ScratchBuffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
 
     private:
         
@@ -74,15 +79,14 @@ class UMDDisplay
         int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 
         // 0 - MAIN MENU
-        #define UMD_MAIN_MENU_SIZE 3
-        const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Identify"), F("Read"), F("Write")};
-        Menu<UMD_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
+        // #define UMD_MAIN_MENU_SIZE 3
+        // const __FlashStringHelper* _mainMenuItems[UMD_MAIN_MENU_SIZE] = {F("Identify"), F("Read"), F("Write")};
+        // Menu<UMD_MAIN_MENU_SIZE> _mainMenu = _mainMenuItems;
 
         struct MenuMetadata
         {
             std::vector<const char *> items;
             bool cursorVisible;
-            UMDMenuIndex index;
             int currentItem;
             int scrollRequired;
             int startLine;
