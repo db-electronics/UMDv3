@@ -10,6 +10,7 @@
 #include <stm32f4xx_hal_gpio.h>
 
 #include "Umd.h"
+#include "cartridges/Cartridge.h"
 #include "config/RemapPins.h"
 #include "config/UMDBoardDefinitions.h"
 #include "services/I2cScanner.h"
@@ -168,7 +169,8 @@ void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
     static uint32_t currentTicks=0, previousTicks;
-    int selectedItemIndex;
+    uint8_t selectedItemIndex;
+    Cartridge::MemoryType selectedMemory;
     uint32_t totalBytes;
     uint16_t batchSize;
 
@@ -196,21 +198,22 @@ void loop()
             else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
                 Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, -1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
                 Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, 1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             // USER PRESSED OK
             else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
 
-                selectedItemIndex = Umd::Ux::Display.menuCurrentItem();
+                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
+                selectedMemory = (Cartridge::MemoryType)selectedItemIndex;
                 switch(Umd::Ux::State){
                     case Umd::Ux::UX_MAIN_MENU:
                         switch(selectedItemIndex)
@@ -230,7 +233,7 @@ void loop()
                                 for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, batchSize, Cartridge::ReadOptions::HW_CHECKSUM);
+                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
                                 Umd::OperationTime = HAL_GetTick() - currentTicks;
@@ -286,11 +289,27 @@ void loop()
                                 break;
                         }
                         break;
+                    // MARK: SELECT MEMORY
                     case Umd::Ux::UX_SELECT_MEMORY:
+                        
                         switch(Umd::Cart::State)
                         {
                             case Cartridge::READ:
+                                // TODO need a filename
+                                
                                 // selected index indicates the memory to read from
+                                currentTicks = HAL_GetTick();
+                                totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
+                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::BUFFER_SIZE_BYTES);
+
+                                // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
+                                for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
+                                {
+                                    batchSize = Umd::Cart::BatchSizeCalc.Next();
+                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.bytes, batchSize, selectedMemory, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                }
+
+                                Umd::OperationTime = HAL_GetTick() - currentTicks;
 
                                 // all done, return to main menu
                                 Umd::Cart::State = Cartridge::IDLE;

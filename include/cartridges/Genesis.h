@@ -1,11 +1,8 @@
 #pragma once
 
 #include "Cartridge.h"
-#include "Menu.h"
 #include <string>
 
-#define GENESIS_HEADER_SIZE             256
-#define GENESIS_HEADER_START_ADDR       0x00000100
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
 #define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
 
@@ -14,7 +11,6 @@
 #define GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME 48
 #define GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME 48
 #define GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER 14
-
 
 struct GenesisHeader{
     union {
@@ -74,7 +70,7 @@ class Genesis : public Cartridge {
         virtual int EraseFlash(MemoryType mem) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
 
-        virtual void ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) override;
+        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) override;
 
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
@@ -84,14 +80,12 @@ class Genesis : public Cartridge {
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
         virtual bool flashIsBusy(uint8_t mem);
 
-        virtual void erasePrgFlash(bool wait);
         virtual uint8_t togglePrgBit(uint8_t attempts);
 
         virtual uint8_t readPrgByte(uint32_t address);
         virtual void writePrgByte(uint32_t address, uint8_t data);
 
-        virtual uint16_t readPrgWord(uint32_t address);
-        virtual void writePrgWord(uint32_t address, uint16_t data);
+
 
         virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
@@ -102,10 +96,14 @@ class Genesis : public Cartridge {
     private:
 
         GenesisHeader mHeader;
-        const uint32_t _timeConfigAddr = 0xA130F1;
+        const uint32_t HEADER_START_ADDR = 0x00000100;
+        const uint32_t HEADER_SIZE = 256;
+        const uint32_t TIME_CONFIG_ADDR = 0xA130F1;
 
         void ReadHeader();
-
+        uint16_t ReadPrgWord(uint32_t address);
+        void WritePrgWord(uint32_t address, uint16_t data);
+        
         void enableSram(bool enable);
 
         // rename Genesis CE pins

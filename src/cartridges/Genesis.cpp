@@ -81,12 +81,12 @@ FlashInfo Genesis::GetFlashInfo(MemoryType mem){
 
     switch(mem){
         case PRG0:
-            writePrgWord(0x00000555 << 1, 0xAA00);
-            writePrgWord(0x000002AA << 1, 0x5500);
-            writePrgWord(0x00000555 << 1, 0x9000);
-            manufacturer = UMD_SWAP_BYTES_16(readPrgWord(0x00000000));
-            device = UMD_SWAP_BYTES_16(readPrgWord(0x00000002));
-            writePrgWord(0x00000000, 0xF000);
+            WritePrgWord(0x00000555 << 1, 0xAA00);
+            WritePrgWord(0x000002AA << 1, 0x5500);
+            WritePrgWord(0x00000555 << 1, 0x9000);
+            manufacturer = UMD_SWAP_BYTES_16(ReadPrgWord(0x00000000));
+            device = UMD_SWAP_BYTES_16(ReadPrgWord(0x00000002));
+            WritePrgWord(0x00000000, 0xF000);
             break;
         default:
             return FlashInfo(0, 0);
@@ -100,12 +100,12 @@ FlashInfo Genesis::GetFlashInfo(MemoryType mem){
 uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
     // fill the buffer, but don't modify its value because we may need it for checksum
     for(int i = 0; i < size; i+=2){
-        *(uint16_t*)(buffer + i) = readPrgWord(address);
+        *(uint16_t*)(buffer + i) = ReadPrgWord(address);
         address += 2;
     }
 
     switch(opt){
-        case HW_CHECKSUM:
+        case CHECKSUM_CALCULATOR:
             return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
         default:
             return 0;
@@ -113,16 +113,22 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
 }
 
 // MARK: ReadMemory()
-void Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt){
+uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt){
     switch(mem){
         case PRG0:
             for(int i = 0; i < size; i+=2){
-                *(uint16_t*)(buffer + i) = readPrgWord(address);
+                *(uint16_t*)(buffer + i) = ReadPrgWord(address);
                 address += 2;
             }
             break;
         default:
             break;
+    }
+    switch(opt){
+        case CHECKSUM_CALCULATOR:
+            return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
+        default:
+            return 0;
     }
 }
 
@@ -130,12 +136,12 @@ void Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, Memor
 int Genesis::EraseFlash(MemoryType mem){
     switch(mem){
         case PRG0:
-            writePrgWord(0x00000555 < 1, 0xAA00);
-            writePrgWord(0x000002AA < 1, 0x5500);
-            writePrgWord(0x00000555 < 1, 0x8000);
-            writePrgWord(0x00000555 < 1, 0xAA00);
-            writePrgWord(0x000002AA < 1, 0x5500);
-            writePrgWord(0x00000555 < 1, 0x1000);
+            WritePrgWord(0x00000555 < 1, 0xAA00);
+            WritePrgWord(0x000002AA < 1, 0x5500);
+            WritePrgWord(0x00000555 < 1, 0x8000);
+            WritePrgWord(0x00000555 < 1, 0xAA00);
+            WritePrgWord(0x000002AA < 1, 0x5500);
+            WritePrgWord(0x00000555 < 1, 0x1000);
             break;
         default:
             return -1;
@@ -161,8 +167,8 @@ void Genesis::ReadHeader(){
         return;
     }
 
-    for(int i = 0; i < GENESIS_HEADER_SIZE; i+=2){
-        mHeader.words[i>>1] = readPrgWord(GENESIS_HEADER_START_ADDR + i);
+    for(int i = 0; i < HEADER_SIZE; i+=2){
+        mHeader.words[i>>1] = ReadPrgWord(HEADER_START_ADDR + i);
     }
 
     // the numeric values need additional work
@@ -204,18 +210,6 @@ void Genesis::ReadHeader(){
     mHeader.HasData = true;
 }
 
-void Genesis::erasePrgFlash(bool wait){
-    writePrgWord(0x00000555 < 1, 0xAA00);
-    writePrgWord(0x000002AA < 1, 0x5500);
-    writePrgWord(0x00000555 < 1, 0x8000);
-    writePrgWord(0x00000555 < 1, 0xAA00);
-    writePrgWord(0x000002AA < 1, 0x5500);
-    writePrgWord(0x00000555 < 1, 0x1000);
-    if(wait){
-        while(togglePrgBit(4) != 4);
-    }
-}
-
 uint8_t Genesis::togglePrgBit(uint8_t attempts){
     uint8_t retValue = 0;
     uint8_t readValue;
@@ -223,10 +217,10 @@ uint8_t Genesis::togglePrgBit(uint8_t attempts){
     uint8_t i;
 
     //first read should always be a 1 according to datasheet
-    oldValue = readPrgWord(0x00000000);
+    oldValue = ReadPrgWord(0x00000000);
 
     for(int i = 0; i < attempts; i++){
-        readValue = readPrgWord(0x00000000) & 0x4000;
+        readValue = ReadPrgWord(0x00000000) & 0x4000;
         if(oldValue == readValue){
 			retValue += 1;
 		}else{
@@ -241,7 +235,7 @@ uint8_t Genesis::togglePrgBit(uint8_t attempts){
 bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
     uint16_t checksum = 0;
     for(uint32_t i = start; i < end; i+=2){
-        checksum += UMD_SWAP_BYTES_16(readPrgWord(i));
+        checksum += UMD_SWAP_BYTES_16(ReadPrgWord(i));
     }
     
     ActualChecksum = checksum;
@@ -308,7 +302,7 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     for(int i = 0; i < romSize; i+=2){
                         
                         // one by one works
-                        data = readPrgWord(i);
+                        data = ReadPrgWord(i);
                         romFile.write((uint8_t*)&data, 2);
                         
                         // this times out
@@ -330,24 +324,12 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     // test the SRAM latch
                     enableSram(true);
                     // read from SRAM range to test CE
-                    data = readPrgWord(0x200000);
+                    data = ReadPrgWord(0x200000);
                     enableSram(false);
                     // read again, should be from ROM now
-                    data = readPrgWord(0x200000);
+                    data = ReadPrgWord(0x200000);
                     return 0; // index of Main menu
                 case 2: // Header
-                    ReadHeader();
-                    if(validRom){
-                        disp.printf(1, 0, " %s", mHeader.Printable.SystemType);
-                        disp.printf(1, 1, " %s", mHeader.Printable.Copyright);
-                        disp.printf(1, 2, " %s", mHeader.Printable.DomesticName);
-                        disp.printf(1, 3, " %s", mHeader.Printable.InternationalName);
-                        disp.printf(1, 4, " %s", mHeader.Printable.SerialNumber);
-                        disp.printf(1, 5, "Size: 0x%06X", mHeader.ROMEnd + 1);
-                        disp.printf(1, 6, "CRC : 0x%04X", mHeader.Checksum);
-                    }else{
-                        disp.printf(1, 6, "Invalid ROM");
-                    }
                     return -1; // stay in Read menu
                 default:
                     return 0;
@@ -388,7 +370,7 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
 
 void Genesis::enableSram(bool enable){
 
-    addressWrite(_timeConfigAddr);
+    addressWrite(TIME_CONFIG_ADDR);
     dataSetToOutputs();
 
     if(enable){
@@ -440,7 +422,7 @@ void Genesis::writePrgByte(uint32_t address, uint8_t data){
     dataSetToInputs(true);
 }
 
-uint16_t Genesis::readPrgWord(uint32_t address){
+uint16_t Genesis::ReadPrgWord(uint32_t address){
     uint16_t result;
     addressWrite(address);
     clearCE();
@@ -454,7 +436,7 @@ uint16_t Genesis::readPrgWord(uint32_t address){
     return result;
 }
 
-void Genesis::writePrgWord(uint32_t address, uint16_t data){
+void Genesis::WritePrgWord(uint32_t address, uint16_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWriteSwapped(data);

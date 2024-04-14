@@ -64,8 +64,7 @@ class Cartridge : public UMDPortsV3 {
         /// @brief Options for reading the ROM
         enum ReadOptions : uint8_t{
             NONE = 0,
-            HW_CHECKSUM,
-            SYSTEM_CHECKUM
+            CHECKSUM_CALCULATOR
         };
 
         /// @brief Reset the checksum calculator
@@ -97,7 +96,7 @@ class Cartridge : public UMDPortsV3 {
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
 
-        virtual void ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) = 0;
+        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) = 0;
 
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
     

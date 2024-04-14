@@ -59,7 +59,7 @@ class UMDDisplay
         void LoadMenuItems(int layer, const char *items[], int size);
 
         void menuCursorUpdate(int delta, bool visible);
-        int menuCurrentItem();
+        uint8_t GetCurrentItemIndex();
 
         void ResetScrollX(int layer);
         void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
@@ -87,14 +87,14 @@ class UMDDisplay
         {
             std::vector<const char *> items;
             bool cursorVisible;
-            int currentItem;
+            uint8_t currentItem;
             int scrollRequired;
             int startLine;
             int windowStart;
             int windowEnd;
             int windowSize;
             int layer;
-        }_menu;
+        }mMenu;
 
         void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
         void scrollMenu(int delta);
@@ -107,7 +107,7 @@ class UMDDisplay
             int y;
             char character;
             bool visible;
-        }_cursor;
+        }mCursor;
 
         #define UMD_CLOCK_ANIMATION_FRAMES 4
         struct Clock
@@ -116,7 +116,7 @@ class UMDDisplay
             int x;
             int y;
             bool visible;
-        }_clock;
+        }mClockSpr;
 
         const uint8_t _clockAnimation[UMD_CLOCK_ANIMATION_FRAMES][8] = {
             {

@@ -13,17 +13,17 @@ bool UMDDisplay::begin()
     // I don't like being tied to Adafruit_SSD1306 like this
     //_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-    _cursor.character = '*';
+    mCursor.character = '*';
     //place cursor offscreen;
-    _cursor.x = 0;
-    _cursor.y = 0;
-    _cursor.visible = false;
-    _menu.cursorVisible = false;
+    mCursor.x = 0;
+    mCursor.y = 0;
+    mCursor.visible = false;
+    mMenu.cursorVisible = false;
 
-    _clock.framePointer = 0;
-    _clock.x = 0;
-    _clock.y = 0;
-    _clock.visible = false;
+    mClockSpr.framePointer = 0;
+    mClockSpr.x = 0;
+    mClockSpr.y = 0;
+    mClockSpr.visible = false;
 
     if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
@@ -56,67 +56,67 @@ bool UMDDisplay::begin()
 
 void UMDDisplay::setCursorChar(char c)
 {
-    _cursor.character = c;
+    mCursor.character = c;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorVisible(bool visible)
 {
-    _cursor.visible = visible;
+    mCursor.visible = visible;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorPosition(int x, int y)
 {
     if(x < OLED_MAX_CHARS_PER_LINE){
-        _cursor.x = x * OLED_FONT_WIDTH;
+        mCursor.x = x * OLED_FONT_WIDTH;
     }else{
-        _cursor.x = -1;
+        mCursor.x = -1;
     }
     
     if(y < OLED_MAX_LINES_PER_SCREEN){
-        _cursor.y = y * OLED_FONT_HEIGHT;
+        mCursor.y = y * OLED_FONT_HEIGHT;
     }else{
-        _cursor.y = -1;
+        mCursor.y = -1;
     }
     _needsRedraw = true;
 }
 
 void UMDDisplay::setClockVisible(bool visible)
 {
-    _clock.visible = visible;
+    mClockSpr.visible = visible;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setClockPosition(int x, int y)
 {
     if(x < OLED_MAX_CHARS_PER_LINE){
-        _clock.x = x * OLED_FONT_WIDTH;
+        mClockSpr.x = x * OLED_FONT_WIDTH;
     }else{
-        _clock.x = -1;
+        mClockSpr.x = -1;
     }
     
     if(y < OLED_MAX_LINES_PER_SCREEN){
-        _clock.y = y * OLED_FONT_HEIGHT;
+        mClockSpr.y = y * OLED_FONT_HEIGHT;
     }else{
-        _clock.y = -1;
+        mClockSpr.y = -1;
     }
     _needsRedraw = true;
 }
 
 void UMDDisplay::advanceClockAnimation()
 {
-    if(!_clock.visible)
+    if(!mClockSpr.visible)
         return;
         
-    if(++_clock.framePointer == UMD_CLOCK_ANIMATION_FRAMES)
-        _clock.framePointer = 0;
+    if(++mClockSpr.framePointer == UMD_CLOCK_ANIMATION_FRAMES)
+        mClockSpr.framePointer = 0;
     _needsRedraw = true;
 }
 
 void UMDDisplay::setCursorMenuPosition()
 {
-    setCursorPosition(0, _menu.startLine + (_menu.currentItem - _menu.windowStart));
+    setCursorPosition(0, mMenu.startLine + (mMenu.currentItem - mMenu.windowStart));
 }
 
 void UMDDisplay::setLayerLineLength(int layer, int length)
@@ -248,7 +248,7 @@ void UMDDisplay::LoadMenuItems(int layer, std::vector<const char *>& items)
     if(layer >= UMD_DISPLAY_LAYERS)
         return;
 
-    _menu.items.assign(items.begin(), items.end());
+    mMenu.items.assign(items.begin(), items.end());
 
     fillLayerFromMenu(layer, 0, 0);
     initMenuCursor(layer);
@@ -259,32 +259,32 @@ void UMDDisplay::menuCursorUpdate(int delta, bool visible)
 {
     if(visible)
     {
-        _menu.currentItem += delta;
-        if(_menu.currentItem < 0)
+        mMenu.currentItem += delta;
+        if(mMenu.currentItem < 0)
         {
-           _menu.currentItem = 0;
+           mMenu.currentItem = 0;
         }
-        else if(_menu.currentItem >= _menu.items.size())
+        else if(mMenu.currentItem >= mMenu.items.size())
         {
-            _menu.currentItem = _menu.items.size() - 1;
+            mMenu.currentItem = mMenu.items.size() - 1;
         }
 
-        if(_menu.items.size() > _menu.windowSize)
+        if(mMenu.items.size() > mMenu.windowSize)
         {
             // reached the top of the displayed menu and we need to scroll up?
-            if(_menu.currentItem == _menu.windowStart && _menu.windowStart > 0)
+            if(mMenu.currentItem == mMenu.windowStart && mMenu.windowStart > 0)
             {
-                _menu.scrollRequired = delta;
-                _menu.windowStart += delta;
-                _menu.windowEnd += delta;
+                mMenu.scrollRequired = delta;
+                mMenu.windowStart += delta;
+                mMenu.windowEnd += delta;
                 scrollMenu(delta);
             }
             // reached the bottom of the displayed menu and we need to scroll down?
-            else if(_menu.currentItem == _menu.windowEnd && _menu.windowEnd < _menu.items.size())
+            else if(mMenu.currentItem == mMenu.windowEnd && mMenu.windowEnd < mMenu.items.size())
             {
-                _menu.scrollRequired = delta;
-                _menu.windowStart += delta;
-                _menu.windowEnd += delta;
+                mMenu.scrollRequired = delta;
+                mMenu.windowStart += delta;
+                mMenu.windowEnd += delta;
                 scrollMenu(delta);
             }
 
@@ -294,27 +294,27 @@ void UMDDisplay::menuCursorUpdate(int delta, bool visible)
     }
     else
     {
-        _menu.cursorVisible = false;
+        mMenu.cursorVisible = false;
         setCursorPosition(-1, -1);
     }
 }
 
-int UMDDisplay::menuCurrentItem()
+uint8_t UMDDisplay::GetCurrentItemIndex()
 {
-    return _menu.currentItem;
+    return mMenu.currentItem;
 }
 
 void UMDDisplay::initMenuCursor(int layer)
 {
-    _menu.cursorVisible = true;
-    _menu.layer = layer;
-    _menu.windowStart = 0;
-    _menu.scrollRequired = 0;
-    _menu.currentItem = 0;
+    mMenu.cursorVisible = true;
+    mMenu.layer = layer;
+    mMenu.windowStart = 0;
+    mMenu.scrollRequired = 0;
+    mMenu.currentItem = 0;
     if(layer == 0)
     {
-        _menu.startLine = 0;
-        _menu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN);
+        mMenu.startLine = 0;
+        mMenu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN);
         
     }
     else
@@ -326,11 +326,11 @@ void UMDDisplay::initMenuCursor(int layer)
             line += _layerLength[prevLayers];
         }
 
-        _menu.startLine = line;
-        _menu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN - line);
+        mMenu.startLine = line;
+        mMenu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN - line);
     }
 
-    _menu.windowEnd = _menu.windowStart + _menu.windowSize - 1;
+    mMenu.windowEnd = mMenu.windowStart + mMenu.windowSize - 1;
     setCursorMenuPosition();
 }
 
@@ -346,7 +346,7 @@ void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMen
     for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
     {
         // have we reached the end of the menu items? if so clear the rest of the buffer
-        if(menuIndex >= _menu.items.size())
+        if(menuIndex >= mMenu.items.size())
         {
             //clearLine(bufferIndex);
             return;
@@ -354,7 +354,7 @@ void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMen
         else
         {
             // always leave 1 blank character at start of string for menus
-            print(layer, _menu.items[menuIndex++], bufferIndex++, 1);
+            print(layer, mMenu.items[menuIndex++], bufferIndex++, 1);
         }
 
         // wrap around the buffer
@@ -366,9 +366,9 @@ void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMen
 void UMDDisplay::scrollMenu(int delta)
 {
     // easy case if menu is smaller than layer buffer
-    if(_menu.items.size() < UMD_DISPLAY_BUFFER_TOTAL_LINES)
+    if(mMenu.items.size() < UMD_DISPLAY_BUFFER_TOTAL_LINES)
     {
-        scrollY(_menu.layer, delta);
+        scrollY(mMenu.layer, delta);
     }
     else
     {
@@ -417,15 +417,15 @@ void UMDDisplay::redraw(void)
     }
 
     // draw the cursor if visible
-    if(_cursor.visible)
+    if(mCursor.visible)
     {
-        _display->setCursor(this->_cursor.x, this->_cursor.y);
-        _display->print(this->_cursor.character);
+        _display->setCursor(this->mCursor.x, this->mCursor.y);
+        _display->print(this->mCursor.character);
     }
 
     // draw the clock if visible
-    if(_clock.visible){
-        _display->drawBitmap(_clock.x, _clock.y, _clockAnimation[_clock.framePointer], 8, 8, SSD1306_WHITE);
+    if(mClockSpr.visible){
+        _display->drawBitmap(mClockSpr.x, mClockSpr.y, _clockAnimation[mClockSpr.framePointer], 8, 8, SSD1306_WHITE);
     }
 
     _display->display();
