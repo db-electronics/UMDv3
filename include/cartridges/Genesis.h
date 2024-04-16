@@ -62,15 +62,15 @@ class Genesis : public Cartridge {
         virtual ~Genesis();
 
         virtual void InitIO() override;
-        virtual const char* GetSystemName() override;
+        virtual const char* GetSystemName() const override {return "MD";};
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
 
-        virtual FlashInfo GetFlashInfo(MemoryType mem) override;
-        virtual int EraseFlash(MemoryType mem) override;
+        virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) override;
+        virtual int EraseFlash(uint8_t memTypeIndex) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
 
-        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) override;
+        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) override;
 
         // TODO REMOVE THIS METHOD
         int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);

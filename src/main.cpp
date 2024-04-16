@@ -54,22 +54,28 @@ void setup()
     // Wire.setSDA(PB9);
     Wire.begin();
 
-    if (!Umd::Ux::Display.begin())
+    if (!Umd::Ux::Display.Init())
     {
         SerialUSB.println(F("display init failure"));
         while (1);
     }
 
+    // enable the title zone
+    Umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_TITLE, true);
+    Umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_STATUS, true);
+
     // sd card
-    Umd::Ux::Display.printf(0, line++, F("init SD card"));
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("initializing..."));
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-sd card"));
+    Umd::Ux::Display.Redraw();
+
     // SD.setDx(PC8, PC9, PC10, PC11);
     // SD.setCMD(PD2);
     // SD.setCK(PC12);
     if (!SD.begin(SD_DETECT_PIN, PC8, PC9, PC10, PC11, PD2, PC12))
     {
-        Umd::Ux::Display.printf(0, line, F("  no card"));
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sd card"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
@@ -80,19 +86,19 @@ void setup()
     int sdVerify = verifySdCard(line);
     if(sdVerify != 0)
     {
-        Umd::Ux::Display.printf(0, line, F("  SD error %d"), sdVerify);
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no UMD folder"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
     // setup onboard mcp23008, GP6 and GP7 LED outputs
-    Umd::Ux::Display.printf(0, line++, F("init umd MCP23008"));
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 io expander"));
+    Umd::Ux::Display.Redraw();
 
     if (!Umd::IoExpander.begin(UMD_BOARD_MCP23008_ADDRESS))
     {
-        Umd::Ux::Display.printf(0, line, F("  failed"));
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
@@ -104,60 +110,61 @@ void setup()
     Umd::IoExpander.digitalWrite(UMD_BOARD_LEDS, LOW);
 
     // setup adapter mcp23008, read adapter id
-    Umd::Ux::Display.printf(0, line++, F("init cart MCP23008"));
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 adapter"));
+    Umd::Ux::Display.Redraw();
     if (!Umd::Cart::IoExpander.begin(UMD_ADAPTER_MCP23008_ADDRESS))
     {
-        Umd::Ux::Display.printf(0, line, F("  no adapter found"));
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
+    // get the adapter id, use it to determine the cartridge type
     Umd::Cart::IoExpander.pinMode(0xFF, INPUT);
     uint8_t adapterId = Umd::Cart::IoExpander.readGPIO();
-
     Umd::Cart::pCartridge = Umd::Cart::Factory.GetCart(adapterId, crc32Calculator);
     if (Umd::Cart::pCartridge == nullptr)
     {
-        Umd::Ux::Display.printf(0, line++, F("  unknown adapter"));
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: unknown adapter"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
     //Umd::Ux::Display.printf(0, line++, F("  adapter id = %d"), adapterId);
     auto systemName = Umd::Cart::pCartridge->GetSystemName();
-    Umd::Ux::Display.printf(0, line++, F("  %s"), systemName);
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-%s"), systemName);
+    Umd::Ux::Display.Redraw();
 
     // check if the sdcard has a _db.txt file containing rom checksums for this system
     sdVerify = verifySdCardSystemSetup(line, systemName);
     if(sdVerify != 0)
     {
-        Umd::Ux::Display.printf(0, line, F("  SD error %d"), sdVerify);
-        Umd::Ux::Display.redraw();
+        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
+        Umd::Ux::Display.Redraw();
         while (1);
     }
 
     // register callbacks for SerialCommand related to the cartridge
     SCmd.addCommand("scani2c", scmdScanI2C);
 
+    // MARK: Init Success
+    Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("init success"));
+    Umd::Ux::Display.Redraw();
     delay(2000);
 
-    // setup the display with 2 layers, having the UMDv3/... static on the first line
-    Umd::Ux::Display.clear();
-    Umd::Ux::Display.setLayerLineLength(0, 1);
-    Umd::Ux::Display.setLayerLineLength(1, UMD_DISPLAY_BUFFER_TOTAL_LINES);
-    Umd::Ux::Display.printf(0, 0, F("UMDv3/%s"), systemName);
+    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_TITLE);
+    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
+    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
 
     // get the supported memory types for this cartridge
     Umd::Cart::MemoryNames = Umd::Cart::pCartridge->GetMemoryNames();
 
-    Umd::Ux::Display.setCursorPosition(0, 0);
-    Umd::Ux::Display.setCursorVisible(true);
-    Umd::Ux::Display.setClockPosition(20, 7);
-    Umd::Ux::Display.setClockVisible(false);
+    // Umd::Ux::Display.setCursorPosition(0, 0);
+    // Umd::Ux::Display.setCursorVisible(true);
+    // Umd::Ux::Display.setClockPosition(20, 7);
+    // Umd::Ux::Display.setClockVisible(false);
     
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Redraw();
 
     Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
     Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_INIT;
@@ -355,15 +362,16 @@ void loop()
             break;
         case Umd::Ux::UX_INPUT_INIT:
         default:
-            Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "");
-            Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
+            Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+            //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
+            Umd::Ux::Display.SetWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
             Umd::Cart::State = Cartridge::IDLE;
             Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             break;
     }
 
     Umd::Ux::Display.advanceClockAnimation();
-    Umd::Ux::Display.redraw();
+    Umd::Ux::Display.Redraw();
     // SerialUSB.println(F("Tick"));
     // delay(100);
 }
@@ -387,9 +395,9 @@ int verifySdCard(int& line)
         return 1;
     }
 
-    auto fileName = sdFile.fullname();
-    Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
-    Umd::Ux::Display.redraw();
+    // auto fileName = sdFile.fullname();
+    // Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
+    // Umd::Ux::Display.redraw();
     sdFile.close();
 
     return 0;
@@ -408,8 +416,8 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     }
 
     auto fileName = sdFile.fullname();
-    Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
-    Umd::Ux::Display.redraw();
+    // Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
+    // Umd::Ux::Display.redraw();
 
     // test read file contents
     char c[16];

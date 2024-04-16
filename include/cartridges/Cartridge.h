@@ -77,7 +77,7 @@ class Cartridge : public UMDPortsV3 {
         virtual void InitIO () = 0;
         
         /// @brief Get the name of the system 
-        virtual const char* GetSystemName() = 0;
+        virtual const char* GetSystemName() const = 0;
 
         /// @brief Get the name of the cartridge currently connected, if it is knowable via the header
         virtual const char* GetCartridgeName() = 0;
@@ -85,8 +85,8 @@ class Cartridge : public UMDPortsV3 {
         /// @brief Get the size of the cartridge currently connected, if it is knowable via the header
         virtual uint32_t GetCartridgeSize() = 0;
 
-        virtual FlashInfo GetFlashInfo(MemoryType mem) = 0;
-        virtual int EraseFlash(MemoryType mem) = 0;
+        virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) = 0;
+        virtual int EraseFlash(uint8_t memTypeIndexm) = 0;
 
         /// @brief Identify the cartridge by reading all its data and computing a checksum
         /// @param address The start address to read from
@@ -96,7 +96,7 @@ class Cartridge : public UMDPortsV3 {
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
 
-        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt) = 0;
+        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) = 0;
 
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
     
@@ -106,9 +106,16 @@ class Cartridge : public UMDPortsV3 {
     protected:
 
         IChecksumCalculator& mChecksumCalculator;
-        std::map<uint8_t, Cartridge::MemoryType> mMemoryIndexToType;
+        std::map<uint8_t, Cartridge::MemoryType> mMemoryTypeIndexMap;
         std::vector<const char *> mMemoryNames;
         std::vector<const char *> mMetadata;
+
+        bool IsMemoryIndexValid(uint8_t memTypeIndex) const {
+            if(memTypeIndex >= mMemoryNames.size()){
+                return false;
+            }
+            return true;
+        }
 
         File romFile;
         union {

@@ -8,13 +8,13 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
 
     // display will show these memory names in order
     // so here we store an index to the memory enum
-    mMemoryIndexToType[0] = PRG0;
+    mMemoryTypeIndexMap[0] = PRG0;
     mMemoryNames.push_back("ROM");
 
-    mMemoryIndexToType[1] = RAM0;
+    mMemoryTypeIndexMap[1] = RAM0;
     mMemoryNames.push_back("Save RAM");
 
-    mMemoryIndexToType[2] = BRAM;
+    mMemoryTypeIndexMap[2] = BRAM;
     mMemoryNames.push_back("SCD Backup RAM");
 
     mMetadata.clear();
@@ -60,11 +60,6 @@ void Genesis::InitIO(){
     enableSram(false);
 }
 
-// MARK: GetSystemName()
-const char* Genesis::GetSystemName(){
-    return "MD";
-}
-
 // MARK: GetCartridgeName()
 const char* Genesis::GetCartridgeName(){
     ReadHeader();
@@ -76,9 +71,16 @@ uint32_t Genesis::GetCartridgeSize(){
     return mHeader.ROMEnd + 1;
 }
 
-FlashInfo Genesis::GetFlashInfo(MemoryType mem){
-    uint16_t manufacturer, device;
+FlashInfo Genesis::GetFlashInfo(uint8_t memTypeIndex){
 
+    // check if the memTypeIndex is valid
+    if(!IsMemoryIndexValid(memTypeIndex)){
+        return FlashInfo(0, 0);
+    }
+
+    uint16_t manufacturer, device;
+    MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
+    
     switch(mem){
         case PRG0:
             WritePrgWord(0x00000555 << 1, 0xAA00);
@@ -113,7 +115,15 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
 }
 
 // MARK: ReadMemory()
-uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, MemoryType mem, ReadOptions opt){
+uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt){
+    
+    // check if the memTypeIndex is valid
+    if(!IsMemoryIndexValid(memTypeIndex)){
+        return 0;
+    }
+
+    MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
+
     switch(mem){
         case PRG0:
             for(int i = 0; i < size; i+=2){
@@ -133,7 +143,13 @@ uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, M
 }
 
 // MARK: EraseFlash()
-int Genesis::EraseFlash(MemoryType mem){
+int Genesis::EraseFlash(uint8_t memTypeIndex){
+    // check if the memTypeIndex is valid
+    if(memTypeIndex >= mMemoryTypeIndexMap.size()){
+        return 0;
+    }
+
+    MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
     switch(mem){
         case PRG0:
             WritePrgWord(0x00000555 < 1, 0xAA00);
