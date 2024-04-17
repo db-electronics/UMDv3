@@ -19,7 +19,7 @@
 #define OLED_LINE_NUMBER(n)             OLED_FONT_HEIGHT * n
 
 #define UMD_DISPLAY_BUFFER_CHARS_PER_LINE   ((OLED_MAX_CHARS_PER_LINE)*2)
-#define UMD_DISPLAY_BUFFER_TOTAL_LINES      16
+#define UMD_DISPLAY_BUFFER_TOTAL_LINES      8
 #define UMD_DISPLAY_WINDOW_SIZE             6
 #define UMD_DISPLAY_LAYERS                  2
 #define UMD_DISPLAY_LAYER_FG                0
@@ -32,29 +32,24 @@ class UMDDisplay
 {
     public:
 
+        enum Zone : uint8_t
+        {
+            ZONE_TITLE = 0,
+            ZONE_STATUS,
+            ZONE_WINDOW
+        };
+
         UMDDisplay();
         
         
-        void setClockPosition(int x, int y);
-        void setClockVisible(bool visible);
-        void advanceClockAnimation();
 
-        void clear(void);
-        void clearLayer(int layer);
-        void clearLine(int layer, int lineNumber);
         void printf(int layer, int lineNumber, const char *format, ...);
         void printf(int layer, int lineNumber, const __FlashStringHelper *format, ...);
         void print(int layer, const char characters[], int lineNumber, int pos);
         void print(int layer, const char characters[], int lineNumber);
         void print(int layer, int number, int lineNumber);
-        void redraw(void);
 
-
-        void LoadMenuItems(int layer, std::vector<const char *>& items);
-        void LoadMenuItems(int layer, const char *items[], int size);
-
-        void menuCursorUpdate(int delta, bool visible);
-        uint8_t GetCurrentItemIndex();
+        uint8_t GetSelectedItemIndex();
 
         
         void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
@@ -64,12 +59,7 @@ class UMDDisplay
         void ClearScratchBufferLine(int lineNumber);
         char ScratchBuffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
 
-        enum Zone : uint8_t
-        {
-            ZONE_TITLE = 0,
-            ZONE_STATUS,
-            ZONE_WINDOW
-        };
+
 
         bool Init();
         void SetZoneVisibility(Zone zone, bool visible);
@@ -81,15 +71,13 @@ class UMDDisplay
         void SetWindowItems(const std::vector<const char *>& items);
         void SetCursorChar(char c);
         void SetCursorVisibility(bool visible);
-        void SetCursorPosition(int x, int y, bool wrap = false);
-        void IncCursorItemPosition();
-        void DecCursorItemPosition();
+        void SetCursorPosition(int x, int y);
+        void UpdateCursorItemPosition(int8_t delta);
 
         void IncWindowScrollX(uint8_t lineNumber);
         void DecWindowScrollX(uint8_t lineNumber);
         void ResetScrollX();
-        void IncWindowScrollY();
-        void DecWindowScrollY();
+        void SetWindowScrollY(int8_t delta);
 
         void Redraw(void);
 
@@ -103,8 +91,20 @@ class UMDDisplay
         int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 
         // character buffers for the display
+        struct FontInfo
+        {
+            uint8_t Width;
+            uint8_t Height;
+            
+            void Set(uint8_t width, uint8_t height)
+            {
+                Width = width;
+                Height = height;
+            }
+        } mFontInfo;
+
         bool mRedrawScreen;
-        
+
         bool mTitleVisible;
         bool mWindowVisible;
         bool mStatusVisible;
@@ -123,48 +123,37 @@ class UMDDisplay
         
         std::array<char, OLED_MAX_CHARS_PER_LINE+1> mLineBuffer;
         // window scroll y position, indicates on which line the window starts
-        uint8_t mWindowScrollY;
+        int8_t mWindowScrollY;
 
-        void LoadWindowItemsToBuffer(uint8_t startItemIndex, uint8_t startBufferIndex, uint8_t windowSize);
+        void LoadWindowItemsToBuffer();
+        void LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex);
         uint8_t GetWindowVisibleLinesCount();
 
         struct WindowItemsData{
             std::vector<const char *> items;
-            uint8_t StartIndex;
-            uint8_t SelectedItemIndex;
-            uint8_t WindowSize;
-            uint8_t WindowStart;
-            uint8_t CursorIndex;
-            uint8_t Count;   // items added to buffer afterwards
+            uint8_t StartLine;          // display line where the window starts
+            int16_t SelectedItemIndex;  // index of the selected item in the display buffer
+            uint8_t WindowSize;         // number of items that can be displayed in the window
+            uint8_t WindowStart;        // index of the first item in the visible window
+            uint8_t WindowEnd;          // index of the last item in the visible window    
+            uint8_t TotalItems;         // items can be added to the display buffer afterwards
+            uint8_t StartBufferItem;    // index of the first item in the display buffer
+            uint8_t EndBufferItem;     // index of the last item in the display buffer
+            int8_t ScrollRequired;
             
-            void Reset(uint8_t startIndex, uint8_t windowSize){
-                StartIndex = startIndex;
+            void Reset(uint8_t startLine, uint8_t windowSize, const std::vector<const char *>& newItems){
+                items.assign(newItems.begin(), newItems.end());
+                StartLine = startLine;
                 SelectedItemIndex = 0;
                 WindowSize = windowSize;
                 WindowStart = 0;
-                CursorIndex = 0;
-                Count = 0;
+                WindowEnd = windowSize - 1;
+                TotalItems = newItems.size();
+                StartBufferItem = 0;
+                EndBufferItem = std::min(TotalItems, (uint8_t)UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+                ScrollRequired = 0;
             }
-        }mWindowItems;
-
-        struct MenuMetadata
-        {
-            std::vector<const char *> items;
-            bool cursorVisible;
-            uint8_t currentItem;
-            int scrollRequired;
-            int startLine;
-            int windowStart;
-            int windowEnd;
-            int windowSize;
-            int layer;
-
-        }mMenu;
-
-        void fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex);
-        void scrollMenu(int delta);
-        void initMenuCursor(int layer);
-        void setCursorMenuPosition();
+        }mWindow;
 
         struct Cursor
         {

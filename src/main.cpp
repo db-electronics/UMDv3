@@ -194,32 +194,32 @@ void loop()
         case Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
             if(Umd::Ux::UserInput.Down >= Umd::Ux::UserInput.PRESSED)
             {
-                Umd::Ux::Display.menuCursorUpdate(1, true);
+                Umd::Ux::Display.UpdateCursorItemPosition(1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
             {
-                Umd::Ux::Display.menuCursorUpdate(-1, true);
+                Umd::Ux::Display.UpdateCursorItemPosition(-1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
+                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
                 Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, -1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
+                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
                 Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, 1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             // USER PRESSED OK
             else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
 
-                selectedItemIndex = Umd::Ux::Display.GetCurrentItemIndex();
+                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
                 selectedMemory = (Cartridge::MemoryType)selectedItemIndex;
                 switch(Umd::Ux::State){
                     case Umd::Ux::UX_MAIN_MENU:
@@ -260,12 +260,12 @@ void loop()
                                 sprintf(Umd::Ux::Display.ScratchBuffer[2], "Time : %d ms", Umd::OperationTime);
                                 Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[2]);
 
-                                Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Id");
+                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), "Id");
                                 // Umd::Cart::AddMetadataItem(F("Size : %08X"), totalBytes);
                                 // Umd::Cart::AddMetadataItem(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
                                 // Umd::Cart::AddMetadataItem(F("Time : %d ms"), Umd::OperationTime);
 
-                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
+                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
 
                                 // TODO search for this crc32 in the database
 
@@ -277,16 +277,16 @@ void loop()
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
                                 Umd::Cart::State = Cartridge::READ;
-                                Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Read");
-                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), "Read");
+                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
                                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             case Cartridge::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
                                 Umd::Cart::State = Cartridge::WRITE;
-                                Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "Write");
-                                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), "Write");
+                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
                                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
@@ -296,7 +296,7 @@ void loop()
                                 break;
                         }
                         break;
-                    // MARK: SELECT MEMORY
+                    // MARK: Select Memory
                     case Umd::Ux::UX_SELECT_MEMORY:
                         
                         switch(Umd::Cart::State)
@@ -348,9 +348,9 @@ void loop()
             }
             // user pressed back, always return to main menu
             else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
-                Umd::Ux::UpdateDisplayPathAddressBar(Umd::Cart::pCartridge->GetSystemName(), "");
-                Umd::Ux::Display.ResetScrollX(UMD_DISPLAY_LAYER_MENU);
-                Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
+                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
+                Umd::Ux::Display.ResetScrollX();
+                Umd::Ux::Display.SetWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             break;
@@ -363,14 +363,15 @@ void loop()
         case Umd::Ux::UX_INPUT_INIT:
         default:
             Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName());
-            //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Ux::MAIN_MENU_ITEMS);
-            Umd::Ux::Display.SetWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
+            Umd::Ux::Display.SetWindowItems(Umd::Ux::MENU_WITH_30_ITEMS);
+            Umd::Ux::Display.SetCursorVisibility(true);
+            Umd::Ux::Display.SetCursorChar('>');
+            Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));
             Umd::Cart::State = Cartridge::IDLE;
             Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             break;
     }
 
-    Umd::Ux::Display.advanceClockAnimation();
     Umd::Ux::Display.Redraw();
     // SerialUSB.println(F("Tick"));
     // delay(100);

@@ -30,18 +30,17 @@ namespace Umd
         Controls UserInput;
 
         UMDDisplay Display;
-        void UpdateDisplayPathAddressBar(const char* system, const char *path){
-            Display.clearLine(0 ,0);
-            Display.printf(0, 0, F("UMDv3/%s/%s"), system, path);
-        }
-        // void PrintOperationTime(){
-        //     Display.printf(1, 0, F("%d ms"), Umd::OperationTime);
-        // }
 
-        std::vector<const char *> MAIN_MENU_ITEMS = {
+        const std::vector<const char *> MAIN_MENU_ITEMS = {
             "Identify",
             "Read",
             "Write"
+        };
+
+        const std::vector<const char *> MENU_WITH_30_ITEMS = {
+            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+            "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
+            "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"
         };
     };
 

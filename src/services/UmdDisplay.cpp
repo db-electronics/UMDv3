@@ -5,7 +5,7 @@ Adafruit_SSD1306* UMDDisplay::_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH,
 
 UMDDisplay::UMDDisplay()
 {
-    this->clear();
+
 }
 
 // MARK: Init()
@@ -20,6 +20,7 @@ bool UMDDisplay::Init(){
     ClearZone(Zone::ZONE_WINDOW);
     ClearZone(Zone::ZONE_STATUS);
     ResetScrollX();
+
     mTitleVisible = false;
     mWindowVisible = true;
     mStatusVisible = false;
@@ -28,6 +29,7 @@ bool UMDDisplay::Init(){
 
     _display->clearDisplay();
     _display->setTextSize(1);             // Normal 1:1 pixel scale
+    mFontInfo.Set(6,8);
     _display->setTextColor(WHITE);        // Draw white text
     _display->display();
     mRedrawScreen = false;
@@ -123,7 +125,7 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
             ClearLine(Zone::ZONE_WINDOW, mWindowCurrentLine);
             std::vsnprintf(mWindowBuffer[mWindowCurrentLine].data(), mWindowBuffer[mWindowCurrentLine].size(), (const char *)format, args);
             mWindowCurrentLine++;
-            mWindowItems.Count++;
+            mWindow.TotalItems++;
             if(mWindowCurrentLine >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
             {
                 mWindowCurrentLine = 0;
@@ -139,11 +141,12 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
 // MARK: SetWindowItems()
 void UMDDisplay::SetWindowItems(const std::vector<const char *>& items)
 {
-    mWindowItems.items.assign(items.begin(), items.end());
-    mWindowItems.Reset(0, UMD_DISPLAY_BUFFER_TOTAL_LINES);
-    mWindowItems.Count = items.size();
-    mWindowCurrentLine = items.size();
-    LoadWindowItemsToBuffer(0, 0, UMD_DISPLAY_BUFFER_TOTAL_LINES);
+    uint8_t windowStartLine = mTitleVisible ? 1 : 0;
+
+    mWindow.Reset(windowStartLine, GetWindowVisibleLinesCount(), items);
+    mWindowCurrentLine = std::min(items.size(), (size_t)UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+    LoadWindowItemsToBuffer();
+    SetCursorPosition(0, windowStartLine);
 }
 
 uint8_t UMDDisplay::GetWindowVisibleLinesCount()
@@ -187,25 +190,21 @@ void UMDDisplay::DecWindowScrollX(uint8_t lineNumber)
     }
 }
 
-void UMDDisplay::IncWindowScrollY()
+// MARK: SetWindowScrollY()
+void UMDDisplay::SetWindowScrollY(int8_t delta)
 {
     mRedrawScreen = true;
-    if(++mWindowScrollY >= UMD_DISPLAY_BUFFER_TOTAL_LINES){
+    mWindowScrollY += delta;
+    // limit range to the buffer line size
+
+    if(mWindowScrollY < 0){
+        mWindowScrollY = UMD_DISPLAY_BUFFER_TOTAL_LINES - 1;
+    }else if(mWindowScrollY >= UMD_DISPLAY_BUFFER_TOTAL_LINES){
         mWindowScrollY = 0;
     }
 }
 
-void UMDDisplay::DecWindowScrollY()
-{
-    mRedrawScreen = true;
-    if(mWindowScrollY == 0){
-        mWindowScrollY = UMD_DISPLAY_BUFFER_TOTAL_LINES - 1;
-    }else{
-        mWindowScrollY--;
-    }
-}
-
-// MARK: SetCursor()
+// MARK: SetCursorChar()
 void UMDDisplay::SetCursorChar(char c)
 {
     mCursor.character = c;
@@ -218,95 +217,11 @@ void UMDDisplay::SetCursorVisibility(bool visible)
     mRedrawScreen = true;
 }
 
-void UMDDisplay::SetCursorPosition(int x, int y, bool wrap = false)
+void UMDDisplay::SetCursorPosition(int x, int y)
 {
-
-    if(wrap){
-        mCursor.x = (x * OLED_FONT_WIDTH) % OLED_MAX_CHARS_PER_LINE;
-        mCursor.y = (y * OLED_FONT_HEIGHT) % OLED_MAX_LINES_PER_SCREEN;
-    }else{
-        mCursor.x = x * OLED_FONT_WIDTH < OLED_MAX_CHARS_PER_LINE ? x * OLED_FONT_WIDTH : -1;
-        mCursor.y = y * OLED_FONT_HEIGHT < OLED_MAX_LINES_PER_SCREEN ? y * OLED_FONT_HEIGHT : -1;
-    }
+    mCursor.x = x * mFontInfo.Width;
+    mCursor.y = y * mFontInfo.Height;
     mRedrawScreen = true;
-}
-
-
-void UMDDisplay::setClockVisible(bool visible)
-{
-    mClockSpr.visible = visible;
-    _needsRedraw = true;
-}
-
-void UMDDisplay::setClockPosition(int x, int y)
-{
-    if(x < OLED_MAX_CHARS_PER_LINE){
-        mClockSpr.x = x * OLED_FONT_WIDTH;
-    }else{
-        mClockSpr.x = -1;
-    }
-    
-    if(y < OLED_MAX_LINES_PER_SCREEN){
-        mClockSpr.y = y * OLED_FONT_HEIGHT;
-    }else{
-        mClockSpr.y = -1;
-    }
-    _needsRedraw = true;
-}
-
-void UMDDisplay::advanceClockAnimation()
-{
-    if(!mClockSpr.visible)
-        return;
-        
-    if(++mClockSpr.framePointer == UMD_CLOCK_ANIMATION_FRAMES)
-        mClockSpr.framePointer = 0;
-    _needsRedraw = true;
-}
-
-void UMDDisplay::setCursorMenuPosition()
-{
-    SetCursorPosition(0, mMenu.startLine + (mMenu.currentItem - mMenu.windowStart));
-}
-
-
-void UMDDisplay::clear(void)
-{
-    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
-    {
-        // for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
-        // {
-        //     clearLine(layer, line);
-        // }
-        clearLayer(layer);
-    }
-
-    _needsRedraw = true;
-}
-
-
-void UMDDisplay::clearLayer(int layer)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    for(int line = 0; line < UMD_DISPLAY_BUFFER_TOTAL_LINES; line++)
-    {
-        clearLine(layer, line);
-    }
-    _needsRedraw = true;
-}
-
-void UMDDisplay::clearLine(int layer, int lineNumber)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    for(int chr = 0; chr < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; chr++)
-    {
-        _buffer[layer][lineNumber][chr] = ' ';
-    }
-    _needsRedraw = true;
 }
 
 void UMDDisplay::ClearScratchBufferLine(int lineNumber)
@@ -385,251 +300,150 @@ void UMDDisplay::print(int layer, int number, int lineNumber)
     print(layer, num_char, lineNumber);
 }
 
-void UMDDisplay::LoadMenuItems(int layer, std::vector<const char *>& items)
+
+// MARK: UpdateCursorItemPosition()
+void UMDDisplay::UpdateCursorItemPosition(int8_t delta)
 {
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
+    uint8_t bufferIndex = 0;
 
-    mMenu.items.assign(items.begin(), items.end());
-
-    fillLayerFromMenu(layer, 0, 0);
-    initMenuCursor(layer);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::menuCursorUpdate(int delta, bool visible)
-{
-    if(visible)
-    {
-        mMenu.currentItem += delta;
-        if(mMenu.currentItem < 0)
-        {
-           mMenu.currentItem = 0;
-        }
-        else if(mMenu.currentItem >= mMenu.items.size())
-        {
-            mMenu.currentItem = mMenu.items.size() - 1;
-        }
-
-        if(mMenu.items.size() > mMenu.windowSize)
-        {
-            // reached the top of the displayed menu and we need to scroll up?
-            if(mMenu.currentItem == mMenu.windowStart && mMenu.windowStart > 0)
-            {
-                mMenu.scrollRequired = delta;
-                mMenu.windowStart += delta;
-                mMenu.windowEnd += delta;
-                scrollMenu(delta);
-            }
-            // reached the bottom of the displayed menu and we need to scroll down?
-            else if(mMenu.currentItem == mMenu.windowEnd && mMenu.windowEnd < mMenu.items.size())
-            {
-                mMenu.scrollRequired = delta;
-                mMenu.windowStart += delta;
-                mMenu.windowEnd += delta;
-                scrollMenu(delta);
-            }
-
-        }
-
-        setCursorMenuPosition();
-    }
-    else
-    {
-        mMenu.cursorVisible = false;
-        SetCursorPosition(-1, -1);
-    }
-}
-
-// MARK: IncCursorItemPosition()
-void UMDDisplay::IncCursorItemPosition()
-{
     if(mCursor.visible)
     {
         mRedrawScreen = true;
-        mWindowItems.CursorIndex++;
-        // don't wrap around, stay at 0th index
 
-        // have we reach the second to last item in the window AND there are more items to display?
-        if(mWindowItems.CursorIndex < mWindowItems.StartIndex)
+        // cap at ends of list
+        mWindow.SelectedItemIndex += delta;
+        if(mWindow.SelectedItemIndex < 0)
         {
-            mWindowItems.StartIndex = mWindowItems.CursorIndex;
+            mWindow.SelectedItemIndex = 0;
         }
+        else if(mWindow.SelectedItemIndex >= mWindow.TotalItems)
+        {
+            mWindow.SelectedItemIndex = mWindow.TotalItems - 1;
+        }
+
+        // check if we need to adjust the window
+        if(mWindow.TotalItems > mWindow.WindowSize)
+        {
+            // reached the top of the displayed menu and we need to scroll up?
+            if(mWindow.SelectedItemIndex == mWindow.WindowStart && mWindow.WindowStart > 0)
+            {
+                // scroll up
+                mWindow.ScrollRequired = delta;
+                // adjust window
+                mWindow.WindowStart += delta;
+                mWindow.WindowEnd += delta;
+
+                if(mWindow.SelectedItemIndex == mWindow.StartBufferItem)
+                {
+                    // are there more items before the buffer?
+                    if(mWindow.StartBufferItem > 0)
+                    {
+                        // we're scrolling up, load new item at the top of the buffer
+                        // adding modulo constant ensures modulo signs are correct, and doesn't affect the result of the modulo operation
+                        bufferIndex = ((mWindowScrollY + UMD_DISPLAY_BUFFER_TOTAL_LINES)-1) % UMD_DISPLAY_BUFFER_TOTAL_LINES; 
+                        LoadWindowItemToBuffer(mWindow.SelectedItemIndex - 1, bufferIndex);
+                        // adjust buffer indexes
+                        mWindow.StartBufferItem--;
+                        mWindow.EndBufferItem--;
+                    }
+                }
+            }
+            // reached the bottom of the displayed menu and we need to scroll down?
+            else if (mWindow.SelectedItemIndex == mWindow.WindowEnd && mWindow.WindowEnd < (mWindow.TotalItems-1))
+            {
+                // scroll down
+                mWindow.ScrollRequired = delta;
+                // adjust window
+                mWindow.WindowStart += delta;
+                mWindow.WindowEnd += delta;
+
+                // do we need to load an additional item into the buffer?
+                if(mWindow.SelectedItemIndex == mWindow.EndBufferItem)
+                {
+                    // are there more items passed the buffer?
+                    if(mWindow.EndBufferItem < (mWindow.TotalItems-1))
+                    {
+                        bufferIndex = (mWindowScrollY + mWindow.WindowSize) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
+                        LoadWindowItemToBuffer(mWindow.SelectedItemIndex + 1, bufferIndex);
+                        // adjust buffer indexes
+                        mWindow.StartBufferItem++;
+                        mWindow.EndBufferItem++;
+                    }
+                }
+            }
+        }
+
+        if(mWindow.ScrollRequired != 0)
+        {
+            SetWindowScrollY(mWindow.ScrollRequired);
+            mWindow.ScrollRequired = 0;
+        }
+
+        SetCursorPosition(0, mWindow.StartLine + (mWindow.SelectedItemIndex - mWindow.WindowStart)); 
+
     }else{
         mRedrawScreen = false;
     }
 }
 
-uint8_t UMDDisplay::GetCurrentItemIndex()
+uint8_t UMDDisplay::GetSelectedItemIndex()
 {
-    return mMenu.currentItem;
+    return (uint8_t)mWindow.SelectedItemIndex;
 }
 
-void UMDDisplay::initMenuCursor(int layer)
-{
-    mMenu.cursorVisible = true;
-    mMenu.layer = layer;
-    mMenu.windowStart = 0;
-    mMenu.scrollRequired = 0;
-    mMenu.currentItem = 0;
-    if(layer == 0)
-    {
-        mMenu.startLine = 0;
-        mMenu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN);
-        
-    }
-    else
-    {
-        // find where this menu starts in display line space
-        int line = 0;
-        for(int prevLayers = 0; prevLayers < layer; prevLayers++)
-        {
-            line += _layerLength[prevLayers];
-        }
-
-        mMenu.startLine = line;
-        mMenu.windowSize = std::min(_layerLength[layer], OLED_MAX_LINES_PER_SCREEN - line);
-    }
-
-    mMenu.windowEnd = mMenu.windowStart + mMenu.windowSize - 1;
-    setCursorMenuPosition();
-}
-
-void UMDDisplay::fillLayerFromMenu(int layer, int startBufferIndex, int startMenuIndex)
-{
-    // clear the layer
-    clearLayer(layer);
-
-    // fill the buffer with menu items
-    int menuIndex = startMenuIndex;
-    int bufferIndex = startBufferIndex;
-
-    for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
-    {
-        // have we reached the end of the menu items? if so clear the rest of the buffer
-        if(menuIndex >= mMenu.items.size())
-        {
-            //clearLine(bufferIndex);
-            return;
-        }
-        else
-        {
-            // always leave 1 blank character at start of string for menus
-            print(layer, mMenu.items[menuIndex++], bufferIndex++, 1);
-        }
-
-        // wrap around the buffer
-        if(bufferIndex >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
-            bufferIndex = 0;
-    }
-}
-
-void UMDDisplay::LoadWindowItemsToBuffer(uint8_t startItemIndex, uint8_t startBufferIndex, uint8_t windowSize)
+// MARK: LoadWindowItemsToBuffer()
+void UMDDisplay::LoadWindowItemsToBuffer()
 {
     // let's be safe
-    startItemIndex = startItemIndex % mWindowItems.items.size();
-    startBufferIndex = startBufferIndex % UMD_DISPLAY_BUFFER_TOTAL_LINES;
+    uint8_t charIndex = 0;
 
     // clear the window buffer
     ClearZone(Zone::ZONE_WINDOW);
     for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
     {
         // have we reached the end of the menu items?
-        if(startItemIndex >= mWindowItems.items.size())
+
+        if(i >= mWindow.items.size())
         {
             return;
         }
         else
         {
-            // always leave 1 blank character at start of string for menus (already blanked from ClearZone)
-            strncpy(mWindowBuffer[startBufferIndex++].data()+1, mWindowItems.items[startItemIndex++], OLED_MAX_CHARS_PER_LINE);
+            // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
+            strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
+            charIndex = 0;
+            // while(mWindow.items[i][charIndex] != '\0'){
+            //     mWindowBuffer[i][charIndex+1] = mWindow.items[i][charIndex];
+            //     charIndex = (charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+            // }
         }
-        startBufferIndex = startBufferIndex % UMD_DISPLAY_BUFFER_TOTAL_LINES;
     }
     mRedrawScreen = true;
 }
 
-void UMDDisplay::scrollMenu(int delta)
+void UMDDisplay::LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex)
 {
-    // easy case if menu is smaller than layer buffer
-    if(mMenu.items.size() < UMD_DISPLAY_BUFFER_TOTAL_LINES)
+    uint8_t charIndex = 0;
+    if(itemIndex >= mWindow.items.size())
     {
-        scrollY(mMenu.layer, delta);
+        return;
     }
     else
     {
-
+        ClearLine(Zone::ZONE_WINDOW, bufferIndex);
+        strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
+        // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
+        // while(mWindow.items[itemIndex][charIndex] != '\0'){
+        //     mWindowBuffer[bufferIndex][(charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE] = mWindow.items[itemIndex][charIndex];
+        //     charIndex = (charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+        // }
     }
-}
-
-void UMDDisplay::redraw(void)
-{
-    if(!_needsRedraw)
-        return;
-    
-    char lineChars[OLED_MAX_CHARS_PER_LINE+1]; // +1 for terminator
-    int charIndexFromBuffer, lineIndexFromBuffer;
-
-    _display->clearDisplay();
-
-    int totalLinesDrawn = 0;
-    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
-    {
-        // draw all lines from layer up to OLED_MAX_LINES_PER_SCREEN
-        int layerLength = _layerLength[layer];
-        if( (layerLength + totalLinesDrawn) > OLED_MAX_LINES_PER_SCREEN)
-            layerLength = OLED_MAX_LINES_PER_SCREEN - totalLinesDrawn;
-
-        for(int line = 0; line < layerLength; line++)
-        {
-            _display->setCursor(0, OLED_LINE_NUMBER(totalLinesDrawn));
-            lineIndexFromBuffer = _scroll[layer][line][UMD_DISPLAY_SCROLL_LINE];
-            charIndexFromBuffer = _scroll[layer][lineIndexFromBuffer][UMD_DISPLAY_SCROLL_CHAR];
-            
-            // file the lineChars buffer
-            for(int pos = 0; pos < OLED_MAX_CHARS_PER_LINE; pos++)
-            {
-                // wrap around if required
-                if(charIndexFromBuffer >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
-                {
-                    charIndexFromBuffer = 0;
-                }
-                lineChars[pos] = _buffer[layer][lineIndexFromBuffer][charIndexFromBuffer++];
-            }
-            lineChars[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
-            totalLinesDrawn++;
-            _display->print(lineChars);
-        }
-    }
-
-    // draw the cursor if visible
-    if(mCursor.visible)
-    {
-        _display->setCursor(this->mCursor.x, this->mCursor.y);
-        _display->print(this->mCursor.character);
-    }
-
-    // draw the clock if visible
-    if(mClockSpr.visible){
-        _display->drawBitmap(mClockSpr.x, mClockSpr.y, _clockAnimation[mClockSpr.framePointer], 8, 8, SSD1306_WHITE);
-    }
-
-    _display->display();
-    // clear the next position trackers
-    for(int layer = 0; layer < UMD_DISPLAY_LAYERS; layer++)
-    {
-        for(int i = 0; i < UMD_DISPLAY_BUFFER_TOTAL_LINES; i++)
-        {
-            _bufferNextPos[layer][i] = 0;
-        }
-    }
-    
-    _needsRedraw = false;
+    mRedrawScreen = true;
 }
 
 // MARK: Redraw()
 void UMDDisplay::Redraw(void){
-    uint8_t currentLine = 0;
+    uint8_t currentLineOnDisplay = 0;
     uint8_t windowLinesToPrint = 0;
     uint8_t windowCharPos = 0;
     uint8_t windowLineIndex = mWindowScrollY;
@@ -637,28 +451,32 @@ void UMDDisplay::Redraw(void){
     if(!mRedrawScreen)
         return;
 
+    auto linePosToCoordinate = [h = this->mFontInfo.Height](uint8_t lineNumber) {return lineNumber * h;};
+
     _display->clearDisplay();
 
+    // Title on line 0, if visible
     if(mTitleVisible)
     {
-        _display->setCursor(0, OLED_LINE_NUMBER(0));
+        _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
         _display->print(mTitleBuffer.data());
-        currentLine++;
+        currentLineOnDisplay++;
     }
 
+    // Window on lines 1-n, if visible
     if(mWindowVisible)
     {
         // determine the size of the window to print
         windowLinesToPrint = GetWindowVisibleLinesCount();
 
-        for( ; currentLine < windowLinesToPrint; currentLine++)
+        for(int i = 0 ; i < windowLinesToPrint; i++)
         {
-            _display->setCursor(0, OLED_LINE_NUMBER(currentLine));
+            _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
             windowCharPos = mWindowScrollX[(windowLineIndex) % UMD_DISPLAY_BUFFER_TOTAL_LINES];
             for(uint8_t dispPosition = 0; dispPosition < OLED_MAX_CHARS_PER_LINE; dispPosition++)
             {
                 // copy the character from the window buffer to the line buffer
-                mLineBuffer[dispPosition] = mWindowBuffer[(windowLineIndex) % UMD_DISPLAY_BUFFER_TOTAL_LINES][windowCharPos];
+                mLineBuffer[dispPosition] = mWindowBuffer[windowLineIndex][windowCharPos];
                 // wrap around character pointer
                 windowCharPos = (windowCharPos + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
                 
@@ -666,13 +484,22 @@ void UMDDisplay::Redraw(void){
             mLineBuffer[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
             _display->print(mLineBuffer.data());
             windowLineIndex = (windowLineIndex + 1) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
+            currentLineOnDisplay++;
         }
     }
 
+    // Status on the final line, if visible
     if(mStatusVisible)
     {
-        _display->setCursor(0, OLED_LINE_NUMBER(currentLine));
+        _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
         _display->print(mStatusBuffer.data());
+    }
+
+    // draw the cursor if visible
+    if(mCursor.visible)
+    {
+        _display->setCursor(this->mCursor.x, this->mCursor.y);
+        _display->print(this->mCursor.character);
     }
 
     _display->display();
