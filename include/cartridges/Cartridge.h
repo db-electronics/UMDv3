@@ -77,7 +77,7 @@ class Cartridge : public UMDPortsV3 {
         virtual void InitIO () = 0;
         
         /// @brief Get the name of the system 
-        virtual const char* GetSystemName() const = 0;
+        virtual const std::string& GetSystemName() const = 0;
 
         /// @brief Get the name of the cartridge currently connected, if it is knowable via the header
         virtual const char* GetCartridgeName() = 0;

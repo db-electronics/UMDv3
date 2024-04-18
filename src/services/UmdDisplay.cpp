@@ -143,7 +143,7 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
 // MARK: SetWindowItems()
 void UMDDisplay::SetWindowItems(const std::vector<const char *>& items)
 {
-    uint8_t windowStartLine = mTitleVisible ? 1 : 0;
+    int windowStartLine = mTitleVisible ? 1 : 0;
 
     mWindow.Reset(windowStartLine, GetWindowVisibleLinesCount(), items);
     mWindowCurrentLine = std::min(items.size(), (size_t)UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
@@ -151,9 +151,9 @@ void UMDDisplay::SetWindowItems(const std::vector<const char *>& items)
     SetCursorPosition(0, windowStartLine);
 }
 
-uint8_t UMDDisplay::GetWindowVisibleLinesCount()
+int UMDDisplay::GetWindowVisibleLinesCount()
 {
-    uint8_t result = OLED_MAX_LINES_PER_SCREEN;
+    int result = OLED_MAX_LINES_PER_SCREEN;
     if(mStatusVisible)
     {
         result--;
@@ -172,42 +172,30 @@ void UMDDisplay::ResetScrollX()
     std::fill(mWindowScrollX.begin(), mWindowScrollX.end(), 0);
 }
 
-void UMDDisplay::SetWindowItemScrollX(int8_t delta)
+void UMDDisplay::SetWindowItemScrollX(int delta)
 {
-    uint8_t bufferIndex;
-
     mRedrawScreen = true;
 
     // find on which line the current item is
-    bufferIndex = mWindow.SelectedItemIndex - mWindow.WindowStart;
+    int bufferStartIndex = (mWindowScrollY - mWindow.WindowStart) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
+    int bufferIndex = (mWindow.SelectedItemIndex + bufferStartIndex) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
+
+    // TODO don't scroll if not required to, will need the size of each string in the buffer
+
     // apply the scroll
     mWindowScrollX[bufferIndex] += delta;
-    // limit range to the buffer line size
-    if(mWindowScrollX[bufferIndex] < 0)
-    {
-        mWindowScrollX[bufferIndex] = UMD_DISPLAY_BUFFER_CHARS_PER_LINE - 1;
-    }
-    else if(mWindowScrollX[bufferIndex] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
-    {
-        mWindowScrollX[bufferIndex] = 0;
-    }
+
+    // limit range to prevent the text from wrapping around
+    mWindowScrollX[bufferIndex] = std::clamp(mWindowScrollX[bufferIndex], 0, UMD_DISPLAY_BUFFER_CHARS_PER_LINE - OLED_MAX_CHARS_PER_LINE);
 }
 
 // MARK: SetWindowScrollY()
-void UMDDisplay::SetWindowScrollY(int8_t delta)
+void UMDDisplay::SetWindowScrollY(int delta)
 {
     mRedrawScreen = true;
     mWindowScrollY += delta;
-    // limit range to the buffer line size
-
-    if(mWindowScrollY < 0)
-    {
-        mWindowScrollY = UMD_DISPLAY_BUFFER_TOTAL_LINES - 1;
-    }
-    else if(mWindowScrollY >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
-    {
-        mWindowScrollY = 0;
-    }
+    // proper modulo wrap around for negative value
+    mWindowScrollY = (mWindowScrollY + UMD_DISPLAY_BUFFER_TOTAL_LINES) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
 }
 
 // MARK: SetCursorChar()
@@ -231,7 +219,7 @@ void UMDDisplay::SetCursorPosition(int x, int y)
 }
 
 // MARK: UpdateCursorItemPosition()
-void UMDDisplay::UpdateCursorItemPosition(int8_t delta)
+void UMDDisplay::UpdateCursorItemPosition(int delta)
 {
     uint8_t bufferIndex = 0;
 
@@ -239,16 +227,9 @@ void UMDDisplay::UpdateCursorItemPosition(int8_t delta)
     {
         mRedrawScreen = true;
 
-        // cap at ends of list
+        // clamp at ends
         mWindow.SelectedItemIndex += delta;
-        if(mWindow.SelectedItemIndex < 0)
-        {
-            mWindow.SelectedItemIndex = 0;
-        }
-        else if(mWindow.SelectedItemIndex >= mWindow.TotalItems)
-        {
-            mWindow.SelectedItemIndex = mWindow.TotalItems - 1;
-        }
+        mWindow.SelectedItemIndex = std::clamp(mWindow.SelectedItemIndex, 0, mWindow.TotalItems-1);
 
         // check if we need to adjust the window
         if(mWindow.TotalItems > mWindow.WindowSize)
@@ -324,8 +305,8 @@ uint8_t UMDDisplay::GetSelectedItemIndex()
 void UMDDisplay::LoadWindowItemsToBuffer()
 {
 
-    uint8_t itemChar = 0;
-    uint8_t bufferChar = 0;
+    int itemChar = 0;
+    int bufferChar = 0;
 
     // clear the window buffer
     ClearZone(Zone::ZONE_WINDOW);
@@ -356,7 +337,7 @@ void UMDDisplay::LoadWindowItemsToBuffer()
     mRedrawScreen = true;
 }
 
-void UMDDisplay::LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex)
+void UMDDisplay::LoadWindowItemToBuffer(int itemIndex, int bufferIndex)
 {
     uint8_t itemChar = 0;
     uint8_t bufferChar = 0;

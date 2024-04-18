@@ -62,7 +62,7 @@ class Genesis : public Cartridge {
         virtual ~Genesis();
 
         virtual void InitIO() override;
-        virtual const char* GetSystemName() const override {return "MD";};
+        virtual const std::string& GetSystemName() const {return mSystemName;};
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
 
@@ -96,6 +96,7 @@ class Genesis : public Cartridge {
     private:
 
         GenesisHeader mHeader;
+        const std::string mSystemName = "MD";
         const uint32_t HEADER_START_ADDR = 0x00000100;
         const uint32_t HEADER_SIZE = 256;
         const uint32_t TIME_CONFIG_ADDR = 0xA130F1;

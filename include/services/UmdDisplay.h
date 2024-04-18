@@ -9,7 +9,6 @@
 #define OLED_RESET -1 
 #define OLED_SCREEN_WIDTH 128
 #define OLED_SCREEN_HEIGHT 64
-
 #define OLED_FONT_WIDTH 6
 #define OLED_FONT_HEIGHT 8
 
@@ -25,8 +24,6 @@
 #define UMD_DISPLAY_LAYER_FG                0
 #define UMD_DISPLAY_LAYER_MENU              1
 
-#define UMD_DISPLAY_SCROLL_LINE             0
-#define UMD_DISPLAY_SCROLL_CHAR             1
 
 class UMDDisplay
 {
@@ -55,27 +52,18 @@ class UMDDisplay
         void SetCursorChar(char c);
         void SetCursorVisibility(bool visible);
         void SetCursorPosition(int x, int y);
-        void UpdateCursorItemPosition(int8_t delta);
+        void UpdateCursorItemPosition(int delta);
 
-        void SetWindowItemScrollX(int8_t delta);
+        void SetWindowItemScrollX(int delta);
         void ResetScrollX();
-        void SetWindowScrollY(int8_t delta);
+        void SetWindowScrollY(int delta);
 
         void Redraw(void);
 
     private:
         
-        static Adafruit_SSD1306 *_display;
-
         std::unique_ptr<Adafruit_SSD1306> mDisplay;
         
-        // bool _needsRedraw;
-        // int _layerLength[UMD_DISPLAY_LAYERS];
-        // int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
-        // char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-        // int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
-
-        // character buffers for the display
         struct FontInfo
         {
             uint8_t Width;
@@ -94,8 +82,8 @@ class UMDDisplay
         bool mWindowVisible;
         bool mStatusVisible;
 
-        uint8_t mWindowCurrentLine;
-        uint8_t mUserCurrentLine;
+        int mWindowCurrentLine;
+        int mUserCurrentLine;
 
         // line 0 is the title
         std::array<char, OLED_MAX_CHARS_PER_LINE+1> mTitleBuffer; // +1 for terminator
@@ -107,27 +95,27 @@ class UMDDisplay
         std::array<char, OLED_MAX_CHARS_PER_LINE+1> mLineBuffer;
 
         // window scroll y position, indicates on which line the window starts
-        int8_t mWindowScrollY;
+        int mWindowScrollY;
         // window scroll x position, indicates on which character the window starts
-        std::array<int8_t, UMD_DISPLAY_BUFFER_TOTAL_LINES> mWindowScrollX;
+        std::array<int, UMD_DISPLAY_BUFFER_TOTAL_LINES> mWindowScrollX;
 
         void LoadWindowItemsToBuffer();
-        void LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex);
-        uint8_t GetWindowVisibleLinesCount();
+        void LoadWindowItemToBuffer(int itemIndex, int bufferIndex);
+        int GetWindowVisibleLinesCount();
 
         struct WindowItemsData{
             std::vector<const char *> items;
-            uint8_t StartLine;          // display line where the window starts
-            int16_t SelectedItemIndex;  // index of the selected item in the display buffer
-            uint8_t WindowSize;         // number of items that can be displayed in the window
-            uint8_t WindowStart;        // index of the first item in the visible window
-            uint8_t WindowEnd;          // index of the last item in the visible window    
-            uint8_t TotalItems;         // items can be added to the display buffer afterwards
-            uint8_t StartBufferItem;    // index of the first item in the display buffer
-            uint8_t EndBufferItem;     // index of the last item in the display buffer
-            int8_t ScrollRequired;
+            int StartLine;          // display line where the window starts
+            int SelectedItemIndex;  // index of the selected item in the display buffer
+            int WindowSize;         // number of items that can be displayed in the window
+            int WindowStart;        // index of the first item in the visible window
+            int WindowEnd;          // index of the last item in the visible window    
+            int TotalItems;         // items can be added to the display buffer afterwards
+            int StartBufferItem;    // index of the first item in the display buffer
+            int EndBufferItem;      // index of the last item in the display buffer
+            int ScrollRequired;
             
-            void Reset(uint8_t startLine, uint8_t windowSize, const std::vector<const char *>& newItems){
+            void Reset(int startLine, int windowSize, const std::vector<const char *>& newItems){
                 items.assign(newItems.begin(), newItems.end());
                 StartLine = startLine;
                 SelectedItemIndex = 0;
@@ -136,7 +124,7 @@ class UMDDisplay
                 WindowEnd = windowSize - 1;
                 TotalItems = newItems.size();
                 StartBufferItem = 0;
-                EndBufferItem = std::min(TotalItems, (uint8_t)UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
                 ScrollRequired = 0;
             }
         }mWindow;
