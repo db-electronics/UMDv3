@@ -174,19 +174,23 @@ void UMDDisplay::ResetScrollX()
 
 void UMDDisplay::SetWindowItemScrollX(int delta)
 {
+    // don't scroll if not required to, will need the size of each string in the buffer
+    int itemLength = strlen(mWindow.items[mWindow.SelectedItemIndex]);
+    if(itemLength < OLED_MAX_CHARS_PER_LINE)
+    {
+        return;
+    }
+
     mRedrawScreen = true;
 
     // find on which line the current item is
     int bufferStartIndex = (mWindowScrollY - mWindow.WindowStart) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
     int bufferIndex = (mWindow.SelectedItemIndex + bufferStartIndex) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
-
-    // TODO don't scroll if not required to, will need the size of each string in the buffer
-
     // apply the scroll
     mWindowScrollX[bufferIndex] += delta;
 
     // limit range to prevent the text from wrapping around
-    mWindowScrollX[bufferIndex] = std::clamp(mWindowScrollX[bufferIndex], 0, UMD_DISPLAY_BUFFER_CHARS_PER_LINE - OLED_MAX_CHARS_PER_LINE);
+    mWindowScrollX[bufferIndex] = std::clamp(mWindowScrollX[bufferIndex], 0, itemLength - OLED_MAX_CHARS_PER_LINE + 1);
 }
 
 // MARK: SetWindowScrollY()
@@ -323,15 +327,15 @@ void UMDDisplay::LoadWindowItemsToBuffer()
             // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
             // strncpy fills with null characters, not useful for scrolling
             //strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
-
-            itemChar = 0;
-            bufferChar = 0;
-            while(mWindow.items[i][itemChar] != '\0')
-            {
-                bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-                mWindowBuffer[i][bufferChar] = mWindow.items[i][itemChar];
-                itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-            }
+            strcpy(mWindowBuffer[i].data()+1, mWindow.items[i]);
+            // itemChar = 0;
+            // bufferChar = 0;
+            // while(mWindow.items[i][itemChar] != '\0')
+            // {
+            //     bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+            //     mWindowBuffer[i][bufferChar] = mWindow.items[i][itemChar];
+            //     itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+            // }
         }
     }
     mRedrawScreen = true;
@@ -351,14 +355,15 @@ void UMDDisplay::LoadWindowItemToBuffer(int itemIndex, int bufferIndex)
         ClearLine(Zone::ZONE_WINDOW, bufferIndex);
         //strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
         // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-        itemChar = 0;
-        bufferChar = 0;
-        while(mWindow.items[itemIndex][itemChar] != '\0')
-        {
-            bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-            mWindowBuffer[bufferIndex][bufferChar] = mWindow.items[itemIndex][itemChar];
-            itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-        }
+        strcpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex]);
+        // itemChar = 0;
+        // bufferChar = 0;
+        // while(mWindow.items[itemIndex][itemChar] != '\0')
+        // {
+        //     bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+        //     mWindowBuffer[bufferIndex][bufferChar] = mWindow.items[itemIndex][itemChar];
+        //     itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+        // }
     }
     mRedrawScreen = true;
 }

@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <map>
 #include <Adafruit_SSD1306.h>
 #include "Menu.h"
 
@@ -47,14 +48,26 @@ class UMDDisplay
         void ClearZone(Zone zone);
         void ClearLine(Zone zone, uint8_t lineNumber);
 
+        /// @brief print a line directly to the output buffer, n.b. be wary of buffer line size
+        /// @param zone the zone to print to 
+        /// @param format the format string
+        /// @param args the arguments to the format string
         void Printf(Zone zone, const __FlashStringHelper *format, ...);
+
+        /// @brief load a set of items of arbitrary length into the window buffer, this clears previous items
+        /// @param items 
         void SetWindowItems(const std::vector<const char *>& items);
+        
+        /// @brief clear current window items
+        void ClearWindowItems();
+        void UpdateCursorItemPosition(int delta);
+        void SetWindowItemScrollX(int delta);
+
+
         void SetCursorChar(char c);
         void SetCursorVisibility(bool visible);
         void SetCursorPosition(int x, int y);
-        void UpdateCursorItemPosition(int delta);
 
-        void SetWindowItemScrollX(int delta);
         void ResetScrollX();
         void SetWindowScrollY(int delta);
 
@@ -114,7 +127,7 @@ class UMDDisplay
             int StartBufferItem;    // index of the first item in the display buffer
             int EndBufferItem;      // index of the last item in the display buffer
             int ScrollRequired;
-            
+
             void Reset(int startLine, int windowSize, const std::vector<const char *>& newItems){
                 items.assign(newItems.begin(), newItems.end());
                 StartLine = startLine;
@@ -126,6 +139,40 @@ class UMDDisplay
                 StartBufferItem = 0;
                 EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
                 ScrollRequired = 0;
+            }
+
+            void AddItems(const std::vector<const char *>& newItems){
+                // allocate new memory for each new item and copy the string
+                for(auto item : newItems){
+                    items.push_back(strdup(item));
+                }
+                TotalItems = items.size();
+                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+            }
+
+            void AddItem(const char *newItem){
+                items.push_back(strdup(newItem));
+                TotalItems = items.size();
+                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+            }
+
+            // receive a formatted string, allocate memory and copy the string
+            void AddItem(const __FlashStringHelper *format, ...){
+                char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE+1];
+                va_list args;
+                va_start(args, format);
+                vsnprintf_P(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
+                va_end(args);
+                items.push_back(strdup(buffer));
+                TotalItems = items.size();
+                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+            }
+
+            void ClearItems(){
+                for(auto item : items){
+                    free((void *)item);
+                }
+                items.clear();
             }
         }mWindow;
 

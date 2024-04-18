@@ -42,11 +42,13 @@ namespace Umd
 
         const std::vector<const char *> MENU_WITH_30_ITEMS = {
             "0", 
-            "1", 
+            "this is a bit longer string", 
             "this item should be a pretty long string.", 
             "3", "4", "5", "6", "7", "8", "9",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
-            "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"
+            "20", "21", "22", "23", "24", "25", "26", "27", 
+            "RetroRGB fucks meese, I have proof.", 
+            "29"
         };
     };
 
