@@ -1,9 +1,8 @@
 
 #include "services/UmdDisplay.h"
 
-Adafruit_SSD1306* UMDDisplay::_display = new Adafruit_SSD1306(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-UMDDisplay::UMDDisplay()
+UMDDisplay::UMDDisplay(std::unique_ptr<Adafruit_SSD1306> display) 
+    : mDisplay(std::move(display))
 {
 
 }
@@ -11,7 +10,7 @@ UMDDisplay::UMDDisplay()
 // MARK: Init()
 bool UMDDisplay::Init(){
 
-    if(!_display->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
+    if(!mDisplay->begin(SSD1306_SWITCHCAPVCC, 0x3c)) { 
         return false;
     }
 
@@ -27,16 +26,17 @@ bool UMDDisplay::Init(){
     mWindowCurrentLine = 0;
     mWindowScrollY = 0;
 
-    _display->clearDisplay();
-    _display->setTextSize(1);             // Normal 1:1 pixel scale
+    mDisplay->clearDisplay();
+    mDisplay->setTextSize(1);             // Normal 1:1 pixel scale
     mFontInfo.Set(6,8);
-    _display->setTextColor(WHITE);        // Draw white text
-    _display->display();
+    mDisplay->setTextColor(WHITE);        // Draw white text
+    mDisplay->display();
     mRedrawScreen = false;
 
     return true;
 }
 
+// MARK: SetZoneVisibility()
 void UMDDisplay::SetZoneVisibility(Zone zone, bool visible)
 {
     mRedrawScreen = true;
@@ -57,6 +57,7 @@ void UMDDisplay::SetZoneVisibility(Zone zone, bool visible)
     }
 }
 
+// MARK: ClearZone()
 void UMDDisplay::ClearZone(Zone zone)
 {
     mRedrawScreen = true;
@@ -81,6 +82,7 @@ void UMDDisplay::ClearZone(Zone zone)
     
 }
 
+// MARK: ClearLine()
 void UMDDisplay::ClearLine(Zone zone, uint8_t const lineNumber)
 {
     switch(zone)
@@ -170,23 +172,24 @@ void UMDDisplay::ResetScrollX()
     std::fill(mWindowScrollX.begin(), mWindowScrollX.end(), 0);
 }
 
-void UMDDisplay::IncWindowScrollX(uint8_t lineNumber)
+void UMDDisplay::SetWindowItemScrollX(int8_t delta)
 {
-    uint8_t scroll;
+    uint8_t bufferIndex;
 
     mRedrawScreen = true;
-    if(++mWindowScrollX[lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
-        mWindowScrollX[lineNumber] = 0;
+
+    // find on which line the current item is
+    bufferIndex = mWindow.SelectedItemIndex - mWindow.WindowStart;
+    // apply the scroll
+    mWindowScrollX[bufferIndex] += delta;
+    // limit range to the buffer line size
+    if(mWindowScrollX[bufferIndex] < 0)
+    {
+        mWindowScrollX[bufferIndex] = UMD_DISPLAY_BUFFER_CHARS_PER_LINE - 1;
     }
-}
-
-void UMDDisplay::DecWindowScrollX(uint8_t lineNumber)
-{
-    mRedrawScreen = true;
-    if(mWindowScrollX[lineNumber] == 0){
-        mWindowScrollX[lineNumber] = UMD_DISPLAY_BUFFER_TOTAL_LINES - 1;
-    }else{
-        mWindowScrollX[lineNumber]--;
+    else if(mWindowScrollX[bufferIndex] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
+    {
+        mWindowScrollX[bufferIndex] = 0;
     }
 }
 
@@ -197,9 +200,12 @@ void UMDDisplay::SetWindowScrollY(int8_t delta)
     mWindowScrollY += delta;
     // limit range to the buffer line size
 
-    if(mWindowScrollY < 0){
+    if(mWindowScrollY < 0)
+    {
         mWindowScrollY = UMD_DISPLAY_BUFFER_TOTAL_LINES - 1;
-    }else if(mWindowScrollY >= UMD_DISPLAY_BUFFER_TOTAL_LINES){
+    }
+    else if(mWindowScrollY >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
+    {
         mWindowScrollY = 0;
     }
 }
@@ -223,83 +229,6 @@ void UMDDisplay::SetCursorPosition(int x, int y)
     mCursor.y = y * mFontInfo.Height;
     mRedrawScreen = true;
 }
-
-void UMDDisplay::ClearScratchBufferLine(int lineNumber)
-{
-    for(int i = 0; i < UMD_DISPLAY_BUFFER_CHARS_PER_LINE; i++)
-    {
-        ScratchBuffer[lineNumber][i] = ' ';
-    }
-}
-
-void UMDDisplay::printf(int layer, int lineNumber, const char *format, ...)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    va_list args;
-    va_start(args, format);
-    vsnprintf(_buffer[layer][lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, format, args);
-    va_end(args);
-    _needsRedraw = true;
-}
-
-
-
-void UMDDisplay::printf(int layer, int lineNumber, const __FlashStringHelper *format, ...)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-    
-    va_list args;
-    va_start(args, format);
-    vsnprintf(_buffer[layer][lineNumber], UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
-    va_end(args);
-    _needsRedraw = true;
-}
-
-void UMDDisplay::print(int layer, const char characters[], int lineNumber, int printPos)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-    
-    int i = 0;
-    _bufferNextPos[layer][lineNumber] = printPos;
-
-    if(_bufferNextPos[layer][lineNumber] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE){
-        _bufferNextPos[layer][lineNumber] = 0;
-    }
-
-    while(characters[i] != '\0'){
-        // wrap around if required
-        if(i >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE )
-        {
-            _bufferNextPos[layer][lineNumber] = 0;
-        }
-        
-        //this->buffer[lineNumber][bufferNextPos[lineNumber]++] = characters[i++];
-        _buffer[layer][lineNumber][_bufferNextPos[layer][lineNumber]++] = characters[i++];
-    }
-}
-
-void UMDDisplay::print(int layer, const char characters[], int lineNumber)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    print(layer, characters, lineNumber, _bufferNextPos[layer][lineNumber]);
-}
-
-void UMDDisplay::print(int layer, int number, int lineNumber)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    std::string tmp = std::to_string(number);
-    const char *num_char = tmp.c_str();
-    print(layer, num_char, lineNumber);
-}
-
 
 // MARK: UpdateCursorItemPosition()
 void UMDDisplay::UpdateCursorItemPosition(int8_t delta)
@@ -394,8 +323,9 @@ uint8_t UMDDisplay::GetSelectedItemIndex()
 // MARK: LoadWindowItemsToBuffer()
 void UMDDisplay::LoadWindowItemsToBuffer()
 {
-    // let's be safe
-    uint8_t charIndex = 0;
+
+    uint8_t itemChar = 0;
+    uint8_t bufferChar = 0;
 
     // clear the window buffer
     ClearZone(Zone::ZONE_WINDOW);
@@ -410,12 +340,17 @@ void UMDDisplay::LoadWindowItemsToBuffer()
         else
         {
             // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-            strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
-            charIndex = 0;
-            // while(mWindow.items[i][charIndex] != '\0'){
-            //     mWindowBuffer[i][charIndex+1] = mWindow.items[i][charIndex];
-            //     charIndex = (charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-            // }
+            // strncpy fills with null characters, not useful for scrolling
+            //strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
+
+            itemChar = 0;
+            bufferChar = 0;
+            while(mWindow.items[i][itemChar] != '\0')
+            {
+                bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+                mWindowBuffer[i][bufferChar] = mWindow.items[i][itemChar];
+                itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+            }
         }
     }
     mRedrawScreen = true;
@@ -423,7 +358,9 @@ void UMDDisplay::LoadWindowItemsToBuffer()
 
 void UMDDisplay::LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex)
 {
-    uint8_t charIndex = 0;
+    uint8_t itemChar = 0;
+    uint8_t bufferChar = 0;
+
     if(itemIndex >= mWindow.items.size())
     {
         return;
@@ -431,12 +368,16 @@ void UMDDisplay::LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex)
     else
     {
         ClearLine(Zone::ZONE_WINDOW, bufferIndex);
-        strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
+        //strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
         // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-        // while(mWindow.items[itemIndex][charIndex] != '\0'){
-        //     mWindowBuffer[bufferIndex][(charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE] = mWindow.items[itemIndex][charIndex];
-        //     charIndex = (charIndex + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-        // }
+        itemChar = 0;
+        bufferChar = 0;
+        while(mWindow.items[itemIndex][itemChar] != '\0')
+        {
+            bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+            mWindowBuffer[bufferIndex][bufferChar] = mWindow.items[itemIndex][itemChar];
+            itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
+        }
     }
     mRedrawScreen = true;
 }
@@ -453,13 +394,13 @@ void UMDDisplay::Redraw(void){
 
     auto linePosToCoordinate = [h = this->mFontInfo.Height](uint8_t lineNumber) {return lineNumber * h;};
 
-    _display->clearDisplay();
+    mDisplay->clearDisplay();
 
     // Title on line 0, if visible
     if(mTitleVisible)
     {
-        _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
-        _display->print(mTitleBuffer.data());
+        mDisplay->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
+        mDisplay->print(mTitleBuffer.data());
         currentLineOnDisplay++;
     }
 
@@ -471,7 +412,7 @@ void UMDDisplay::Redraw(void){
 
         for(int i = 0 ; i < windowLinesToPrint; i++)
         {
-            _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
+            mDisplay->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
             windowCharPos = mWindowScrollX[(windowLineIndex) % UMD_DISPLAY_BUFFER_TOTAL_LINES];
             for(uint8_t dispPosition = 0; dispPosition < OLED_MAX_CHARS_PER_LINE; dispPosition++)
             {
@@ -482,7 +423,7 @@ void UMDDisplay::Redraw(void){
                 
             }
             mLineBuffer[OLED_MAX_CHARS_PER_LINE] = '\0'; // Ensure null-termination
-            _display->print(mLineBuffer.data());
+            mDisplay->print(mLineBuffer.data());
             windowLineIndex = (windowLineIndex + 1) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
             currentLineOnDisplay++;
         }
@@ -491,64 +432,17 @@ void UMDDisplay::Redraw(void){
     // Status on the final line, if visible
     if(mStatusVisible)
     {
-        _display->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
-        _display->print(mStatusBuffer.data());
+        mDisplay->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
+        mDisplay->print(mStatusBuffer.data());
     }
 
     // draw the cursor if visible
     if(mCursor.visible)
     {
-        _display->setCursor(this->mCursor.x, this->mCursor.y);
-        _display->print(this->mCursor.character);
+        mDisplay->setCursor(this->mCursor.x, this->mCursor.y);
+        mDisplay->print(this->mCursor.character);
     }
 
-    _display->display();
+    mDisplay->display();
     mRedrawScreen = false;
 }
-
-void UMDDisplay::scrollX(int layer, int lineNumber, int delta)
-{
-    if(delta > UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
-        return;
-
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    if(lineNumber >= OLED_MAX_LINES_PER_SCREEN)
-        return;
-
-    _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] += delta;
-    if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] >= UMD_DISPLAY_BUFFER_CHARS_PER_LINE)
-    {
-        _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] -= UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-    }
-    else if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] < 0)
-    {
-        _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_CHAR] += UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-    }
-    _needsRedraw = true;
-}
-
-void UMDDisplay::scrollY(int layer, int delta)
-{
-    if(layer >= UMD_DISPLAY_LAYERS)
-        return;
-
-    if(delta > UMD_DISPLAY_BUFFER_TOTAL_LINES)
-        return;
-
-    for(int lineNumber = 0; lineNumber < OLED_MAX_LINES_PER_SCREEN; lineNumber++)
-    {
-        _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] += delta;
-        if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
-        {
-            _scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] = 0;
-        }
-        else if(_scroll[layer][lineNumber][UMD_DISPLAY_SCROLL_LINE] < 0)
-        {
-            _scroll[layer][lineNumber][0] = UMD_DISPLAY_BUFFER_TOTAL_LINES-1;
-        }
-    }
-    _needsRedraw = true;
-}
-

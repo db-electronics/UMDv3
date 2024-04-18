@@ -39,26 +39,9 @@ class UMDDisplay
             ZONE_WINDOW
         };
 
-        UMDDisplay();
-        
-        
-
-        void printf(int layer, int lineNumber, const char *format, ...);
-        void printf(int layer, int lineNumber, const __FlashStringHelper *format, ...);
-        void print(int layer, const char characters[], int lineNumber, int pos);
-        void print(int layer, const char characters[], int lineNumber);
-        void print(int layer, int number, int lineNumber);
+        UMDDisplay(std::unique_ptr<Adafruit_SSD1306> display);
 
         uint8_t GetSelectedItemIndex();
-
-        
-        void scrollX(int layer, int lineNumber, int delta); // scroll line by delta chars
-        void scrollY(int layer, int delta); // increment all line numbers by delta
-
-        // persistent buffer to add to the display
-        void ClearScratchBufferLine(int lineNumber);
-        char ScratchBuffer[UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-
 
 
         bool Init();
@@ -74,8 +57,7 @@ class UMDDisplay
         void SetCursorPosition(int x, int y);
         void UpdateCursorItemPosition(int8_t delta);
 
-        void IncWindowScrollX(uint8_t lineNumber);
-        void DecWindowScrollX(uint8_t lineNumber);
+        void SetWindowItemScrollX(int8_t delta);
         void ResetScrollX();
         void SetWindowScrollY(int8_t delta);
 
@@ -84,11 +66,14 @@ class UMDDisplay
     private:
         
         static Adafruit_SSD1306 *_display;
-        bool _needsRedraw;
-        int _layerLength[UMD_DISPLAY_LAYERS];
-        int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
-        char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
-        int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
+
+        std::unique_ptr<Adafruit_SSD1306> mDisplay;
+        
+        // bool _needsRedraw;
+        // int _layerLength[UMD_DISPLAY_LAYERS];
+        // int _scroll[UMD_DISPLAY_LAYERS][OLED_MAX_LINES_PER_SCREEN][2];
+        // char _buffer[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES][UMD_DISPLAY_BUFFER_CHARS_PER_LINE];
+        // int _bufferNextPos[UMD_DISPLAY_LAYERS][UMD_DISPLAY_BUFFER_TOTAL_LINES];
 
         // character buffers for the display
         struct FontInfo
@@ -118,12 +103,13 @@ class UMDDisplay
         std::array<char, OLED_MAX_CHARS_PER_LINE+1> mStatusBuffer;
         // lines 1-n are the scrollable window
         std::array<std::array<char, UMD_DISPLAY_BUFFER_CHARS_PER_LINE+1>, UMD_DISPLAY_BUFFER_TOTAL_LINES> mWindowBuffer;
-        // window scroll x position, indicates on which character the window starts
-        std::array<uint8_t, UMD_DISPLAY_BUFFER_TOTAL_LINES> mWindowScrollX;
         
         std::array<char, OLED_MAX_CHARS_PER_LINE+1> mLineBuffer;
+
         // window scroll y position, indicates on which line the window starts
         int8_t mWindowScrollY;
+        // window scroll x position, indicates on which character the window starts
+        std::array<int8_t, UMD_DISPLAY_BUFFER_TOTAL_LINES> mWindowScrollX;
 
         void LoadWindowItemsToBuffer();
         void LoadWindowItemToBuffer(uint8_t itemIndex, uint8_t bufferIndex);

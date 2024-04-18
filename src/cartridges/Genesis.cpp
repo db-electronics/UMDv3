@@ -101,14 +101,16 @@ FlashInfo Genesis::GetFlashInfo(uint8_t memTypeIndex){
 // MARK: Identify()
 uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
     // fill the buffer, but don't modify its value because we may need it for checksum
+    uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
     for(int i = 0; i < size; i+=2){
-        *(uint16_t*)(buffer + i) = ReadPrgWord(address);
+        //*(uint16_t*)(buffer + i) = ReadPrgWord(address);
+        *(buf16++) = ReadPrgWord(address);
         address += 2;
     }
 
     switch(opt){
         case CHECKSUM_CALCULATOR:
-            return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
+            return mChecksumCalculator.Accumulate(reinterpret_cast<uint32_t*>(buffer), size/4);
         default:
             return 0;
     }
@@ -117,6 +119,8 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
 // MARK: ReadMemory()
 uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt){
     
+    uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
+
     // check if the memTypeIndex is valid
     if(!IsMemoryIndexValid(memTypeIndex)){
         return 0;
@@ -127,7 +131,7 @@ uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, u
     switch(mem){
         case PRG0:
             for(int i = 0; i < size; i+=2){
-                *(uint16_t*)(buffer + i) = ReadPrgWord(address);
+                *(buf16++) = ReadPrgWord(address);
                 address += 2;
             }
             break;
@@ -136,7 +140,7 @@ uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, u
     }
     switch(opt){
         case CHECKSUM_CALCULATOR:
-            return mChecksumCalculator.Accumulate((uint32_t*)buffer, size/4);
+            return mChecksumCalculator.Accumulate(reinterpret_cast<uint32_t*>(buffer), size/4);
         default:
             return 0;
     }
@@ -311,7 +315,7 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     // romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
 
                     if(!romFile){
-                        disp.printf(1, 6, "Error opening file");
+                        //disp.printf(1, 6, "Error opening file");
                         return -1; // stay in Read menu
                     }
 
@@ -371,8 +375,8 @@ int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass&
                     romSize = mHeader.ROMEnd + 1;
                     validChecksum = calculateChecksum(0x200, romSize);
                     // show results
-                    disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);
-                    disp.printf(1, 6, "Actual:   %04X", ActualChecksum);
+                    //disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);
+                    //disp.printf(1, 6, "Actual:   %04X", ActualChecksum);
                     return -1; // stay in Checksum menu
                 default:
                     return 0;

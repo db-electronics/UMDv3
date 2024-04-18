@@ -195,25 +195,25 @@ void loop()
             if(Umd::Ux::UserInput.Down >= Umd::Ux::UserInput.PRESSED)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(1);
+                Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(-1);
+                Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
-                Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, -1);
+                Umd::Ux::Display.SetWindowItemScrollX(-1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
                 // TODO don't needlessly scroll menus
-                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
-                Umd::Ux::Display.scrollX(UMD_DISPLAY_LAYER_MENU, selectedItemIndex, 1);
+                Umd::Ux::Display.SetWindowItemScrollX(1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             // USER PRESSED OK
@@ -240,7 +240,7 @@ void loop()
                                 for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.bytes, batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
                                 Umd::OperationTime = HAL_GetTick() - currentTicks;
@@ -250,15 +250,15 @@ void loop()
                                 Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
 
                                 // TODO this is ugly, but it works for now, and really who cares because we have tons of RAM
-                                Umd::Ux::Display.ClearScratchBufferLine(0);
-                                sprintf(Umd::Ux::Display.ScratchBuffer[0], "Size : %08X", totalBytes);
-                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[0]);
-                                Umd::Ux::Display.ClearScratchBufferLine(1);
-                                sprintf(Umd::Ux::Display.ScratchBuffer[1], "CRC  : %08X", Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[1]);
-                                Umd::Ux::Display.ClearScratchBufferLine(2);
-                                sprintf(Umd::Ux::Display.ScratchBuffer[2], "Time : %d ms", Umd::OperationTime);
-                                Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[2]);
+                                // Umd::Ux::Display.ClearScratchBufferLine(0);
+                                // sprintf(Umd::Ux::Display.ScratchBuffer[0], "Size : %08X", totalBytes);
+                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[0]);
+                                // Umd::Ux::Display.ClearScratchBufferLine(1);
+                                // sprintf(Umd::Ux::Display.ScratchBuffer[1], "CRC  : %08X", Umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[1]);
+                                // Umd::Ux::Display.ClearScratchBufferLine(2);
+                                // sprintf(Umd::Ux::Display.ScratchBuffer[2], "Time : %d ms", Umd::OperationTime);
+                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[2]);
 
                                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName(), "Id");
                                 // Umd::Cart::AddMetadataItem(F("Size : %08X"), totalBytes);
@@ -313,7 +313,7 @@ void loop()
                                 for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.bytes, batchSize, selectedMemory, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.data(), batchSize, selectedMemory, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
                                 Umd::OperationTime = HAL_GetTick() - currentTicks;

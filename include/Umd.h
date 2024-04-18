@@ -8,6 +8,8 @@
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
 
+#define UMD_DATA_BUFFER_SIZE_BYTES 512
+
 namespace Umd
 {
     
@@ -29,7 +31,8 @@ namespace Umd
 
         Controls UserInput;
 
-        UMDDisplay Display;
+        std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
+        UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
 
         const std::vector<const char *> MAIN_MENU_ITEMS = {
             "Identify",
@@ -38,7 +41,10 @@ namespace Umd
         };
 
         const std::vector<const char *> MENU_WITH_30_ITEMS = {
-            "0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+            "0", 
+            "1", 
+            "this item should be a pretty long string.", 
+            "3", "4", "5", "6", "7", "8", "9",
             "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
             "20", "21", "22", "23", "24", "25", "26", "27", "28", "29"
         };
@@ -90,9 +96,10 @@ namespace Umd
 
     const uint16_t BUFFER_SIZE_BYTES = 512;
     /// @brief Data buffer for the UMD, must be a multiple of 4 bytes
-    union DataBuffer{
-        uint8_t bytes[BUFFER_SIZE_BYTES];
-        uint16_t words[BUFFER_SIZE_BYTES/2];
-        uint32_t dwords[BUFFER_SIZE_BYTES/4];
-    }DataBuffer;
+    // union DataBuffer{
+    //     uint8_t bytes[BUFFER_SIZE_BYTES];
+    //     uint16_t words[BUFFER_SIZE_BYTES/2];
+    //     uint32_t dwords[BUFFER_SIZE_BYTES/4];
+    // }DataBuffer;
+    std::array<uint8_t, UMD_DATA_BUFFER_SIZE_BYTES> DataBuffer;
 }
