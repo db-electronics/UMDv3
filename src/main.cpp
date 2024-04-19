@@ -175,7 +175,7 @@ void setup()
 void loop()
 {
     // Reminder: when debugging ticks isn't accurate at all and SD card is more wonky
-    static uint32_t currentTicks=0, previousTicks;
+    static uint32_t currentTicks=0, previousTicks, dasTicks;
     uint8_t selectedItemIndex;
     Cartridge::MemoryType selectedMemory;
     uint32_t totalBytes;
@@ -187,7 +187,7 @@ void loop()
 
     // process inputs
     uint8_t inputs = Umd::IoExpander.readGPIO();
-    Umd::Ux::UserInput.process(inputs, currentTicks);
+    Umd::Ux::UserInput.Process(inputs, currentTicks);
 
     switch(Umd::Ux::UserInputState)
     {
@@ -197,24 +197,26 @@ void loop()
                 Umd::Ux::Display.UpdateCursorItemPosition(1);
                 Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                dasTicks = currentTicks;
             }
             else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(-1);
                 Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                dasTicks = currentTicks;
             }
             else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
             {
-                // TODO don't needlessly scroll menus
                 Umd::Ux::Display.SetWindowItemScrollX(-1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                dasTicks = currentTicks;
             }
             else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
             {
-                // TODO don't needlessly scroll menus
                 Umd::Ux::Display.SetWindowItemScrollX(1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                dasTicks = currentTicks;
             }
             // USER PRESSED OK
             else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
@@ -351,7 +353,7 @@ void loop()
             else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
                 Umd::Ux::Display.ResetScrollX();
-                Umd::Ux::Display.SetWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
+                Umd::Ux::Display.NewWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             break;
@@ -366,21 +368,33 @@ void loop()
             {
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             }
-            // DAS
+            // MARK: Delayed auto-shift
             if(Umd::Ux::UserInput.Up == Umd::Ux::UserInput.HELD){
-                Umd::Ux::Display.UpdateCursorItemPosition(-1);
+                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+                    Umd::Ux::Display.UpdateCursorItemPosition(-1);
+                    dasTicks = currentTicks;
+                }
             }else if(Umd::Ux::UserInput.Down == Umd::Ux::UserInput.HELD){
-                Umd::Ux::Display.UpdateCursorItemPosition(1);
+                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+                    Umd::Ux::Display.UpdateCursorItemPosition(1);
+                    dasTicks = currentTicks;
+                }
             }else if(Umd::Ux::UserInput.Left == Umd::Ux::UserInput.HELD){
-                Umd::Ux::Display.SetWindowItemScrollX(-1);
+                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+                    Umd::Ux::Display.SetWindowItemScrollX(-1);
+                    dasTicks = currentTicks;
+                }
             }else if(Umd::Ux::UserInput.Right == Umd::Ux::UserInput.HELD){
-                Umd::Ux::Display.SetWindowItemScrollX(1);
+                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+                    Umd::Ux::Display.SetWindowItemScrollX(1);
+                    dasTicks = currentTicks;
+                } 
             }
             break;
         case Umd::Ux::UX_INPUT_INIT:
         default:
             Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
-            Umd::Ux::Display.SetWindowItems(Umd::Ux::MENU_WITH_30_ITEMS);
+            Umd::Ux::Display.NewWindowItems(Umd::Ux::MENU_WITH_30_ITEMS);
             Umd::Ux::Display.SetCursorVisibility(true);
             Umd::Ux::Display.SetCursorChar('>');
             Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));

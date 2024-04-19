@@ -30,6 +30,7 @@ namespace Umd
         UxUserInputState UserInputState = UX_INPUT_INIT;
 
         Controls UserInput;
+        const int DAS_DELAY_MS = 75;
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));

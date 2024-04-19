@@ -56,10 +56,14 @@ class UMDDisplay
 
         /// @brief load a set of items of arbitrary length into the window buffer, this clears previous items
         /// @param items 
-        void SetWindowItems(const std::vector<const char *>& items);
+        void NewWindowItems(const std::vector<const char *>& items);
         
         /// @brief clear current window items
         void ClearWindowItems();
+
+        void AddWindowItem(const char *item);
+
+
         void UpdateCursorItemPosition(int delta);
         void SetWindowItemScrollX(int delta);
 
@@ -116,63 +120,37 @@ class UMDDisplay
         void LoadWindowItemToBuffer(int itemIndex, int bufferIndex);
         int GetWindowVisibleLinesCount();
 
+        void AddWindowItem(const __FlashStringHelper *format, ...);
+        void AddWindowItems(const std::vector<const char *>& items);
+
         struct WindowItemsData{
-            std::vector<const char *> items;
+            std::vector<const char *> Items;
             int StartLine;          // display line where the window starts
             int SelectedItemIndex;  // index of the selected item in the display buffer
             int WindowSize;         // number of items that can be displayed in the window
             int WindowStart;        // index of the first item in the visible window
             int WindowEnd;          // index of the last item in the visible window    
-            int TotalItems;         // items can be added to the display buffer afterwards
             int StartBufferItem;    // index of the first item in the display buffer
             int EndBufferItem;      // index of the last item in the display buffer
             int ScrollRequired;
 
-            void Reset(int startLine, int windowSize, const std::vector<const char *>& newItems){
-                items.assign(newItems.begin(), newItems.end());
+            void Reset(int startLine, int windowSize){
+                ClearAndDeleteItems();
                 StartLine = startLine;
                 SelectedItemIndex = 0;
                 WindowSize = windowSize;
                 WindowStart = 0;
                 WindowEnd = windowSize - 1;
-                TotalItems = newItems.size();
                 StartBufferItem = 0;
-                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+                EndBufferItem = 0;
                 ScrollRequired = 0;
             }
-
-            void AddItems(const std::vector<const char *>& newItems){
-                // allocate new memory for each new item and copy the string
-                for(auto item : newItems){
-                    items.push_back(strdup(item));
+            
+            void ClearAndDeleteItems(){
+                for(auto item : Items){
+                    delete[] item;
                 }
-                TotalItems = items.size();
-                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
-            }
-
-            void AddItem(const char *newItem){
-                items.push_back(strdup(newItem));
-                TotalItems = items.size();
-                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
-            }
-
-            // receive a formatted string, allocate memory and copy the string
-            void AddItem(const __FlashStringHelper *format, ...){
-                char buffer[UMD_DISPLAY_BUFFER_CHARS_PER_LINE+1];
-                va_list args;
-                va_start(args, format);
-                vsnprintf_P(buffer, UMD_DISPLAY_BUFFER_CHARS_PER_LINE, (const char *)format, args);
-                va_end(args);
-                items.push_back(strdup(buffer));
-                TotalItems = items.size();
-                EndBufferItem = std::min(TotalItems, UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
-            }
-
-            void ClearItems(){
-                for(auto item : items){
-                    free((void *)item);
-                }
-                items.clear();
+                Items.clear();
             }
         }mWindow;
 

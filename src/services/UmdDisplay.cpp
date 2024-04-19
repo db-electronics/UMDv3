@@ -117,7 +117,6 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
         case Zone::ZONE_TITLE:
             ClearZone(Zone::ZONE_TITLE);
             std::vsnprintf(mTitleBuffer.data(), mTitleBuffer.size(), (const char *)format, args);
-            //vsnprintf(mTitleBuffer, OLED_MAX_CHARS_PER_LINE, (const char *)format, args);
             break;
         case Zone::ZONE_STATUS:
             ClearZone(Zone::ZONE_STATUS);
@@ -126,12 +125,7 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
         case Zone::ZONE_WINDOW:
             ClearLine(Zone::ZONE_WINDOW, mWindowCurrentLine);
             std::vsnprintf(mWindowBuffer[mWindowCurrentLine].data(), mWindowBuffer[mWindowCurrentLine].size(), (const char *)format, args);
-            mWindowCurrentLine++;
-            mWindow.TotalItems++;
-            if(mWindowCurrentLine >= UMD_DISPLAY_BUFFER_TOTAL_LINES)
-            {
-                mWindowCurrentLine = 0;
-            }
+            mWindowCurrentLine = (mWindowCurrentLine + 1) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
             break;
         default:
             mRedrawScreen = false;
@@ -140,15 +134,50 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
     va_end(args);
 }
 
-// MARK: SetWindowItems()
-void UMDDisplay::SetWindowItems(const std::vector<const char *>& items)
+// MARK: NewWindowItems()
+void UMDDisplay::NewWindowItems(const std::vector<const char *>& items)
 {
     int windowStartLine = mTitleVisible ? 1 : 0;
-
-    mWindow.Reset(windowStartLine, GetWindowVisibleLinesCount(), items);
-    mWindowCurrentLine = std::min(items.size(), (size_t)UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+    mWindowScrollY = 0;
+    ResetScrollX();
+    mWindow.Reset(windowStartLine, GetWindowVisibleLinesCount());
+    AddWindowItems(items);
     LoadWindowItemsToBuffer();
-    SetCursorPosition(0, windowStartLine);
+    SetCursorPosition(0, mWindow.StartLine);
+}
+
+void UMDDisplay::AddWindowItem(const char *item)
+{
+    const char *copy = strdup(item);
+    mWindow.Items.push_back(copy);
+    // TODO set EndBufferItem
+    mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+}
+
+void UMDDisplay::AddWindowItem(const __FlashStringHelper *format, ...){
+    va_list args;
+    va_start(args, format);
+    char *copy = new char[UMD_DISPLAY_BUFFER_CHARS_PER_LINE+1];
+    std::vsprintf(copy, (const char *)format, args);
+    va_end(args);
+    mWindow.Items.push_back(copy);
+    mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+}
+
+void UMDDisplay::AddWindowItems(const std::vector<const char *>& items)
+{
+    for(auto item : items){
+        const char *copy = strdup(item);
+        mWindow.Items.push_back(copy);
+    }
+    // TODO set EndBufferItem
+    mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+}
+
+void UMDDisplay::ClearWindowItems()
+{
+    mWindow.ClearAndDeleteItems();
+    ClearZone(Zone::ZONE_WINDOW);
 }
 
 int UMDDisplay::GetWindowVisibleLinesCount()
@@ -175,7 +204,7 @@ void UMDDisplay::ResetScrollX()
 void UMDDisplay::SetWindowItemScrollX(int delta)
 {
     // don't scroll if not required to, will need the size of each string in the buffer
-    int itemLength = strlen(mWindow.items[mWindow.SelectedItemIndex]);
+    int itemLength = strlen(mWindow.Items[mWindow.SelectedItemIndex]);
     if(itemLength < OLED_MAX_CHARS_PER_LINE)
     {
         return;
@@ -233,10 +262,10 @@ void UMDDisplay::UpdateCursorItemPosition(int delta)
 
         // clamp at ends
         mWindow.SelectedItemIndex += delta;
-        mWindow.SelectedItemIndex = std::clamp(mWindow.SelectedItemIndex, 0, mWindow.TotalItems-1);
+        mWindow.SelectedItemIndex = std::clamp(mWindow.SelectedItemIndex, 0, (int)mWindow.Items.size()-1);
 
         // check if we need to adjust the window
-        if(mWindow.TotalItems > mWindow.WindowSize)
+        if(mWindow.Items.size() > mWindow.WindowSize)
         {
             // reached the top of the displayed menu and we need to scroll up?
             if(mWindow.SelectedItemIndex == mWindow.WindowStart && mWindow.WindowStart > 0)
@@ -263,7 +292,7 @@ void UMDDisplay::UpdateCursorItemPosition(int delta)
                 }
             }
             // reached the bottom of the displayed menu and we need to scroll down?
-            else if (mWindow.SelectedItemIndex == mWindow.WindowEnd && mWindow.WindowEnd < (mWindow.TotalItems-1))
+            else if (mWindow.SelectedItemIndex == mWindow.WindowEnd && mWindow.WindowEnd < (mWindow.Items.size()-1))
             {
                 // scroll down
                 mWindow.ScrollRequired = delta;
@@ -275,7 +304,7 @@ void UMDDisplay::UpdateCursorItemPosition(int delta)
                 if(mWindow.SelectedItemIndex == mWindow.EndBufferItem)
                 {
                     // are there more items passed the buffer?
-                    if(mWindow.EndBufferItem < (mWindow.TotalItems-1))
+                    if(mWindow.EndBufferItem < (mWindow.Items.size()-1))
                     {
                         bufferIndex = (mWindowScrollY + mWindow.WindowSize) % UMD_DISPLAY_BUFFER_TOTAL_LINES;
                         LoadWindowItemToBuffer(mWindow.SelectedItemIndex + 1, bufferIndex);
@@ -318,7 +347,7 @@ void UMDDisplay::LoadWindowItemsToBuffer()
     {
         // have we reached the end of the menu items?
 
-        if(i >= mWindow.items.size())
+        if(i >= mWindow.Items.size())
         {
             return;
         }
@@ -327,7 +356,7 @@ void UMDDisplay::LoadWindowItemsToBuffer()
             // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
             // strncpy fills with null characters, not useful for scrolling
             //strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
-            strcpy(mWindowBuffer[i].data()+1, mWindow.items[i]);
+            strcpy(mWindowBuffer[i].data()+1, mWindow.Items[i]);
             // itemChar = 0;
             // bufferChar = 0;
             // while(mWindow.items[i][itemChar] != '\0')
@@ -346,7 +375,7 @@ void UMDDisplay::LoadWindowItemToBuffer(int itemIndex, int bufferIndex)
     uint8_t itemChar = 0;
     uint8_t bufferChar = 0;
 
-    if(itemIndex >= mWindow.items.size())
+    if(itemIndex >= mWindow.Items.size())
     {
         return;
     }
@@ -355,7 +384,7 @@ void UMDDisplay::LoadWindowItemToBuffer(int itemIndex, int bufferIndex)
         ClearLine(Zone::ZONE_WINDOW, bufferIndex);
         //strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
         // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-        strcpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex]);
+        strcpy(mWindowBuffer[bufferIndex].data()+1, mWindow.Items[itemIndex]);
         // itemChar = 0;
         // bufferChar = 0;
         // while(mWindow.items[itemIndex][itemChar] != '\0')

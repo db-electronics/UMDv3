@@ -3,69 +3,69 @@
 
 Controls::Controls()
 {
-    this->Up = OFF;
-    this->Down = OFF;
-    this->Left = OFF;
-    this->Right = OFF;
-    this->Ok = OFF;
-    this->Back = OFF;
+    Up = OFF;
+    Down = OFF;
+    Left = OFF;
+    Right = OFF;
+    Ok = OFF;
+    Back = OFF;
 
-    this->_btnStates.push_back(BtnState(&Up, UMD_UP_PUSHBUTTON));
-    this->_btnStates.push_back(BtnState(&Down, UMD_DOWN_PUSHBUTTON));
-    this->_btnStates.push_back(BtnState(&Left, UMD_LEFT_PUSHBUTTON));
-    this->_btnStates.push_back(BtnState(&Right, UMD_RIGHT_PUSHBUTTON));
-    this->_btnStates.push_back(BtnState(&Ok, UMD_OK_PUSHBUTTON));
-    this->_btnStates.push_back(BtnState(&Back, UMD_BACK_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Up, UMD_UP_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Down, UMD_DOWN_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Left, UMD_LEFT_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Right, UMD_RIGHT_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Ok, UMD_OK_PUSHBUTTON));
+    ButtonStates.push_back(BtnState(&Back, UMD_BACK_PUSHBUTTON));
 }
 
-void Controls::process(uint8_t inputs, uint32_t currentTicks)
+void Controls::Process(uint8_t inputs, uint32_t currentTicks)
 {
 
-    for (auto& btn : _btnStates)
+    for (auto& btn : ButtonStates)
     {
-        _setButtonState(inputs, currentTicks, btn);
+        SetButtonState(inputs, currentTicks, btn);
     }
 }
 
-void Controls::_setButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
+void Controls::SetButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
 {
-    bool isPressed = (inputs & btnState.pinMask) == 0;
+    bool isPressed = (inputs & btnState.PinMask) == 0;
 
-    switch (*(btnState.state))
+    switch (*(btnState.pButtonstate))
     {
         case OFF:
-            *(btnState.state) = isPressed ? PRESSED : OFF;
-            btnState.previousTicks = currentTicks;
+            *(btnState.pButtonstate) = isPressed ? PRESSED : OFF;
+            btnState.PreviousTicks = currentTicks;
             break;
         case PRESSED:
             if (isPressed)
             {
-                if (currentTicks > (btnState.previousTicks + _pressedToHeldTicks))
+                if (currentTicks > (btnState.PreviousTicks + PRESSED_TO_HELD_MS))
                 {
-                    *(btnState.state) = HELD;
+                    *(btnState.pButtonstate) = HELD;
                 }
             }
             else
             {
-                *(btnState.state) = RELEASED;
+                *(btnState.pButtonstate) = RELEASED;
             }
             break;
         case HELD:
-            *(btnState.state) = isPressed ? HELD : RELEASED;
-            btnState.previousTicks = currentTicks;
+            *(btnState.pButtonstate) = isPressed ? HELD : RELEASED;
+            btnState.PreviousTicks = currentTicks;
             break;
         case RELEASED:
             if (!isPressed)
             {
-                if (currentTicks > (btnState.previousTicks + _releasedToOffTicks))
+                if (currentTicks > (btnState.PreviousTicks + RELEASED_TO_OFF_MS))
                 {
-                    *(btnState.state) = OFF;
+                    *(btnState.pButtonstate) = OFF;
                 }
             }
             else
             {
-                *(btnState.state) = PRESSED;
-                btnState.previousTicks = currentTicks;
+                *(btnState.pButtonstate) = PRESSED;
+                btnState.PreviousTicks = currentTicks;
             }
             break;
         default:
