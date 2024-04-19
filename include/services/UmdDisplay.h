@@ -54,19 +54,22 @@ class UMDDisplay
         /// @param args the arguments to the format string
         void Printf(Zone zone, const __FlashStringHelper *format, ...);
 
-        /// @brief load a set of items of arbitrary length into the window buffer, this clears previous items
+        /// @brief allocate a new line in the window items and print to it
+        /// @param format 
+        /// @param  
+        void Printf(const __FlashStringHelper *format, ...);
+
+        /// @brief load a set of items of arbitrary length into the window buffer, destroys any existing items
         /// @param items 
-        void NewWindowItems(const std::vector<const char *>& items);
-        
-        /// @brief clear current window items
-        void ClearWindowItems();
-
+        void NewWindow(const std::vector<const char *>& items);
         void AddWindowItem(const char *item);
-
+        void AddWindowItems(const std::vector<const char *>& items);
+        
+        /// @brief destroy current window items
+        void ClearWindowItems();
 
         void UpdateCursorItemPosition(int delta);
         void SetWindowItemScrollX(int delta);
-
 
         void SetCursorChar(char c);
         void SetCursorVisibility(bool visible);
@@ -120,11 +123,8 @@ class UMDDisplay
         void LoadWindowItemToBuffer(int itemIndex, int bufferIndex);
         int GetWindowVisibleLinesCount();
 
-        void AddWindowItem(const __FlashStringHelper *format, ...);
-        void AddWindowItems(const std::vector<const char *>& items);
-
         struct WindowItemsData{
-            std::vector<const char *> Items;
+            std::vector<std::string> Items;
             int StartLine;          // display line where the window starts
             int SelectedItemIndex;  // index of the selected item in the display buffer
             int WindowSize;         // number of items that can be displayed in the window
@@ -135,7 +135,7 @@ class UMDDisplay
             int ScrollRequired;
 
             void Reset(int startLine, int windowSize){
-                ClearAndDeleteItems();
+                Items.clear();      // destroys all string items too
                 StartLine = startLine;
                 SelectedItemIndex = 0;
                 WindowSize = windowSize;
@@ -145,14 +145,8 @@ class UMDDisplay
                 EndBufferItem = 0;
                 ScrollRequired = 0;
             }
-            
-            void ClearAndDeleteItems(){
-                for(auto item : Items){
-                    delete[] item;
-                }
-                Items.clear();
-            }
-        }mWindow;
+
+        } mWindow;
 
         struct Cursor
         {

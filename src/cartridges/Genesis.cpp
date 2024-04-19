@@ -18,7 +18,6 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
     mMemoryNames.push_back("SCD Backup RAM");
 
     mMetadata.clear();
-    mHeader.HasData = false;
 }
 
 // MARK: Destructor
@@ -183,10 +182,6 @@ bool Genesis::flashIsBusy(uint8_t mem){
 // MARK: ReadHeader
 void Genesis::ReadHeader(){
 
-    if(mHeader.HasData){
-        return;
-    }
-
     for(int i = 0; i < HEADER_SIZE; i+=2){
         mHeader.words[i>>1] = ReadPrgWord(HEADER_START_ADDR + i);
     }
@@ -226,8 +221,6 @@ void Genesis::ReadHeader(){
     mMetadata.clear();
     mMetadata.push_back(mHeader.Printable.DomesticName);
     mMetadata.push_back(mHeader.Printable.SerialNumber);
-
-    mHeader.HasData = true;
 }
 
 uint8_t Genesis::togglePrgBit(uint8_t attempts){

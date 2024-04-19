@@ -135,7 +135,7 @@ void UMDDisplay::Printf(Zone zone, const __FlashStringHelper *format, ...){
 }
 
 // MARK: NewWindowItems()
-void UMDDisplay::NewWindowItems(const std::vector<const char *>& items)
+void UMDDisplay::NewWindow(const std::vector<const char *>& items)
 {
     int windowStartLine = mTitleVisible ? 1 : 0;
     mWindowScrollY = 0;
@@ -148,35 +148,46 @@ void UMDDisplay::NewWindowItems(const std::vector<const char *>& items)
 
 void UMDDisplay::AddWindowItem(const char *item)
 {
-    const char *copy = strdup(item);
-    mWindow.Items.push_back(copy);
-    // TODO set EndBufferItem
+    mWindow.Items.push_back(std::string(item));
     mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
 }
 
-void UMDDisplay::AddWindowItem(const __FlashStringHelper *format, ...){
+void UMDDisplay::Printf(const __FlashStringHelper *format, ...){
     va_list args;
     va_start(args, format);
-    char *copy = new char[UMD_DISPLAY_BUFFER_CHARS_PER_LINE+1];
-    std::vsprintf(copy, (const char *)format, args);
+
+    // Get the length of the formatted string
+    va_list args_copy;
+    va_copy(args_copy, args);
+    int len = std::vsnprintf(nullptr, 0, (const char *)format, args_copy);
+    va_end(args_copy);
+
+    // Allocate an std::string of the appropriate size
+    std::string str(len, ' ');
+
+    // Print the formatted string to the std::string
+    std::vsprintf(&str[0], (const char *)format, args);
+
     va_end(args);
-    mWindow.Items.push_back(copy);
+
+    mWindow.Items.push_back(str);
     mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
+
+    // just reload the buffer, it's easier
+    LoadWindowItemsToBuffer();
 }
 
 void UMDDisplay::AddWindowItems(const std::vector<const char *>& items)
 {
     for(auto item : items){
-        const char *copy = strdup(item);
-        mWindow.Items.push_back(copy);
+        mWindow.Items.push_back(std::string(item));
     }
-    // TODO set EndBufferItem
     mWindow.EndBufferItem = std::min((int)mWindow.Items.size(), UMD_DISPLAY_BUFFER_TOTAL_LINES) - 1;
 }
 
 void UMDDisplay::ClearWindowItems()
 {
-    mWindow.ClearAndDeleteItems();
+    mWindow.Items.clear();
     ClearZone(Zone::ZONE_WINDOW);
 }
 
@@ -204,7 +215,7 @@ void UMDDisplay::ResetScrollX()
 void UMDDisplay::SetWindowItemScrollX(int delta)
 {
     // don't scroll if not required to, will need the size of each string in the buffer
-    int itemLength = strlen(mWindow.Items[mWindow.SelectedItemIndex]);
+    int itemLength = mWindow.Items[mWindow.SelectedItemIndex].length();
     if(itemLength < OLED_MAX_CHARS_PER_LINE)
     {
         return;
@@ -354,17 +365,7 @@ void UMDDisplay::LoadWindowItemsToBuffer()
         else
         {
             // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-            // strncpy fills with null characters, not useful for scrolling
-            //strncpy(mWindowBuffer[i].data()+1, mWindow.items[i], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
-            strcpy(mWindowBuffer[i].data()+1, mWindow.Items[i]);
-            // itemChar = 0;
-            // bufferChar = 0;
-            // while(mWindow.items[i][itemChar] != '\0')
-            // {
-            //     bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-            //     mWindowBuffer[i][bufferChar] = mWindow.items[i][itemChar];
-            //     itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-            // }
+            strcpy(mWindowBuffer[i].data()+1, mWindow.Items[i].c_str());
         }
     }
     mRedrawScreen = true;
@@ -382,17 +383,8 @@ void UMDDisplay::LoadWindowItemToBuffer(int itemIndex, int bufferIndex)
     else
     {
         ClearLine(Zone::ZONE_WINDOW, bufferIndex);
-        //strncpy(mWindowBuffer[bufferIndex].data()+1, mWindow.items[itemIndex], UMD_DISPLAY_BUFFER_CHARS_PER_LINE-1);
         // always leave 1 blank character at start of string for cursor (already blanked from ClearZone)
-        strcpy(mWindowBuffer[bufferIndex].data()+1, mWindow.Items[itemIndex]);
-        // itemChar = 0;
-        // bufferChar = 0;
-        // while(mWindow.items[itemIndex][itemChar] != '\0')
-        // {
-        //     bufferChar = (bufferChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-        //     mWindowBuffer[bufferIndex][bufferChar] = mWindow.items[itemIndex][itemChar];
-        //     itemChar = (itemChar + 1) % UMD_DISPLAY_BUFFER_CHARS_PER_LINE;
-        // }
+        strcpy(mWindowBuffer[bufferIndex].data()+1, mWindow.Items[itemIndex].c_str());
     }
     mRedrawScreen = true;
 }
@@ -415,7 +407,9 @@ void UMDDisplay::Redraw(void){
     if(mTitleVisible)
     {
         mDisplay->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
+        //mDisplay->setTextColor(BLACK, WHITE);
         mDisplay->print(mTitleBuffer.data());
+        //mDisplay->setTextColor(WHITE, BLACK);
         currentLineOnDisplay++;
     }
 

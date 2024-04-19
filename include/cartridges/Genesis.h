@@ -51,8 +51,6 @@ struct GenesisHeader{
         char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME+1];
         char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER+1];
     } Printable;
-
-    bool HasData;
 };
 
 class Genesis : public Cartridge {

@@ -233,9 +233,17 @@ void loop()
                             case Cartridge::IDENTIFY:
                                 // update state to IDENTIFY,
                                 Umd::Cart::State = Cartridge::IDENTIFY;
+                                
+                                // clear window and status
+                                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
+                                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
+                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
+                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("identifying..."));
+                                // redraw
+                                Umd::Ux::Display.Redraw();
+
                                 currentTicks = HAL_GetTick();
                                 Umd::Cart::pCartridge->ResetChecksumCalculator();
-
                                 totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
                                 Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::BUFFER_SIZE_BYTES);
 
@@ -251,25 +259,12 @@ void loop()
                                 // ask cartridge for some metadata about the ROM
                                 Umd::Cart::Metadata.clear();
                                 Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
-
-                                // TODO this is ugly, but it works for now, and really who cares because we have tons of RAM
-                                // Umd::Ux::Display.ClearScratchBufferLine(0);
-                                // sprintf(Umd::Ux::Display.ScratchBuffer[0], "Size : %08X", totalBytes);
-                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[0]);
-                                // Umd::Ux::Display.ClearScratchBufferLine(1);
-                                // sprintf(Umd::Ux::Display.ScratchBuffer[1], "CRC  : %08X", Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[1]);
-                                // Umd::Ux::Display.ClearScratchBufferLine(2);
-                                // sprintf(Umd::Ux::Display.ScratchBuffer[2], "Time : %d ms", Umd::OperationTime);
-                                // Umd::Cart::Metadata.push_back(Umd::Ux::Display.ScratchBuffer[2]);
-
-                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
-                                // Umd::Cart::AddMetadataItem(F("Size : %08X"), totalBytes);
-                                // Umd::Cart::AddMetadataItem(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                // Umd::Cart::AddMetadataItem(F("Time : %d ms"), Umd::OperationTime);
-
-                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::Metadata);
-
+                                
+                                Umd::Ux::Display.NewWindow(Umd::Cart::Metadata);
+                                Umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
+                                Umd::Ux::Display.Printf(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTime);
+                                
                                 // TODO search for this crc32 in the database
 
                                 // all done, return to main menu
@@ -281,7 +276,7 @@ void loop()
                                 // update state to READ and offer choice of memory to read from
                                 Umd::Cart::State = Cartridge::READ;
                                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Read");
-                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::Display.NewWindow(Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
                                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
@@ -289,7 +284,7 @@ void loop()
                                 // update state to WRITE and offer choice of memory to write to
                                 Umd::Cart::State = Cartridge::WRITE;
                                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Write");
-                                //Umd::Ux::Display.LoadMenuItems(UMD_DISPLAY_LAYER_MENU, Umd::Cart::MemoryNames);
+                                Umd::Ux::Display.NewWindow(Umd::Cart::MemoryNames);
                                 Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
                                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
@@ -351,9 +346,12 @@ void loop()
             }
             // user pressed back, always return to main menu
             else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
+                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
+                Umd::Ux::Display.SetCursorVisibility(true);
+                Umd::Ux::Display.SetCursorChar('>');
                 Umd::Ux::Display.ResetScrollX();
-                Umd::Ux::Display.NewWindowItems(Umd::Ux::MAIN_MENU_ITEMS);
+                Umd::Ux::Display.NewWindow(Umd::Ux::MAIN_MENU_ITEMS);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             break;
@@ -393,11 +391,15 @@ void loop()
             break;
         case Umd::Ux::UX_INPUT_INIT:
         default:
+            Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
             Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
-            Umd::Ux::Display.NewWindowItems(Umd::Ux::MENU_WITH_30_ITEMS);
             Umd::Ux::Display.SetCursorVisibility(true);
             Umd::Ux::Display.SetCursorChar('>');
-            Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));
+            Umd::Ux::Display.ResetScrollX();
+            // Umd::Ux::Display.NewWindow(Umd::Ux::MENU_WITH_30_ITEMS);
+            // Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));
+            // Umd::Ux::Display.Printf(F("hello world %d"), 1); // add a new item at the end
+            Umd::Ux::Display.NewWindow(Umd::Ux::MAIN_MENU_ITEMS);
             Umd::Cart::State = Cartridge::IDLE;
             Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             break;
