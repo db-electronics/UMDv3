@@ -8,6 +8,9 @@ The firmware is designed to be as accessible as possible and is being developed 
 
 Please note that version 3.0 is in its absolute infancy, don't expect to find any working releases yet.
 
+## 2024-04-19
+The current firmware has rather solid UI code. It can correctly run a Crc32Mpeg2 id check on Genesis cartridges.
+
 ## Uploading
 Firmware can be uploaded to the STM32F407 using an STLink programmer or using the built-in DFU bootloader:
 
