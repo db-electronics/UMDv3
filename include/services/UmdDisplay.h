@@ -29,6 +29,7 @@ class UMDDisplay
 {
     public:
 
+        /// @brief display zones
         enum Zone : uint8_t
         {
             ZONE_TITLE = 0,
@@ -38,13 +39,19 @@ class UMDDisplay
 
         UMDDisplay(std::unique_ptr<Adafruit_SSD1306> display);
 
-        uint8_t GetSelectedItemIndex();
-
-
+        /// @brief initialize the display
         bool Init();
+
+        /// @brief set the visibility of a display zone
+        /// @param zone the zone to set visibility for
+        /// @param visible the visibility state
         void SetZoneVisibility(Zone zone, bool visible);
 
+        /// @brief clear a zone of the display
+        /// @param zone the zone to clear
         void ClearZone(Zone zone);
+
+        /// @brief clear a line in a zone of the display
         void ClearLine(Zone zone, uint8_t lineNumber);
 
         /// @brief print a line directly to the output buffer, n.b. be wary of buffer line size
@@ -54,28 +61,44 @@ class UMDDisplay
         void Printf(Zone zone, const __FlashStringHelper *format, ...);
 
         /// @brief allocate a new line in the window items and print to it
-        /// @param format 
-        /// @param  
+        /// @param format the format string
+        /// @param args the arguments to the format string
         void Printf(const __FlashStringHelper *format, ...);
 
-        /// @brief load a set of items of arbitrary length into the window buffer, destroys any existing items
-        /// @param items 
+        /// @brief load a set of items of arbitrary length into the item buffer, destroys any existing items
+        /// @param items the items to load
         void NewWindow(const std::vector<const char *>& items);
+
+        /// @brief allocate a new line in the window items and add an item to it
+        /// @param item the item to add
         void AddWindowItem(const char *item);
+
+        /// @brief allocate new lines in the window items and add items to them
+        /// @param items the items to add
         void AddWindowItems(const std::vector<const char *>& items);
         
         /// @brief destroy current window items
         void ClearWindowItems();
 
+        /// @brief get the selected item index
+        /// @return the selected item index
+        int GetSelectedItemIndex() { return mWindow.SelectedItemIndex; }
+
+        /// @brief update the cursor item position up or down, moves the display window as required
+        /// @param delta displacement amount
         void UpdateCursorItemPosition(int delta);
-        void SetWindowItemScrollX(int delta);
 
         void SetCursorChar(char c);
         void SetCursorVisibility(bool visible);
         void SetCursorPosition(int x, int y);
 
         void ResetScrollX();
+        void SetWindowItemScrollX(int delta);
         void SetWindowScrollY(int delta);
+
+        void SetProgressBarVisibility(bool visible);
+        void SetProgressBarSize(int width);
+        void SetProgressBar(uint32_t progress, uint32_t max, bool showPercent = true);
 
         void Redraw(void);
 
@@ -94,6 +117,17 @@ class UMDDisplay
                 Height = height;
             }
         } mFontInfo;
+
+        struct ProgressBar
+        {
+            int Width = 100;
+            int Height = 8;
+            bool Visible = false;
+            uint32_t Progress = 0;
+            uint32_t Max = 100;
+            float Percent = 0.0f;
+            bool ShowPercent = true;
+        } mProgressBar;
 
         bool mRedrawScreen;
 

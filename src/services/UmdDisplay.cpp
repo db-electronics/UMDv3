@@ -23,6 +23,7 @@ bool UMDDisplay::Init(){
     mTitleVisible = false;
     mWindowVisible = true;
     mStatusVisible = false;
+    mProgressBar.Visible = false;
     mWindowCurrentLine = 0;
     mWindowScrollY = 0;
 
@@ -34,6 +35,27 @@ bool UMDDisplay::Init(){
     mRedrawScreen = false;
 
     return true;
+}
+
+void UMDDisplay::SetProgressBarVisibility(bool visible)
+{
+    mRedrawScreen = true;
+    mProgressBar.Visible = visible;
+}
+
+void UMDDisplay::SetProgressBarSize(int width)
+{
+    mRedrawScreen = true;
+    mProgressBar.Width = std::max(width, 100);
+}
+
+void UMDDisplay::SetProgressBar(uint32_t progress, uint32_t max, bool showPercent)
+{
+    mRedrawScreen = true;
+    mProgressBar.Progress = progress;
+    mProgressBar.Max = std::min(max, (uint32_t)1); // prevent division by zero
+    mProgressBar.Percent = (float)progress / (float)max;
+    mProgressBar.ShowPercent = showPercent;
 }
 
 // MARK: SetZoneVisibility()
@@ -194,7 +216,7 @@ void UMDDisplay::ClearWindowItems()
 int UMDDisplay::GetWindowVisibleLinesCount()
 {
     int result = OLED_MAX_LINES_PER_SCREEN;
-    if(mStatusVisible)
+    if(mStatusVisible || mProgressBar.Visible)
     {
         result--;
     }
@@ -214,7 +236,7 @@ void UMDDisplay::ResetScrollX()
 
 void UMDDisplay::SetWindowItemScrollX(int delta)
 {
-    // don't scroll if not required to, will need the size of each string in the buffer
+    // don't scroll if not required to
     int itemLength = mWindow.Items[mWindow.SelectedItemIndex].length();
     if(itemLength < OLED_MAX_CHARS_PER_LINE)
     {
@@ -357,11 +379,6 @@ void UMDDisplay::UpdateCursorItemPosition(int delta)
     }
 }
 
-uint8_t UMDDisplay::GetSelectedItemIndex()
-{
-    return (uint8_t)mWindow.SelectedItemIndex;
-}
-
 // MARK: LoadWindowItemsToBuffer()
 void UMDDisplay::LoadWindowItemsToBuffer()
 {
@@ -455,8 +472,22 @@ void UMDDisplay::Redraw(void){
         }
     }
 
-    // Status on the final line, if visible
-    if(mStatusVisible)
+    // Progress bar, if visible will override the status line
+    if(mProgressBar.Visible)
+    {
+        // draw the progress bar padded by 2 pixels, fill represents the percent complete
+        mDisplay->drawRect(2, linePosToCoordinate(currentLineOnDisplay), mProgressBar.Width, mProgressBar.Height, WHITE);
+        mDisplay->fillRect(2, linePosToCoordinate(currentLineOnDisplay), mProgressBar.Width * mProgressBar.Percent, mProgressBar.Height, WHITE);
+        
+        if(mProgressBar.ShowPercent)
+        {
+            mDisplay->setCursor(mProgressBar.Width + 4, linePosToCoordinate(currentLineOnDisplay));
+            mDisplay->print((int)(mProgressBar.Percent * 100));
+            mDisplay->print('%');
+        }
+        currentLineOnDisplay++;
+    }
+    else if(mStatusVisible)
     {
         mDisplay->setCursor(0, linePosToCoordinate(currentLineOnDisplay));
         mDisplay->print(mStatusBuffer.data());
