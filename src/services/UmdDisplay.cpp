@@ -230,7 +230,24 @@ void UMDDisplay::SetWindowItemScrollX(int delta)
     mWindowScrollX[bufferIndex] += delta;
 
     // limit range to prevent the text from wrapping around
-    mWindowScrollX[bufferIndex] = std::clamp(mWindowScrollX[bufferIndex], 0, itemLength - OLED_MAX_CHARS_PER_LINE + 1);
+    mWindowScrollX[bufferIndex] = Clamp(mWindowScrollX[bufferIndex], 0, itemLength - OLED_MAX_CHARS_PER_LINE + 1);
+}
+
+int UMDDisplay::Clamp(int value, int min, int max)
+{
+    if(value < min)
+    {
+        return min;
+    }
+    else if (value > max)
+    {
+        return max;
+    }
+    else
+    {
+        return value;
+    }
+    
 }
 
 // MARK: SetWindowScrollY()
@@ -273,7 +290,7 @@ void UMDDisplay::UpdateCursorItemPosition(int delta)
 
         // clamp at ends
         mWindow.SelectedItemIndex += delta;
-        mWindow.SelectedItemIndex = std::clamp(mWindow.SelectedItemIndex, 0, (int)mWindow.Items.size()-1);
+        mWindow.SelectedItemIndex = Clamp(mWindow.SelectedItemIndex, 0, (int)mWindow.Items.size()-1);
 
         // check if we need to adjust the window
         if(mWindow.Items.size() > mWindow.WindowSize)

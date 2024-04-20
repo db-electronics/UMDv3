@@ -3,7 +3,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <map>
 #include <Adafruit_SSD1306.h>
 #include "Menu.h"
 
@@ -122,6 +121,7 @@ class UMDDisplay
         void LoadWindowItemsToBuffer();
         void LoadWindowItemToBuffer(int itemIndex, int bufferIndex);
         int GetWindowVisibleLinesCount();
+        int Clamp(int value, int min, int max);
 
         struct WindowItemsData{
             std::vector<std::string> Items;
