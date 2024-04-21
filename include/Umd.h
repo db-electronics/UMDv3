@@ -8,11 +8,17 @@
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
 
-#define UMD_DATA_BUFFER_SIZE_BYTES 512
-
 namespace Umd
 {
-    
+    namespace Config{
+
+        const uint32_t DAS_REPEAT_RATE_MS = 75;
+        const uint32_t PROGRESS_REFRESH_RATE_MS = 200;
+        const uint16_t BUFFER_SIZE_BYTES = 512;
+        const uint8_t MCP23008_BOARD_ADDRESS = 0x27;
+        const uint8_t MCP23008_ADAPTER_ADDRESS = 0x20;
+    }
+
     namespace Ux{
         enum UxUserInputState : uint8_t{
             UX_INPUT_INIT,
@@ -29,8 +35,8 @@ namespace Umd
         UxState State = UX_MAIN_MENU;
         UxUserInputState UserInputState = UX_INPUT_INIT;
 
-        Controls UserInput;
-        const int DAS_DELAY_MS = 75;
+        // Controls UserInput;
+        std::unique_ptr<Controls> pUserInput = std::make_unique<Controls>();
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
@@ -38,7 +44,8 @@ namespace Umd
         const std::vector<const char *> MAIN_MENU_ITEMS = {
             "Identify",
             "Read",
-            "Write"
+            "Write",
+            "Flash"
         };
 
         const std::vector<const char *> MENU_WITH_30_ITEMS = {
@@ -95,14 +102,15 @@ namespace Umd
     }
 
     Mcp23008 IoExpander;
-    uint32_t OperationTime;
+    uint32_t OperationStartTime;
+    uint32_t OperationTotalTime;
 
-    const uint16_t BUFFER_SIZE_BYTES = 512;
+    
     /// @brief Data buffer for the UMD, must be a multiple of 4 bytes
     // union DataBuffer{
     //     uint8_t bytes[BUFFER_SIZE_BYTES];
     //     uint16_t words[BUFFER_SIZE_BYTES/2];
     //     uint32_t dwords[BUFFER_SIZE_BYTES/4];
     // }DataBuffer;
-    std::array<uint8_t, UMD_DATA_BUFFER_SIZE_BYTES> DataBuffer;
+    std::array<uint8_t, Umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
 }

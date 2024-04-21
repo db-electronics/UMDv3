@@ -1,9 +1,9 @@
 #include "services/CartridgeFactory.h"
 
-std::unique_ptr<Cartridge> CartridgeFactory::GetCart(uint8_t adapterId, IChecksumCalculator& checksumCalculator){
+std::unique_ptr<Cartridge> CartridgeFactory::GetCart(uint8_t adapterId){
     switch(adapterId){
         case GENESIS:
-            return std::make_unique<Genesis>(checksumCalculator);
+            return std::make_unique<Genesis>(crc32Calculator);
         default:
             return nullptr;
 

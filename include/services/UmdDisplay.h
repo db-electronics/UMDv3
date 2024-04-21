@@ -19,11 +19,6 @@
 
 #define UMD_DISPLAY_BUFFER_CHARS_PER_LINE   ((OLED_MAX_CHARS_PER_LINE)*2)
 #define UMD_DISPLAY_BUFFER_TOTAL_LINES      8
-#define UMD_DISPLAY_WINDOW_SIZE             6
-#define UMD_DISPLAY_LAYERS                  2
-#define UMD_DISPLAY_LAYER_FG                0
-#define UMD_DISPLAY_LAYER_MENU              1
-
 
 class UMDDisplay
 {

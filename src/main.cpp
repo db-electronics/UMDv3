@@ -26,9 +26,6 @@
 File sdFile;
 SerialCommand SCmd;
 
-// TODO move all this to UMD.h
-Crc32Calculator crc32Calculator;
-
 // SD stuff
 int verifySdCard(int& line);
 int verifySdCardSystemSetup(int& line, const char* systemName);
@@ -95,7 +92,7 @@ void setup()
     Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 io expander"));
     Umd::Ux::Display.Redraw();
 
-    if (!Umd::IoExpander.begin(UMD_BOARD_MCP23008_ADDRESS))
+    if (!Umd::IoExpander.begin(Umd::Config::MCP23008_BOARD_ADDRESS))
     {
         Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
         Umd::Ux::Display.Redraw();
@@ -112,7 +109,7 @@ void setup()
     // setup adapter mcp23008, read adapter id
     Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 adapter"));
     Umd::Ux::Display.Redraw();
-    if (!Umd::Cart::IoExpander.begin(UMD_ADAPTER_MCP23008_ADDRESS))
+    if (!Umd::Cart::IoExpander.begin(Umd::Config::MCP23008_ADAPTER_ADDRESS))
     {
         Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
         Umd::Ux::Display.Redraw();
@@ -122,7 +119,7 @@ void setup()
     // get the adapter id, use it to determine the cartridge type
     Umd::Cart::IoExpander.pinMode(0xFF, INPUT);
     uint8_t adapterId = Umd::Cart::IoExpander.readGPIO();
-    Umd::Cart::pCartridge = Umd::Cart::Factory.GetCart(adapterId, crc32Calculator);
+    Umd::Cart::pCartridge = Umd::Cart::Factory.GetCart(adapterId);
     if (Umd::Cart::pCartridge == nullptr)
     {
         Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: unknown adapter"));
@@ -158,11 +155,6 @@ void setup()
 
     // get the supported memory types for this cartridge
     Umd::Cart::MemoryNames = Umd::Cart::pCartridge->GetMemoryNames();
-
-    // Umd::Ux::Display.setCursorPosition(0, 0);
-    // Umd::Ux::Display.setCursorVisible(true);
-    // Umd::Ux::Display.setClockPosition(20, 7);
-    // Umd::Ux::Display.setClockVisible(false);
     
     Umd::Ux::Display.Redraw();
 
@@ -187,39 +179,43 @@ void loop()
 
     // process inputs
     uint8_t inputs = Umd::IoExpander.readGPIO();
-    Umd::Ux::UserInput.Process(inputs, currentTicks);
+    Umd::Ux::pUserInput->Process(inputs, currentTicks);
 
     switch(Umd::Ux::UserInputState)
     {
         case Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
-            if(Umd::Ux::UserInput.Down >= Umd::Ux::UserInput.PRESSED)
+            // user pressed down
+            if(Umd::Ux::pUserInput->Down >= Umd::Ux::pUserInput->PRESSED)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(1);
                 Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
-            else if (Umd::Ux::UserInput.Up >= Umd::Ux::UserInput.PRESSED)
+            // user pressed up
+            else if (Umd::Ux::pUserInput->Up >= Umd::Ux::pUserInput->PRESSED)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(-1);
                 Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
-            else if (Umd::Ux::UserInput.Left >= Umd::Ux::UserInput.PRESSED)
+            // user pressed left
+            else if (Umd::Ux::pUserInput->Left >= Umd::Ux::pUserInput->PRESSED)
             {
                 Umd::Ux::Display.SetWindowItemScrollX(-1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
-            else if (Umd::Ux::UserInput.Right >= Umd::Ux::UserInput.PRESSED)
+            // user pressed right
+            else if (Umd::Ux::pUserInput->Right >= Umd::Ux::pUserInput->PRESSED)
             {
                 Umd::Ux::Display.SetWindowItemScrollX(1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
-            // USER PRESSED OK
-            else if (Umd::Ux::UserInput.Ok >= Umd::Ux::UserInput.PRESSED){
+            // user pressed ok
+            else if (Umd::Ux::pUserInput->Ok >= Umd::Ux::pUserInput->PRESSED){
 
                 selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
                 selectedMemory = (Cartridge::MemoryType)selectedItemIndex;
@@ -242,19 +238,19 @@ void loop()
                                 // redraw
                                 Umd::Ux::Display.Redraw();
 
-                                currentTicks = HAL_GetTick();
+                                Umd::OperationStartTime = HAL_GetTick();
                                 Umd::Cart::pCartridge->ResetChecksumCalculator();
                                 totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
-                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::BUFFER_SIZE_BYTES);
+                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::Config::BUFFER_SIZE_BYTES);
 
                                 // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
-                                for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
+                                for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
                                     Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
-                                Umd::OperationTime = HAL_GetTick() - currentTicks;
+                                Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
 
                                 // ask cartridge for some metadata about the ROM
                                 Umd::Cart::Metadata.clear();
@@ -263,7 +259,7 @@ void loop()
                                 Umd::Ux::Display.NewWindow(Umd::Cart::Metadata);
                                 Umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
                                 Umd::Ux::Display.Printf(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTime);
+                                Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTotalTime);
                                 
                                 // TODO search for this crc32 in the database
 
@@ -303,18 +299,18 @@ void loop()
                                 // TODO need a filename
                                 
                                 // selected index indicates the memory to read from
-                                currentTicks = HAL_GetTick();
+                                Umd::OperationStartTime = HAL_GetTick();
                                 totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
-                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::BUFFER_SIZE_BYTES);
+                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::Config::BUFFER_SIZE_BYTES);
 
                                 // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
-                                for(int addr = 0; addr < totalBytes; addr += Umd::BUFFER_SIZE_BYTES)
+                                for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
                                     Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.data(), batchSize, selectedMemory, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
-                                Umd::OperationTime = HAL_GetTick() - currentTicks;
+                                Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
 
                                 // all done, return to main menu
                                 Umd::Cart::State = Cartridge::IDLE;
@@ -345,7 +341,7 @@ void loop()
                 }
             }
             // user pressed back, always return to main menu
-            else if (Umd::Ux::UserInput.Back >= Umd::Ux::UserInput.PRESSED){
+            else if (Umd::Ux::pUserInput->Back >= Umd::Ux::pUserInput->PRESSED){
                 Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
                 Umd::Ux::Display.SetCursorVisibility(true);
@@ -357,33 +353,33 @@ void loop()
             break;
         case Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED:
             // release all keys before accepting a new input
-            if(Umd::Ux::UserInput.Ok == Umd::Ux::UserInput.OFF && 
-                Umd::Ux::UserInput.Back == Umd::Ux::UserInput.OFF && 
-                Umd::Ux::UserInput.Up == Umd::Ux::UserInput.OFF && 
-                Umd::Ux::UserInput.Down == Umd::Ux::UserInput.OFF && 
-                Umd::Ux::UserInput.Left == Umd::Ux::UserInput.OFF &&
-                Umd::Ux::UserInput.Right == Umd::Ux::UserInput.OFF)
+            if(Umd::Ux::pUserInput->Ok == Umd::Ux::pUserInput->OFF && 
+                Umd::Ux::pUserInput->Back == Umd::Ux::pUserInput->OFF && 
+                Umd::Ux::pUserInput->Up == Umd::Ux::pUserInput->OFF && 
+                Umd::Ux::pUserInput->Down == Umd::Ux::pUserInput->OFF && 
+                Umd::Ux::pUserInput->Left == Umd::Ux::pUserInput->OFF &&
+                Umd::Ux::pUserInput->Right == Umd::Ux::pUserInput->OFF)
             {
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             }
             // MARK: Delayed auto-shift
-            if(Umd::Ux::UserInput.Up == Umd::Ux::UserInput.HELD){
-                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+            if(Umd::Ux::pUserInput->Up == Umd::Ux::pUserInput->HELD){
+                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.UpdateCursorItemPosition(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::UserInput.Down == Umd::Ux::UserInput.HELD){
-                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+            }else if(Umd::Ux::pUserInput->Down == Umd::Ux::pUserInput->HELD){
+                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.UpdateCursorItemPosition(1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::UserInput.Left == Umd::Ux::UserInput.HELD){
-                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+            }else if(Umd::Ux::pUserInput->Left == Umd::Ux::pUserInput->HELD){
+                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.SetWindowItemScrollX(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::UserInput.Right == Umd::Ux::UserInput.HELD){
-                if(currentTicks > dasTicks + Umd::Ux::DAS_DELAY_MS){
+            }else if(Umd::Ux::pUserInput->Right == Umd::Ux::pUserInput->HELD){
+                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.SetWindowItemScrollX(1);
                     dasTicks = currentTicks;
                 } 
