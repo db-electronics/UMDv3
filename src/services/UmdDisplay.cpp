@@ -49,13 +49,26 @@ void UMDDisplay::SetProgressBarSize(int width)
     mProgressBar.Width = std::max(width, 100);
 }
 
-void UMDDisplay::SetProgressBar(uint32_t progress, uint32_t max, bool showPercent)
+void UMDDisplay::UpdateProgressBar(uint32_t progress, uint32_t max, bool showMillis)
 {
     mRedrawScreen = true;
     mProgressBar.Progress = progress;
-    mProgressBar.Max = std::min(max, (uint32_t)1); // prevent division by zero
+    mProgressBar.Max = max == 0 ? 1 : max; // prevent division by zero
     mProgressBar.Percent = (float)progress / (float)max;
-    mProgressBar.ShowPercent = showPercent;
+
+    // only show milliseconds if the progress bar is not showing the percentage
+    mProgressBar.ShowMillis = showMillis;
+    mProgressBar.ShowPercent = !showMillis;
+}
+
+void UMDDisplay::SetProgressBarComplete(uint32_t millis)
+{
+    mRedrawScreen = true;
+    mProgressBar.Millis = millis;
+    mProgressBar.Progress = mProgressBar.Max;
+    mProgressBar.Percent = 1.0f;
+    mProgressBar.ShowMillis = true;
+    mProgressBar.ShowPercent = false;
 }
 
 // MARK: SetZoneVisibility()
@@ -477,13 +490,18 @@ void UMDDisplay::Redraw(void){
     {
         // draw the progress bar padded by 2 pixels, fill represents the percent complete
         mDisplay->drawRect(2, linePosToCoordinate(currentLineOnDisplay), mProgressBar.Width, mProgressBar.Height, WHITE);
-        mDisplay->fillRect(2, linePosToCoordinate(currentLineOnDisplay), mProgressBar.Width * mProgressBar.Percent, mProgressBar.Height, WHITE);
+        mDisplay->fillRect(2, linePosToCoordinate(currentLineOnDisplay)+1, mProgressBar.Width * mProgressBar.Percent, mProgressBar.Height-2, WHITE);
         
         if(mProgressBar.ShowPercent)
         {
-            mDisplay->setCursor(mProgressBar.Width + 4, linePosToCoordinate(currentLineOnDisplay));
+            mDisplay->setCursor(mProgressBar.Width + 8, linePosToCoordinate(currentLineOnDisplay));
             mDisplay->print((int)(mProgressBar.Percent * 100));
             mDisplay->print('%');
+        }else if(mProgressBar.ShowMillis)
+        {
+            mDisplay->setCursor(mProgressBar.Width + 8, linePosToCoordinate(currentLineOnDisplay));
+            mDisplay->print(mProgressBar.Millis);
+            mDisplay->print("ms");
         }
         currentLineOnDisplay++;
     }

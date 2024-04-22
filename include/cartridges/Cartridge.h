@@ -46,7 +46,7 @@ class Cartridge : public UMDPortsV3 {
         virtual ~Cartridge();
         void TestWait(void);
 
-        enum MemoryType : uint8_t{
+        enum class MemoryType : uint8_t{
             PRG0 = 0, PRG1, PRG2, PRG3,
             CHR0, CHR1,
             RAM0, RAM1,

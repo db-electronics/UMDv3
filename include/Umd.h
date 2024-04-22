@@ -13,7 +13,7 @@ namespace Umd
     namespace Config{
 
         const uint32_t DAS_REPEAT_RATE_MS = 75;
-        const uint32_t PROGRESS_REFRESH_RATE_MS = 200;
+        const uint32_t PROGRESS_REFRESH_RATE_MS = 100;
         const uint16_t BUFFER_SIZE_BYTES = 512;
         const uint8_t MCP23008_BOARD_ADDRESS = 0x27;
         const uint8_t MCP23008_ADAPTER_ADDRESS = 0x20;

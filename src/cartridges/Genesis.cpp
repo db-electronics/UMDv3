@@ -8,13 +8,13 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
 
     // display will show these memory names in order
     // so here we store an index to the memory enum
-    mMemoryTypeIndexMap[0] = PRG0;
+    mMemoryTypeIndexMap[0] = MemoryType::PRG0;
     mMemoryNames.push_back("ROM");
 
-    mMemoryTypeIndexMap[1] = RAM0;
+    mMemoryTypeIndexMap[1] = MemoryType::RAM0;
     mMemoryNames.push_back("Save RAM");
 
-    mMemoryTypeIndexMap[2] = BRAM;
+    mMemoryTypeIndexMap[2] = MemoryType::BRAM;
     mMemoryNames.push_back("SCD Backup RAM");
 
     mMetadata.clear();
@@ -81,7 +81,7 @@ FlashInfo Genesis::GetFlashInfo(uint8_t memTypeIndex){
     MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
     
     switch(mem){
-        case PRG0:
+        case MemoryType::PRG0:
             WritePrgWord(0x00000555 << 1, 0xAA00);
             WritePrgWord(0x000002AA << 1, 0x5500);
             WritePrgWord(0x00000555 << 1, 0x9000);
@@ -128,7 +128,7 @@ uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, u
     MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
 
     switch(mem){
-        case PRG0:
+        case MemoryType::PRG0:
             for(int i = 0; i < size; i+=2){
                 *(buf16++) = ReadPrgWord(address);
                 address += 2;
@@ -154,7 +154,7 @@ int Genesis::EraseFlash(uint8_t memTypeIndex){
 
     MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
     switch(mem){
-        case PRG0:
+        case MemoryType::PRG0:
             WritePrgWord(0x00000555 < 1, 0xAA00);
             WritePrgWord(0x000002AA < 1, 0x5500);
             WritePrgWord(0x00000555 < 1, 0x8000);

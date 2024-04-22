@@ -218,7 +218,6 @@ void loop()
             else if (Umd::Ux::pUserInput->Ok >= Umd::Ux::pUserInput->PRESSED){
 
                 selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
-                selectedMemory = (Cartridge::MemoryType)selectedItemIndex;
                 switch(Umd::Ux::State){
                     // MARK: Main Menu
                     case Umd::Ux::UX_MAIN_MENU:
@@ -234,32 +233,40 @@ void loop()
                                 Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
                                 Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
                                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
-                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("identifying..."));
-                                // redraw
-                                Umd::Ux::Display.Redraw();
+                                // Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("identifying..."));
+                                // // redraw
+                                // Umd::Ux::Display.Redraw();
 
                                 Umd::OperationStartTime = HAL_GetTick();
                                 Umd::Cart::pCartridge->ResetChecksumCalculator();
                                 totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
                                 Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::Config::BUFFER_SIZE_BYTES);
 
-                                // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
+                                currentTicks = HAL_GetTick();
+                                Umd::Ux::Display.SetProgressBarVisibility(true);
                                 for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
                                     Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    if(HAL_GetTick() > currentTicks + Umd::Config::PROGRESS_REFRESH_RATE_MS)
+                                    {
+                                        currentTicks = HAL_GetTick();
+                                        Umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
+                                        Umd::Ux::Display.Redraw(); 
+                                    }
                                 }
-
                                 Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
+                                Umd::Ux::Display.SetProgressBarComplete(Umd::OperationTotalTime);
 
-                                // ask cartridge for some metadata about the ROM
+                                // TODO get rid of metadata from cartridge and get the title instead
+                                // seems better from an encapsulation perspective
                                 Umd::Cart::Metadata.clear();
                                 Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
                                 
                                 Umd::Ux::Display.NewWindow(Umd::Cart::Metadata);
                                 Umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
                                 Umd::Ux::Display.Printf(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTotalTime);
+                                //Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTotalTime);
                                 
                                 // TODO search for this crc32 in the database
 
@@ -307,7 +314,7 @@ void loop()
                                 for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
                                 {
                                     batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.data(), batchSize, selectedMemory, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
                                 Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
@@ -345,6 +352,7 @@ void loop()
                 Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
                 Umd::Ux::Display.SetCursorVisibility(true);
+                Umd::Ux::Display.SetProgressBarVisibility(false);
                 Umd::Ux::Display.SetCursorChar('>');
                 Umd::Ux::Display.ResetScrollX();
                 Umd::Ux::Display.NewWindow(Umd::Ux::MAIN_MENU_ITEMS);
@@ -390,6 +398,7 @@ void loop()
             Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
             Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
             Umd::Ux::Display.SetCursorVisibility(true);
+            Umd::Ux::Display.SetProgressBarVisibility(false);
             Umd::Ux::Display.SetCursorChar('>');
             Umd::Ux::Display.ResetScrollX();
             // Umd::Ux::Display.NewWindow(Umd::Ux::MENU_WITH_30_ITEMS);

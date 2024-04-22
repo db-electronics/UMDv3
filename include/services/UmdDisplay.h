@@ -93,7 +93,8 @@ class UMDDisplay
 
         void SetProgressBarVisibility(bool visible);
         void SetProgressBarSize(int width);
-        void SetProgressBar(uint32_t progress, uint32_t max, bool showPercent = true);
+        void UpdateProgressBar(uint32_t progress, uint32_t max, bool showMillis = false);
+        void SetProgressBarComplete(uint32_t millis);
 
         void Redraw(void);
 
@@ -115,13 +116,16 @@ class UMDDisplay
 
         struct ProgressBar
         {
-            int Width = 100;
+            // default width to fit percentage and milliseconds
+            int Width = 64;
             int Height = 8;
             bool Visible = false;
             uint32_t Progress = 0;
             uint32_t Max = 100;
+            uint32_t Millis = 0;
             float Percent = 0.0f;
             bool ShowPercent = true;
+            bool ShowMillis = false;
         } mProgressBar;
 
         bool mRedrawScreen;
@@ -184,56 +188,4 @@ class UMDDisplay
             char character;
             bool visible;
         }mCursor;
-
-        #define UMD_CLOCK_ANIMATION_FRAMES 4
-        struct Clock
-        {
-            int framePointer;
-            int x;
-            int y;
-            bool visible;
-        }mClockSpr;
-
-        const uint8_t _clockAnimation[UMD_CLOCK_ANIMATION_FRAMES][8] = {
-            {
-                0b00111000,
-                0b01000100,
-                0b10010010,
-                0b10011010,
-                0b10000010,
-                0b01000100,
-                0b00111000,
-                0b00000000
-            },
-            {
-                0b00111000,
-                0b01000100,
-                0b10000010,
-                0b10011010,
-                0b10010010,
-                0b01000100,
-                0b00111000,
-                0b00000000
-            },
-            {
-                0b00111000,
-                0b01000100,
-                0b10000010,
-                0b10110010,
-                0b10010010,
-                0b01000100,
-                0b00111000,
-                0b00000000
-            },
-            {
-                0b00111000,
-                0b01000100,
-                0b10010010,
-                0b10110010,
-                0b10000010,
-                0b01000100,
-                0b00111000,
-                0b00000000
-            },
-        };
 };
