@@ -163,6 +163,7 @@ void setup()
     umd::Ux::State = umd::Ux::UX_MAIN_MENU;
     umd::Ux::UserInputState = umd::Ux::UX_INPUT_INIT;
     umd::Cart::State = Cartridge::IDLE;
+
 }
 
 //MARK: Main loop

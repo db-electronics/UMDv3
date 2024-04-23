@@ -7,6 +7,7 @@
 #include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
+#include "services/Buffer.h"
 
 namespace umd
 {
@@ -114,4 +115,6 @@ namespace umd
     //     uint32_t dwords[BUFFER_SIZE_BYTES/4];
     // }DataBuffer;
     std::array<uint8_t, umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
+
+    UmdBuffer<Config::BUFFER_SIZE_BYTES> Buffer;
 }
