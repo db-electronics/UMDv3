@@ -1,6 +1,6 @@
 #include "services/Mcp23008.h"
 
-bool Mcp23008::begin(uint8_t address, TwoWire *wire)
+bool i2cdevice::Mcp23008::begin(uint8_t address, TwoWire *wire)
 {
     // keep address in range
     if ((address >= MCP23008_BASE_ADDRESS) && (address <= MCP23008_MAX_ADDRESS))
@@ -20,50 +20,47 @@ bool Mcp23008::begin(uint8_t address, TwoWire *wire)
 
     // check if device is actually there
     pWire->beginTransmission(mDeviceAddress);
-    error = pWire->endTransmission();
+    mError = pWire->endTransmission();
 
-    if (error != 0)
+    if (mError != 0)
     {
         return false;
     }
 
-    return _initAllPOR();
+    return Init();
 }
 
-bool Mcp23008::_initAllPOR(void)
+bool i2cdevice::Mcp23008::Init(void)
 {
     // these should be the POR values in the device
-    mRegisters[MCP23008_IODIR] = 0xFF;
-    for (int i = 1; i < MCP23008_NUM_OF_SHADOW_REGISTERS; i++)
-    {
-        mRegisters[i] = 0;
-    }
+    std::fill(mRegisters.begin(), mRegisters.end(), 0);
+    mRegisters[GetRegisterAddress(Registers::IODIR)] = 0xFF;
 
     pWire->beginTransmission(mDeviceAddress);
-    pWire->write(MCP23008_IODIR);
-    pWire->write(mRegisters, MCP23008_NUM_OF_SHADOW_REGISTERS);
-    error = pWire->endTransmission();
-    if (error == 0)
+    pWire->write(GetRegisterAddress(Registers::IODIR));
+    pWire->write(mRegisters.data(), mRegisters.size());
+    mError = pWire->endTransmission();
+    if (mError == 0)
     {
         return true;
     }
     return false;
 }
 
-bool Mcp23008::_writeDeviceRegister(uint8_t registerAddress, uint8_t val)
+bool i2cdevice::Mcp23008::WriteRegister(uint8_t registerAddress, uint8_t val)
 {
     pWire->beginTransmission(mDeviceAddress);
     pWire->write(registerAddress);
     pWire->write(val);
-    error = pWire->endTransmission();
-    if (error == 0)
+    mError = pWire->endTransmission();
+    if (mError == 0)
     {
         return true;
     }
     return false;
 }
 
-bool Mcp23008::_updateRegister(uint8_t registerAddress, uint8_t bitMask, bool set)
+bool i2cdevice::Mcp23008::UpdateRegister(uint8_t registerAddress, uint8_t bitMask, bool set)
 {
     if (set)
     {
@@ -74,10 +71,10 @@ bool Mcp23008::_updateRegister(uint8_t registerAddress, uint8_t bitMask, bool se
         mRegisters[registerAddress] &= ~bitMask;
     }
 
-    return _writeDeviceRegister(registerAddress, mRegisters[registerAddress]);
+    return WriteRegister(registerAddress, mRegisters[registerAddress]);
 }
 
-uint8_t Mcp23008::_readDeviceRegister(uint8_t registerAddress)
+uint8_t i2cdevice::Mcp23008::ReadRegister(uint8_t registerAddress)
 {
     uint8_t readValue;
 
@@ -86,81 +83,81 @@ uint8_t Mcp23008::_readDeviceRegister(uint8_t registerAddress)
     pWire->endTransmission(false);
     pWire->requestFrom(mDeviceAddress, 1, true);
     readValue = pWire->read();
-    error = pWire->endTransmission();
+    mError = pWire->endTransmission();
     return readValue;
 }
 
-bool Mcp23008::pinMode(uint8_t pins, uint8_t mode)
+bool i2cdevice::Mcp23008::pinMode(uint8_t pins, uint8_t mode)
 {
     // 1 = input in MCP23008
     bool set = mode == OUTPUT ? false : true;
-    return _updateRegister(MCP23008_IODIR, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::IODIR), pins, set);
 }
 
-bool Mcp23008::digitalWrite(uint8_t pins, uint8_t value)
+bool i2cdevice::Mcp23008::digitalWrite(uint8_t pins, uint8_t value)
 {
     bool set = value == LOW ? false : true;
-    return _updateRegister(MCP23008_OLAT, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::OLAT), pins, set);
 }
 
-bool Mcp23008::tooglePins(uint8_t pins)
+bool i2cdevice::Mcp23008::tooglePins(uint8_t pins)
 {
     // only toggle the output pins, so we don't create garbage data in the shadow registers
-    mRegisters[MCP23008_OLAT] ^= (pins & ~mRegisters[MCP23008_IODIR]);
-    return _writeDeviceRegister(MCP23008_OLAT, mRegisters[MCP23008_OLAT]);
+    mRegisters[GetRegisterAddress(Registers::OLAT)] ^= (pins & ~mRegisters[GetRegisterAddress(Registers::IODIR)]);
+    return WriteRegister(GetRegisterAddress(Registers::OLAT), mRegisters[GetRegisterAddress(Registers::OLAT)]);
 }
 
-bool Mcp23008::setPinPolarity(uint8_t pins, bool invert)
+bool i2cdevice::Mcp23008::setPinPolarity(uint8_t pins, bool invert)
 {
     // 1 = pin polarity is inverted
-    return _updateRegister(MCP23008_IPOL, pins, invert);
+    return UpdateRegister(GetRegisterAddress(Registers::IPOL), pins, invert);
 }
 
-bool Mcp23008::setInterruptEnable(uint8_t pins, bool set)
+bool i2cdevice::Mcp23008::setInterruptEnable(uint8_t pins, bool set)
 {
     // 1 = Enable GPIO input pin for interrupt-on-change event
-    return _updateRegister(MCP23008_GPINTEN, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::GPINTEN), pins, set);
 }
 
-bool Mcp23008::setInterruptOnChange(uint8_t pins, bool set)
+bool i2cdevice::Mcp23008::setInterruptOnChange(uint8_t pins, bool set)
 {
     // 1 = pin is configured for interrupt on change
-    return _updateRegister(MCP23008_INTCON, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::INTCON), pins, set);
 }
 
-bool Mcp23008::setDefaultValue(uint8_t pins, uint8_t value)
+bool i2cdevice::Mcp23008::setDefaultValue(uint8_t pins, uint8_t value)
 {
     // if the associated pin level is the opposite from the register bit, an interrupt occurs.
     bool set = value == LOW ? false : true;
-    return _updateRegister(MCP23008_DEFVAL, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::DEFVAL), pins, set);
 }
 
-bool Mcp23008::setInterruptControl(uint8_t pins, INTCON_MODE mode)
+bool i2cdevice::Mcp23008::setInterruptControl(uint8_t pins, INTCON_MODE mode)
 {
     // if the associated pin level is the opposite from the register bit, an interrupt occurs.
     bool set = mode == DEFVAL ? true : false;
-    return _updateRegister(MCP23008_INTCON, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::INTCON), pins, set);
 }
 
-bool Mcp23008::setPullUpResistors(uint8_t pins, bool set)
+bool i2cdevice::Mcp23008::setPullUpResistors(uint8_t pins, bool set)
 {
     // 1 = pullup is enabled
-    return _updateRegister(MCP23008_GPPU, pins, set);
+    return UpdateRegister(GetRegisterAddress(Registers::GPPU), pins, set);
 }
 
-uint8_t Mcp23008::readInterruptFlags()
+uint8_t i2cdevice::Mcp23008::readInterruptFlags()
 {
     // 1 = pin caused an interrupt
-    return _readDeviceRegister(MCP23008_INTF);
+    return ReadRegister(GetRegisterAddress(Registers::INTF));
 }
 
-uint8_t Mcp23008::readInterruptCapture()
+uint8_t i2cdevice::Mcp23008::readInterruptCapture()
 {
     // state of pins when interrupt occured
-    return _readDeviceRegister(MCP23008_INTCAP);
+    return ReadRegister(GetRegisterAddress(Registers::INTCAP));
 }
 
-uint8_t Mcp23008::readGPIO()
+uint8_t i2cdevice::Mcp23008::readGPIO()
 {
-    return _readDeviceRegister(MCP23008_GPIO);
+    return ReadRegister(GetRegisterAddress(Registers::GPIO));
 }

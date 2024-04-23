@@ -61,7 +61,7 @@ namespace umd
 
     namespace Cart{
         std::unique_ptr<Cartridge> pCartridge;
-        Mcp23008 IoExpander;
+        i2cdevice::Mcp23008 IoExpander;
         std::vector<const char *> MemoryNames;
         std::vector<const char *> Metadata;
         CartridgeFactory Factory;
@@ -100,7 +100,7 @@ namespace umd
         } BatchSizeCalc;
     }
 
-    Mcp23008 IoExpander;
+    i2cdevice::Mcp23008 IoExpander;
     uint32_t OperationStartTime;
     uint32_t OperationTotalTime;
 

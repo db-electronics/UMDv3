@@ -3,13 +3,6 @@
 
 umd::Debouncer::Debouncer()
 {
-    Up = Key::Off;
-    Down = Key::Off;
-    Left = Key::Off;
-    Right = Key::Off;
-    Ok = Key::Off;
-    Back = Key::Off;
-
     KeyStates.push_back(KeyState(&Up, UMD_UP_PUSHBUTTON));
     KeyStates.push_back(KeyState(&Down, UMD_DOWN_PUSHBUTTON));
     KeyStates.push_back(KeyState(&Left, UMD_LEFT_PUSHBUTTON));

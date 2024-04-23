@@ -17,18 +17,15 @@ namespace umd {
     class Debouncer{
         public:
             Debouncer();
-
-
-
-            Key Up;
-            Key Down;
-            Key Left;
-            Key Right;
-            Key Ok;
-            Key Back;
-
             void Process(uint8_t inputs, uint32_t currentTicks);
         
+            Key Up = Key::Off;
+            Key Down = Key::Off;
+            Key Left = Key::Off;
+            Key Right = Key::Off;
+            Key Ok = Key::Off;
+            Key Back = Key::Off;
+
         private:
 
             class KeyState 
