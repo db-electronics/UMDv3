@@ -1,14 +1,14 @@
 
-#include "services/Controls.h"
+#include "services/Debouncer.h"
 
-Controls::Controls()
+Umd::Debouncer::Debouncer()
 {
-    Up = OFF;
-    Down = OFF;
-    Left = OFF;
-    Right = OFF;
-    Ok = OFF;
-    Back = OFF;
+    Up = ButtonState::Off;
+    Down = ButtonState::Off;
+    Left = ButtonState::Off;
+    Right = ButtonState::Off;
+    Ok = ButtonState::Off;
+    Back = ButtonState::Off;
 
     ButtonStates.push_back(BtnState(&Up, UMD_UP_PUSHBUTTON));
     ButtonStates.push_back(BtnState(&Down, UMD_DOWN_PUSHBUTTON));
@@ -18,7 +18,7 @@ Controls::Controls()
     ButtonStates.push_back(BtnState(&Back, UMD_BACK_PUSHBUTTON));
 }
 
-void Controls::Process(uint8_t inputs, uint32_t currentTicks)
+void Umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)
 {
 
     for (auto& btn : ButtonStates)
@@ -27,44 +27,44 @@ void Controls::Process(uint8_t inputs, uint32_t currentTicks)
     }
 }
 
-void Controls::SetButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
+void Umd::Debouncer::SetButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
 {
     bool isPressed = (inputs & btnState.PinMask) == 0;
 
     switch (*(btnState.pButtonstate))
     {
-        case OFF:
-            *(btnState.pButtonstate) = isPressed ? PRESSED : OFF;
+        case ButtonState::Off:
+            *(btnState.pButtonstate) = isPressed ? ButtonState::Pressed : ButtonState::Off;
             btnState.PreviousTicks = currentTicks;
             break;
-        case PRESSED:
+        case ButtonState::Pressed:
             if (isPressed)
             {
                 if (currentTicks > (btnState.PreviousTicks + PRESSED_TO_HELD_MS))
                 {
-                    *(btnState.pButtonstate) = HELD;
+                    *(btnState.pButtonstate) = ButtonState::Held;
                 }
             }
             else
             {
-                *(btnState.pButtonstate) = RELEASED;
+                *(btnState.pButtonstate) = ButtonState::Released;
             }
             break;
-        case HELD:
-            *(btnState.pButtonstate) = isPressed ? HELD : RELEASED;
+        case ButtonState::Held:
+            *(btnState.pButtonstate) = isPressed ? ButtonState::Held : ButtonState::Released;
             btnState.PreviousTicks = currentTicks;
             break;
-        case RELEASED:
+        case ButtonState::Released:
             if (!isPressed)
             {
                 if (currentTicks > (btnState.PreviousTicks + RELEASED_TO_OFF_MS))
                 {
-                    *(btnState.pButtonstate) = OFF;
+                    *(btnState.pButtonstate) = ButtonState::Off;
                 }
             }
             else
             {
-                *(btnState.pButtonstate) = PRESSED;
+                *(btnState.pButtonstate) = ButtonState::Pressed;
                 btnState.PreviousTicks = currentTicks;
             }
             break;

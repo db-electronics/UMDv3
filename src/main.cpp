@@ -179,13 +179,13 @@ void loop()
 
     // process inputs
     uint8_t inputs = Umd::IoExpander.readGPIO();
-    Umd::Ux::pUserInput->Process(inputs, currentTicks);
+    Umd::Ux::Debouncer.Process(inputs, currentTicks);
 
     switch(Umd::Ux::UserInputState)
     {
         case Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
             // user pressed down
-            if(Umd::Ux::pUserInput->Down >= Umd::Ux::pUserInput->PRESSED)
+            if(Umd::Ux::Debouncer.Down >= Umd::Debouncer::ButtonState::Pressed)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(1);
                 Umd::Ux::Display.ResetScrollX();
@@ -193,7 +193,7 @@ void loop()
                 dasTicks = currentTicks;
             }
             // user pressed up
-            else if (Umd::Ux::pUserInput->Up >= Umd::Ux::pUserInput->PRESSED)
+            else if (Umd::Ux::Debouncer.Up >= Umd::Debouncer::ButtonState::Pressed)
             {
                 Umd::Ux::Display.UpdateCursorItemPosition(-1);
                 Umd::Ux::Display.ResetScrollX();
@@ -201,21 +201,21 @@ void loop()
                 dasTicks = currentTicks;
             }
             // user pressed left
-            else if (Umd::Ux::pUserInput->Left >= Umd::Ux::pUserInput->PRESSED)
+            else if (Umd::Ux::Debouncer.Left >= Umd::Debouncer::ButtonState::Pressed)
             {
                 Umd::Ux::Display.SetWindowItemScrollX(-1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed right
-            else if (Umd::Ux::pUserInput->Right >= Umd::Ux::pUserInput->PRESSED)
+            else if (Umd::Ux::Debouncer.Right >= Umd::Debouncer::ButtonState::Pressed)
             {
                 Umd::Ux::Display.SetWindowItemScrollX(1);
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed ok
-            else if (Umd::Ux::pUserInput->Ok >= Umd::Ux::pUserInput->PRESSED){
+            else if (Umd::Ux::Debouncer.Ok >= Umd::Debouncer::ButtonState::Pressed){
 
                 selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
                 switch(Umd::Ux::State){
@@ -348,7 +348,7 @@ void loop()
                 }
             }
             // user pressed back, always return to main menu
-            else if (Umd::Ux::pUserInput->Back >= Umd::Ux::pUserInput->PRESSED){
+            else if (Umd::Ux::Debouncer.Back >= Umd::Debouncer::ButtonState::Pressed){
                 Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
                 Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
                 Umd::Ux::Display.SetCursorVisibility(true);
@@ -361,32 +361,32 @@ void loop()
             break;
         case Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED:
             // release all keys before accepting a new input
-            if(Umd::Ux::pUserInput->Ok == Umd::Ux::pUserInput->OFF && 
-                Umd::Ux::pUserInput->Back == Umd::Ux::pUserInput->OFF && 
-                Umd::Ux::pUserInput->Up == Umd::Ux::pUserInput->OFF && 
-                Umd::Ux::pUserInput->Down == Umd::Ux::pUserInput->OFF && 
-                Umd::Ux::pUserInput->Left == Umd::Ux::pUserInput->OFF &&
-                Umd::Ux::pUserInput->Right == Umd::Ux::pUserInput->OFF)
+            if(Umd::Ux::Debouncer.Ok == Umd::Debouncer::ButtonState::Off && 
+                Umd::Ux::Debouncer.Back == Umd::Debouncer::ButtonState::Off && 
+                Umd::Ux::Debouncer.Up == Umd::Debouncer::ButtonState::Off && 
+                Umd::Ux::Debouncer.Down == Umd::Debouncer::ButtonState::Off && 
+                Umd::Ux::Debouncer.Left == Umd::Debouncer::ButtonState::Off &&
+                Umd::Ux::Debouncer.Right == Umd::Debouncer::ButtonState::Off)
             {
                 Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             }
             // MARK: Delayed auto-shift
-            if(Umd::Ux::pUserInput->Up == Umd::Ux::pUserInput->HELD){
+            if(Umd::Ux::Debouncer.Up == Umd::Debouncer::ButtonState::Held){
                 if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.UpdateCursorItemPosition(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::pUserInput->Down == Umd::Ux::pUserInput->HELD){
+            }else if(Umd::Ux::Debouncer.Down == Umd::Debouncer::ButtonState::Held){
                 if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.UpdateCursorItemPosition(1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::pUserInput->Left == Umd::Ux::pUserInput->HELD){
+            }else if(Umd::Ux::Debouncer.Left == Umd::Debouncer::ButtonState::Held){
                 if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.SetWindowItemScrollX(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::pUserInput->Right == Umd::Ux::pUserInput->HELD){
+            }else if(Umd::Ux::Debouncer.Right == Umd::Debouncer::ButtonState::Held){
                 if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
                     Umd::Ux::Display.SetWindowItemScrollX(1);
                     dasTicks = currentTicks;

@@ -4,7 +4,7 @@
 #include <memory>
 #include "cartridges/Cartridge.h"
 #include "services/CartridgeFactory.h"
-#include "services/Controls.h"
+#include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
 
@@ -35,8 +35,7 @@ namespace Umd
         UxState State = UX_MAIN_MENU;
         UxUserInputState UserInputState = UX_INPUT_INIT;
 
-        // Controls UserInput;
-        std::unique_ptr<Controls> pUserInput = std::make_unique<Controls>();
+        Umd::Debouncer Debouncer;
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
