@@ -20,12 +20,14 @@ namespace umd
     }
 
     namespace Ux{
+        // TODO enum class
         enum UxUserInputState : uint8_t{
             UX_INPUT_INIT,
             UX_INPUT_WAIT_FOR_PRESSED,
             UX_INPUT_WAIT_FOR_RELEASED
         };
 
+        // TODO enum class
         enum UxState : uint8_t{
             UX_MAIN_MENU,
             UX_OPERATION_COMPLETE,
