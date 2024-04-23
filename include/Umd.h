@@ -8,7 +8,7 @@
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
 
-namespace Umd
+namespace umd
 {
     namespace Config{
 
@@ -35,7 +35,7 @@ namespace Umd
         UxState State = UX_MAIN_MENU;
         UxUserInputState UserInputState = UX_INPUT_INIT;
 
-        Umd::Debouncer Debouncer;
+        umd::Debouncer Keys;
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
@@ -111,5 +111,5 @@ namespace Umd
     //     uint16_t words[BUFFER_SIZE_BYTES/2];
     //     uint32_t dwords[BUFFER_SIZE_BYTES/4];
     // }DataBuffer;
-    std::array<uint8_t, Umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
+    std::array<uint8_t, umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
 }

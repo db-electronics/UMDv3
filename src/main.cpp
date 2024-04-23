@@ -16,6 +16,8 @@
 #include "services/I2cScanner.h"
 #include "services/Crc32Calculator.h"
 
+using umd::Key;
+
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
 #endif
@@ -51,28 +53,28 @@ void setup()
     // Wire.setSDA(PB9);
     Wire.begin();
 
-    if (!Umd::Ux::Display.Init())
+    if (!umd::Ux::Display.Init())
     {
         SerialUSB.println(F("display init failure"));
         while (1);
     }
 
     // enable the title zone
-    Umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_TITLE, true);
-    Umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_STATUS, true);
+    umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_TITLE, true);
+    umd::Ux::Display.SetZoneVisibility(UMDDisplay::ZONE_STATUS, true);
 
     // sd card
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("initializing..."));
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-sd card"));
-    Umd::Ux::Display.Redraw();
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("initializing..."));
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-sd card"));
+    umd::Ux::Display.Redraw();
 
     // SD.setDx(PC8, PC9, PC10, PC11);
     // SD.setCMD(PD2);
     // SD.setCK(PC12);
     if (!SD.begin(SD_DETECT_PIN, PC8, PC9, PC10, PC11, PD2, PC12))
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sd card"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sd card"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
@@ -83,61 +85,61 @@ void setup()
     int sdVerify = verifySdCard(line);
     if(sdVerify != 0)
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no UMD folder"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no UMD folder"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
     // setup onboard mcp23008, GP6 and GP7 LED outputs
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 io expander"));
-    Umd::Ux::Display.Redraw();
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 io expander"));
+    umd::Ux::Display.Redraw();
 
-    if (!Umd::IoExpander.begin(Umd::Config::MCP23008_BOARD_ADDRESS))
+    if (!umd::IoExpander.begin(umd::Config::MCP23008_BOARD_ADDRESS))
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
-    Umd::IoExpander.pinMode(UMD_BOARD_LEDS, OUTPUT);
-    Umd::IoExpander.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
-    Umd::IoExpander.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
-    Umd::IoExpander.setInterruptControl(UMD_BOARD_PUSHBUTTONS, Umd::IoExpander.PREVIOUS);
-    Umd::IoExpander.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
-    Umd::IoExpander.digitalWrite(UMD_BOARD_LEDS, LOW);
+    umd::IoExpander.pinMode(UMD_BOARD_LEDS, OUTPUT);
+    umd::IoExpander.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
+    umd::IoExpander.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
+    umd::IoExpander.setInterruptControl(UMD_BOARD_PUSHBUTTONS, umd::IoExpander.PREVIOUS);
+    umd::IoExpander.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
+    umd::IoExpander.digitalWrite(UMD_BOARD_LEDS, LOW);
 
     // setup adapter mcp23008, read adapter id
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 adapter"));
-    Umd::Ux::Display.Redraw();
-    if (!Umd::Cart::IoExpander.begin(Umd::Config::MCP23008_ADAPTER_ADDRESS))
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 adapter"));
+    umd::Ux::Display.Redraw();
+    if (!umd::Cart::IoExpander.begin(umd::Config::MCP23008_ADAPTER_ADDRESS))
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not found"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
     // get the adapter id, use it to determine the cartridge type
-    Umd::Cart::IoExpander.pinMode(0xFF, INPUT);
-    uint8_t adapterId = Umd::Cart::IoExpander.readGPIO();
-    Umd::Cart::pCartridge = Umd::Cart::Factory.GetCart(adapterId);
-    if (Umd::Cart::pCartridge == nullptr)
+    umd::Cart::IoExpander.pinMode(0xFF, INPUT);
+    uint8_t adapterId = umd::Cart::IoExpander.readGPIO();
+    umd::Cart::pCartridge = umd::Cart::Factory.GetCart(adapterId);
+    if (umd::Cart::pCartridge == nullptr)
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: unknown adapter"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: unknown adapter"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
-    //Umd::Ux::Display.printf(0, line++, F("  adapter id = %d"), adapterId);
-    auto systemName = Umd::Cart::pCartridge->GetSystemName();
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-%s"), systemName.c_str());
-    Umd::Ux::Display.Redraw();
+    //umd::Ux::Display.printf(0, line++, F("  adapter id = %d"), adapterId);
+    auto systemName = umd::Cart::pCartridge->GetSystemName();
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-%s"), systemName.c_str());
+    umd::Ux::Display.Redraw();
 
     // check if the sdcard has a _db.txt file containing rom checksums for this system
     sdVerify = verifySdCardSystemSetup(line, systemName.c_str());
     if(sdVerify != 0)
     {
-        Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
-        Umd::Ux::Display.Redraw();
+        umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
+        umd::Ux::Display.Redraw();
         while (1);
     }
 
@@ -145,22 +147,22 @@ void setup()
     SCmd.addCommand("scani2c", scmdScanI2C);
 
     // MARK: Init Success
-    Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("init success"));
-    Umd::Ux::Display.Redraw();
+    umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("init success"));
+    umd::Ux::Display.Redraw();
     delay(2000);
 
-    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_TITLE);
-    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
-    Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
+    umd::Ux::Display.ClearZone(UMDDisplay::ZONE_TITLE);
+    umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
+    umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
 
     // get the supported memory types for this cartridge
-    Umd::Cart::MemoryNames = Umd::Cart::pCartridge->GetMemoryNames();
+    umd::Cart::MemoryNames = umd::Cart::pCartridge->GetMemoryNames();
     
-    Umd::Ux::Display.Redraw();
+    umd::Ux::Display.Redraw();
 
-    Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-    Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_INIT;
-    Umd::Cart::State = Cartridge::IDLE;
+    umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+    umd::Ux::UserInputState = umd::Ux::UX_INPUT_INIT;
+    umd::Cart::State = Cartridge::IDLE;
 }
 
 //MARK: Main loop
@@ -178,239 +180,239 @@ void loop()
     currentTicks = HAL_GetTick();
 
     // process inputs
-    uint8_t inputs = Umd::IoExpander.readGPIO();
-    Umd::Ux::Debouncer.Process(inputs, currentTicks);
+    uint8_t inputs = umd::IoExpander.readGPIO();
+    umd::Ux::Keys.Process(inputs, currentTicks);
 
-    switch(Umd::Ux::UserInputState)
+    switch(umd::Ux::UserInputState)
     {
-        case Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
+        case umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
             // user pressed down
-            if(Umd::Ux::Debouncer.Down >= Umd::Debouncer::ButtonState::Pressed)
+            if(umd::Ux::Keys.Down >= Key::Pressed)
             {
-                Umd::Ux::Display.UpdateCursorItemPosition(1);
-                Umd::Ux::Display.ResetScrollX();
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                umd::Ux::Display.UpdateCursorItemPosition(1);
+                umd::Ux::Display.ResetScrollX();
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed up
-            else if (Umd::Ux::Debouncer.Up >= Umd::Debouncer::ButtonState::Pressed)
+            else if (umd::Ux::Keys.Up >= Key::Pressed)
             {
-                Umd::Ux::Display.UpdateCursorItemPosition(-1);
-                Umd::Ux::Display.ResetScrollX();
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                umd::Ux::Display.UpdateCursorItemPosition(-1);
+                umd::Ux::Display.ResetScrollX();
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed left
-            else if (Umd::Ux::Debouncer.Left >= Umd::Debouncer::ButtonState::Pressed)
+            else if (umd::Ux::Keys.Left >= Key::Pressed)
             {
-                Umd::Ux::Display.SetWindowItemScrollX(-1);
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                umd::Ux::Display.SetWindowItemScrollX(-1);
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed right
-            else if (Umd::Ux::Debouncer.Right >= Umd::Debouncer::ButtonState::Pressed)
+            else if (umd::Ux::Keys.Right >= Key::Pressed)
             {
-                Umd::Ux::Display.SetWindowItemScrollX(1);
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                umd::Ux::Display.SetWindowItemScrollX(1);
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                 dasTicks = currentTicks;
             }
             // user pressed ok
-            else if (Umd::Ux::Debouncer.Ok >= Umd::Debouncer::ButtonState::Pressed){
+            else if (umd::Ux::Keys.Ok >= Key::Pressed){
 
-                selectedItemIndex = Umd::Ux::Display.GetSelectedItemIndex();
-                switch(Umd::Ux::State){
+                selectedItemIndex = umd::Ux::Display.GetSelectedItemIndex();
+                switch(umd::Ux::State){
                     // MARK: Main Menu
-                    case Umd::Ux::UX_MAIN_MENU:
+                    case umd::Ux::UX_MAIN_MENU:
                         switch(selectedItemIndex)
                         {
                             // these must match the index of the menu items currently displayed
                             // Identify the connected cartridge by calculating the CRC32 of the ROM and comparing against the database
                             case Cartridge::IDENTIFY:
                                 // update state to IDENTIFY,
-                                Umd::Cart::State = Cartridge::IDENTIFY;
+                                umd::Cart::State = Cartridge::IDENTIFY;
                                 
                                 // clear window and status
-                                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
-                                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
-                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
-                                // Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("identifying..."));
+                                umd::Ux::Display.ClearZone(UMDDisplay::ZONE_WINDOW);
+                                umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
+                                umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
+                                // umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("identifying..."));
                                 // // redraw
-                                // Umd::Ux::Display.Redraw();
+                                // umd::Ux::Display.Redraw();
 
-                                Umd::OperationStartTime = HAL_GetTick();
-                                Umd::Cart::pCartridge->ResetChecksumCalculator();
-                                totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
-                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::Config::BUFFER_SIZE_BYTES);
+                                umd::OperationStartTime = HAL_GetTick();
+                                umd::Cart::pCartridge->ResetChecksumCalculator();
+                                totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
+                                umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
 
                                 currentTicks = HAL_GetTick();
-                                Umd::Ux::Display.SetProgressBarVisibility(true);
-                                for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
+                                umd::Ux::Display.SetProgressBarVisibility(true);
+                                for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
                                 {
-                                    batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->Identify(addr, Umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
-                                    if(HAL_GetTick() > currentTicks + Umd::Config::PROGRESS_REFRESH_RATE_MS)
+                                    batchSize = umd::Cart::BatchSizeCalc.Next();
+                                    umd::Cart::pCartridge->Identify(addr, umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    if(HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS)
                                     {
                                         currentTicks = HAL_GetTick();
-                                        Umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
-                                        Umd::Ux::Display.Redraw(); 
+                                        umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
+                                        umd::Ux::Display.Redraw(); 
                                     }
                                 }
-                                Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
-                                Umd::Ux::Display.SetProgressBarComplete(Umd::OperationTotalTime);
+                                umd::OperationTotalTime = HAL_GetTick() - umd::OperationStartTime;
+                                umd::Ux::Display.SetProgressBarComplete(umd::OperationTotalTime);
 
                                 // TODO get rid of metadata from cartridge and get the title instead
                                 // seems better from an encapsulation perspective
-                                Umd::Cart::Metadata.clear();
-                                Umd::Cart::Metadata = Umd::Cart::pCartridge->GetMetadata();
+                                umd::Cart::Metadata.clear();
+                                umd::Cart::Metadata = umd::Cart::pCartridge->GetMetadata();
                                 
-                                Umd::Ux::Display.NewWindow(Umd::Cart::Metadata);
-                                Umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
-                                Umd::Ux::Display.Printf(F("CRC  : %08X"), Umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                //Umd::Ux::Display.Printf(Umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), Umd::OperationTotalTime);
+                                umd::Ux::Display.NewWindow(umd::Cart::Metadata);
+                                umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
+                                umd::Ux::Display.Printf(F("CRC  : %08X"), umd::Cart::pCartridge->GetAccumulatedChecksum());
+                                //umd::Ux::Display.Printf(umd::Ux::Display.ZONE_STATUS, F("Time : %d ms"), umd::OperationTotalTime);
                                 
                                 // TODO search for this crc32 in the database
 
                                 // all done, return to main menu
-                                Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                                umd::Cart::State = Cartridge::IDLE;
+                                umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             case Cartridge::READ: 
                                 // update state to READ and offer choice of memory to read from
-                                Umd::Cart::State = Cartridge::READ;
-                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Read");
-                                Umd::Ux::Display.NewWindow(Umd::Cart::MemoryNames);
-                                Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                                umd::Cart::State = Cartridge::READ;
+                                umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), umd::Cart::pCartridge->GetSystemName().c_str(), "Read");
+                                umd::Ux::Display.NewWindow(umd::Cart::MemoryNames);
+                                umd::Ux::State = umd::Ux::UX_SELECT_MEMORY;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             case Cartridge::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
-                                Umd::Cart::State = Cartridge::WRITE;
-                                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), Umd::Cart::pCartridge->GetSystemName().c_str(), "Write");
-                                Umd::Ux::Display.NewWindow(Umd::Cart::MemoryNames);
-                                Umd::Ux::State = Umd::Ux::UX_SELECT_MEMORY;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                                umd::Cart::State = Cartridge::WRITE;
+                                umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), umd::Cart::pCartridge->GetSystemName().c_str(), "Write");
+                                umd::Ux::Display.NewWindow(umd::Cart::MemoryNames);
+                                umd::Ux::State = umd::Ux::UX_SELECT_MEMORY;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                             default:
-                                Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                                umd::Cart::State = Cartridge::IDLE;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
                         }
                         break;
                     // MARK: Select Memory
-                    case Umd::Ux::UX_SELECT_MEMORY:
+                    case umd::Ux::UX_SELECT_MEMORY:
                         
-                        switch(Umd::Cart::State)
+                        switch(umd::Cart::State)
                         {
                             case Cartridge::READ:
                                 // TODO need a filename
                                 
                                 // selected index indicates the memory to read from
-                                Umd::OperationStartTime = HAL_GetTick();
-                                totalBytes = Umd::Cart::pCartridge->GetCartridgeSize();
-                                Umd::Cart::BatchSizeCalc.Init(Umd::Cart::pCartridge->GetCartridgeSize(), Umd::Config::BUFFER_SIZE_BYTES);
+                                umd::OperationStartTime = HAL_GetTick();
+                                totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
+                                umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
 
                                 // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
-                                for(int addr = 0; addr < totalBytes; addr += Umd::Config::BUFFER_SIZE_BYTES)
+                                for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
                                 {
-                                    batchSize = Umd::Cart::BatchSizeCalc.Next();
-                                    Umd::Cart::pCartridge->ReadMemory(addr, Umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    batchSize = umd::Cart::BatchSizeCalc.Next();
+                                    umd::Cart::pCartridge->ReadMemory(addr, umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                 }
 
-                                Umd::OperationTotalTime = HAL_GetTick() - Umd::OperationStartTime;
+                                umd::OperationTotalTime = HAL_GetTick() - umd::OperationStartTime;
 
                                 // all done, return to main menu
-                                Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                umd::Cart::State = Cartridge::IDLE;
+                                umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
                                 break;
                             case Cartridge::WRITE:
                                 // selected index indicates the memory to write to
                                 
                                 // all done, return to main menu
-                                Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                umd::Cart::State = Cartridge::IDLE;
+                                umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
                                 break;
                             default:
-                                Umd::Cart::State = Cartridge::IDLE;
-                                Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-                                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                                umd::Cart::State = Cartridge::IDLE;
+                                umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+                                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
                                 break;
                         }
                         break;
                     default:
                         // debounce and return to main menu
-                        Umd::Cart::State = Cartridge::IDLE;
-                        Umd::Ux::State = Umd::Ux::UX_MAIN_MENU;
-                        Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+                        umd::Cart::State = Cartridge::IDLE;
+                        umd::Ux::State = umd::Ux::UX_MAIN_MENU;
+                        umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                         break;
                 }
             }
             // user pressed back, always return to main menu
-            else if (Umd::Ux::Debouncer.Back >= Umd::Debouncer::ButtonState::Pressed){
-                Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
-                Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
-                Umd::Ux::Display.SetCursorVisibility(true);
-                Umd::Ux::Display.SetProgressBarVisibility(false);
-                Umd::Ux::Display.SetCursorChar('>');
-                Umd::Ux::Display.ResetScrollX();
-                Umd::Ux::Display.NewWindow(Umd::Ux::MAIN_MENU_ITEMS);
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
+            else if (umd::Ux::Keys.Back >= Key::Pressed){
+                umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
+                umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), umd::Cart::pCartridge->GetSystemName().c_str());
+                umd::Ux::Display.SetCursorVisibility(true);
+                umd::Ux::Display.SetProgressBarVisibility(false);
+                umd::Ux::Display.SetCursorChar('>');
+                umd::Ux::Display.ResetScrollX();
+                umd::Ux::Display.NewWindow(umd::Ux::MAIN_MENU_ITEMS);
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
             }
             break;
-        case Umd::Ux::UX_INPUT_WAIT_FOR_RELEASED:
+        case umd::Ux::UX_INPUT_WAIT_FOR_RELEASED:
             // release all keys before accepting a new input
-            if(Umd::Ux::Debouncer.Ok == Umd::Debouncer::ButtonState::Off && 
-                Umd::Ux::Debouncer.Back == Umd::Debouncer::ButtonState::Off && 
-                Umd::Ux::Debouncer.Up == Umd::Debouncer::ButtonState::Off && 
-                Umd::Ux::Debouncer.Down == Umd::Debouncer::ButtonState::Off && 
-                Umd::Ux::Debouncer.Left == Umd::Debouncer::ButtonState::Off &&
-                Umd::Ux::Debouncer.Right == Umd::Debouncer::ButtonState::Off)
+            if(umd::Ux::Keys.Ok == Key::Off && 
+                umd::Ux::Keys.Back == Key::Off && 
+                umd::Ux::Keys.Up == Key::Off && 
+                umd::Ux::Keys.Down == Key::Off && 
+                umd::Ux::Keys.Left == Key::Off &&
+                umd::Ux::Keys.Right == Key::Off)
             {
-                Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+                umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             }
             // MARK: Delayed auto-shift
-            if(Umd::Ux::Debouncer.Up == Umd::Debouncer::ButtonState::Held){
-                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
-                    Umd::Ux::Display.UpdateCursorItemPosition(-1);
+            if(umd::Ux::Keys.Up == Key::Held){
+                if(currentTicks > dasTicks + umd::Config::DAS_REPEAT_RATE_MS){
+                    umd::Ux::Display.UpdateCursorItemPosition(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::Debouncer.Down == Umd::Debouncer::ButtonState::Held){
-                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
-                    Umd::Ux::Display.UpdateCursorItemPosition(1);
+            }else if(umd::Ux::Keys.Down == Key::Held){
+                if(currentTicks > dasTicks + umd::Config::DAS_REPEAT_RATE_MS){
+                    umd::Ux::Display.UpdateCursorItemPosition(1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::Debouncer.Left == Umd::Debouncer::ButtonState::Held){
-                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
-                    Umd::Ux::Display.SetWindowItemScrollX(-1);
+            }else if(umd::Ux::Keys.Left == Key::Held){
+                if(currentTicks > dasTicks + umd::Config::DAS_REPEAT_RATE_MS){
+                    umd::Ux::Display.SetWindowItemScrollX(-1);
                     dasTicks = currentTicks;
                 }
-            }else if(Umd::Ux::Debouncer.Right == Umd::Debouncer::ButtonState::Held){
-                if(currentTicks > dasTicks + Umd::Config::DAS_REPEAT_RATE_MS){
-                    Umd::Ux::Display.SetWindowItemScrollX(1);
+            }else if(umd::Ux::Keys.Right == Key::Held){
+                if(currentTicks > dasTicks + umd::Config::DAS_REPEAT_RATE_MS){
+                    umd::Ux::Display.SetWindowItemScrollX(1);
                     dasTicks = currentTicks;
                 } 
             }
             break;
-        case Umd::Ux::UX_INPUT_INIT:
+        case umd::Ux::UX_INPUT_INIT:
         default:
-            Umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
-            Umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), Umd::Cart::pCartridge->GetSystemName().c_str());
-            Umd::Ux::Display.SetCursorVisibility(true);
-            Umd::Ux::Display.SetProgressBarVisibility(false);
-            Umd::Ux::Display.SetCursorChar('>');
-            Umd::Ux::Display.ResetScrollX();
-            // Umd::Ux::Display.NewWindow(Umd::Ux::MENU_WITH_30_ITEMS);
-            // Umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));
-            // Umd::Ux::Display.Printf(F("hello world %d"), 1); // add a new item at the end
-            Umd::Ux::Display.NewWindow(Umd::Ux::MAIN_MENU_ITEMS);
-            Umd::Cart::State = Cartridge::IDLE;
-            Umd::Ux::UserInputState = Umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
+            umd::Ux::Display.ClearZone(UMDDisplay::ZONE_STATUS);
+            umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s"), umd::Cart::pCartridge->GetSystemName().c_str());
+            umd::Ux::Display.SetCursorVisibility(true);
+            umd::Ux::Display.SetProgressBarVisibility(false);
+            umd::Ux::Display.SetCursorChar('>');
+            umd::Ux::Display.ResetScrollX();
+            // umd::Ux::Display.NewWindow(umd::Ux::MENU_WITH_30_ITEMS);
+            // umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("test many items"));
+            // umd::Ux::Display.Printf(F("hello world %d"), 1); // add a new item at the end
+            umd::Ux::Display.NewWindow(umd::Ux::MAIN_MENU_ITEMS);
+            umd::Cart::State = Cartridge::IDLE;
+            umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_PRESSED;
             break;
     }
 
-    Umd::Ux::Display.Redraw();
+    umd::Ux::Display.Redraw();
     // SerialUSB.println(F("Tick"));
     // delay(100);
 }
@@ -435,8 +437,8 @@ int verifySdCard(int& line)
     }
 
     // auto fileName = sdFile.fullname();
-    // Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
-    // Umd::Ux::Display.redraw();
+    // umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
+    // umd::Ux::Display.redraw();
     sdFile.close();
 
     return 0;
@@ -455,8 +457,8 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     }
 
     auto fileName = sdFile.fullname();
-    // Umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
-    // Umd::Ux::Display.redraw();
+    // umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
+    // umd::Ux::Display.redraw();
 
     // test read file contents
     char c[16];

@@ -1,71 +1,71 @@
 
 #include "services/Debouncer.h"
 
-Umd::Debouncer::Debouncer()
+umd::Debouncer::Debouncer()
 {
-    Up = ButtonState::Off;
-    Down = ButtonState::Off;
-    Left = ButtonState::Off;
-    Right = ButtonState::Off;
-    Ok = ButtonState::Off;
-    Back = ButtonState::Off;
+    Up = Key::Off;
+    Down = Key::Off;
+    Left = Key::Off;
+    Right = Key::Off;
+    Ok = Key::Off;
+    Back = Key::Off;
 
-    ButtonStates.push_back(BtnState(&Up, UMD_UP_PUSHBUTTON));
-    ButtonStates.push_back(BtnState(&Down, UMD_DOWN_PUSHBUTTON));
-    ButtonStates.push_back(BtnState(&Left, UMD_LEFT_PUSHBUTTON));
-    ButtonStates.push_back(BtnState(&Right, UMD_RIGHT_PUSHBUTTON));
-    ButtonStates.push_back(BtnState(&Ok, UMD_OK_PUSHBUTTON));
-    ButtonStates.push_back(BtnState(&Back, UMD_BACK_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Up, UMD_UP_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Down, UMD_DOWN_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Left, UMD_LEFT_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Right, UMD_RIGHT_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Ok, UMD_OK_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Back, UMD_BACK_PUSHBUTTON));
 }
 
-void Umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)
+void umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)
 {
 
-    for (auto& btn : ButtonStates)
+    for (auto& btn : KeyStates)
     {
         SetButtonState(inputs, currentTicks, btn);
     }
 }
 
-void Umd::Debouncer::SetButtonState(uint8_t inputs, uint32_t currentTicks, BtnState& btnState)
+void umd::Debouncer::SetButtonState(uint8_t inputs, uint32_t currentTicks, KeyState& keyState)
 {
-    bool isPressed = (inputs & btnState.PinMask) == 0;
+    bool isPressed = (inputs & keyState.PinMask) == 0;
 
-    switch (*(btnState.pButtonstate))
+    switch (*(keyState.pKeyState))
     {
-        case ButtonState::Off:
-            *(btnState.pButtonstate) = isPressed ? ButtonState::Pressed : ButtonState::Off;
-            btnState.PreviousTicks = currentTicks;
+        case Key::Off:
+            *(keyState.pKeyState) = isPressed ? Key::Pressed : Key::Off;
+            keyState.PreviousTicks = currentTicks;
             break;
-        case ButtonState::Pressed:
+        case Key::Pressed:
             if (isPressed)
             {
-                if (currentTicks > (btnState.PreviousTicks + PRESSED_TO_HELD_MS))
+                if (currentTicks > (keyState.PreviousTicks + PRESSED_TO_HELD_MS))
                 {
-                    *(btnState.pButtonstate) = ButtonState::Held;
+                    *(keyState.pKeyState) = Key::Held;
                 }
             }
             else
             {
-                *(btnState.pButtonstate) = ButtonState::Released;
+                *(keyState.pKeyState) = Key::Released;
             }
             break;
-        case ButtonState::Held:
-            *(btnState.pButtonstate) = isPressed ? ButtonState::Held : ButtonState::Released;
-            btnState.PreviousTicks = currentTicks;
+        case Key::Held:
+            *(keyState.pKeyState) = isPressed ? Key::Held : Key::Released;
+            keyState.PreviousTicks = currentTicks;
             break;
-        case ButtonState::Released:
+        case Key::Released:
             if (!isPressed)
             {
-                if (currentTicks > (btnState.PreviousTicks + RELEASED_TO_OFF_MS))
+                if (currentTicks > (keyState.PreviousTicks + RELEASED_TO_OFF_MS))
                 {
-                    *(btnState.pButtonstate) = ButtonState::Off;
+                    *(keyState.pKeyState) = Key::Off;
                 }
             }
             else
             {
-                *(btnState.pButtonstate) = ButtonState::Pressed;
-                btnState.PreviousTicks = currentTicks;
+                *(keyState.pKeyState) = Key::Pressed;
+                keyState.PreviousTicks = currentTicks;
             }
             break;
         default:
