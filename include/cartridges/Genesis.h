@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Cartridge.h"
+#include "GenesisHeader.h"
 #include <string>
 
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
@@ -11,47 +12,6 @@
 #define GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME 48
 #define GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME 48
 #define GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER 14
-
-struct GenesisHeader{
-    union {
-        struct{
-            char SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE];
-            char Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT];
-            char DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME];
-            char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME];
-            char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER];
-            uint16_t Checksum;
-            char DeviceSupport[16];
-            uint32_t ROMStart;
-            uint32_t ROMEnd;
-            uint32_t RAMStart;
-            uint32_t RAMEnd;
-            char MemoryType[2];
-            uint8_t RAMType;
-            uint8_t RAM20;
-            uint32_t SRAMStart;
-            uint32_t SRAMEnd;
-            char ModemSupport[12];
-            char Notes[40];
-            char RegionSupport[3];
-            char Reserved[13];
-        };
-        struct{
-            uint8_t bytes[256];
-        };
-        struct{
-            uint16_t words[128];
-        };
-    };
-
-    struct {
-        char SystemType[GENESIS_HEADER_SIZE_OF_SYSTEM_TYPE+1];
-        char Copyright[GENESIS_HEADER_SIZE_OF_COPYRIGHT+1];
-        char DomesticName[GENESIS_HEADER_SIZE_OF_DOMESTIC_NAME+1];
-        char InternationalName[GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME+1];
-        char SerialNumber[GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER+1];
-    } Printable;
-};
 
 class Genesis : public Cartridge {
     public:
@@ -83,8 +43,6 @@ class Genesis : public Cartridge {
         virtual uint8_t readPrgByte(uint32_t address);
         virtual void writePrgByte(uint32_t address, uint8_t data);
 
-
-
         virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
@@ -93,7 +51,7 @@ class Genesis : public Cartridge {
         
     private:
 
-        GenesisHeader mHeader;
+        genesis::Header mHeader;
         const std::string mSystemName = "MD";
         const uint32_t HEADER_START_ADDR = 0x00000100;
         const uint32_t HEADER_SIZE = 256;

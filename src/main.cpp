@@ -164,6 +164,15 @@ void setup()
     umd::Ux::UserInputState = umd::Ux::UX_INPUT_INIT;
     umd::Cart::State = Cartridge::IDLE;
 
+    umd::Array[0] = 0x01;
+    umd::Array[1] = 0x02;
+    umd::Array[2] = 0x03;
+    umd::Array[3] = 0x04;
+    uint8_t byte = umd::Array[0];
+    uint16_t word = umd::Array.Word(0);
+    uint32_t dword = umd::Array.Long(0);
+    umd::Array.Long(8) = 0xFFFFFFFF;
+    umd::Array.Word(12) = 0xFFFF;
 }
 
 //MARK: Main loop

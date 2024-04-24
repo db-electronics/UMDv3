@@ -7,7 +7,8 @@
 #include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
-#include "services/Buffer.h"
+#include "services/UmdArray.h"
+#include "services/BatchSizeCalculator.h"
 
 namespace umd
 {
@@ -78,29 +79,7 @@ namespace umd
             Metadata.clear();
         }
 
-        class BatchSizeCalculator{
-            public:
-                BatchSizeCalculator(){};
-
-                void Init(uint32_t totalBytes, uint16_t batchSize){
-                    mBytesLeft = totalBytes;
-                    mMBatchSize = batchSize;
-                }
-
-                uint16_t Next(){
-                    if(mBytesLeft >= mMBatchSize){
-                        mBytesLeft -= mMBatchSize;
-                        return mMBatchSize;
-                    }
-                    else{
-                        return mBytesLeft;
-                    }
-                };
-
-            private:
-                uint32_t mBytesLeft;
-                uint32_t mMBatchSize;
-        } BatchSizeCalc;
+        umd::BatchSizeCalculator BatchSizeCalc;
     }
 
     i2cdevice::Mcp23008 IoExpander;
@@ -116,5 +95,5 @@ namespace umd
     // }DataBuffer;
     std::array<uint8_t, umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
 
-    UmdBuffer<Config::BUFFER_SIZE_BYTES> Buffer;
+    UmdArray<Config::BUFFER_SIZE_BYTES> Array;
 }
