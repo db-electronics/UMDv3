@@ -6,7 +6,7 @@
 #include "cartridges/Cartridge.h"
 #include "services/IChecksumCalculator.h"
 #include "services/Crc32Calculator.h"
-#include "cartridges/Genesis.h"
+#include "cartridges/Genesis/Genesis.h"
 
 class CartridgeFactory
 {

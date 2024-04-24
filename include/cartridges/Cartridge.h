@@ -8,6 +8,7 @@
 #include <map>
 
 #include <STM32SD.h>
+#include "UmdArray.h"
 #include "services/IChecksumCalculator.h"
 #include "services/UmdDisplay.h"
 #include "memory/FlashInfo.h"
@@ -95,6 +96,8 @@ class Cartridge : public UMDPortsV3 {
         /// @param opt The options for reading
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
+
+        virtual uint32_t Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt) = 0;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) = 0;
 

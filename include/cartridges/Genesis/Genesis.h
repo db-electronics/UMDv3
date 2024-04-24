@@ -1,7 +1,8 @@
 #pragma once
 
-#include "Cartridge.h"
-#include "GenesisHeader.h"
+#include "../Cartridge.h"
+#include "../UmdArray.h"
+#include "Header.h"
 #include <string>
 
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
@@ -27,6 +28,7 @@ class Genesis : public Cartridge {
         virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) override;
         virtual int EraseFlash(uint8_t memTypeIndex) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
+        virtual uint32_t Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt) override;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) override;
 

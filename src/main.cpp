@@ -164,15 +164,7 @@ void setup()
     umd::Ux::UserInputState = umd::Ux::UX_INPUT_INIT;
     umd::Cart::State = Cartridge::IDLE;
 
-    umd::Array[0] = 0x01;
-    umd::Array[1] = 0x02;
-    umd::Array[2] = 0x03;
-    umd::Array[3] = 0x04;
-    uint8_t byte = umd::Array[0];
-    uint16_t word = umd::Array.Word(0);
-    uint32_t dword = umd::Array.Long(0);
-    umd::Array.Long(8) = 0xFFFFFFFF;
-    umd::Array.Word(12) = 0xFFFF;
+    std::fill(std::begin(umd::Array), std::end(umd::Array), 0xAA);
 }
 
 //MARK: Main loop
@@ -251,15 +243,16 @@ void loop()
 
                                 umd::OperationStartTime = HAL_GetTick();
                                 umd::Cart::pCartridge->ResetChecksumCalculator();
+
                                 totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
-                                umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
+
+                                umd::Array.SetTransfer(totalBytes);
 
                                 currentTicks = HAL_GetTick();
                                 umd::Ux::Display.SetProgressBarVisibility(true);
                                 for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
                                 {
-                                    batchSize = umd::Cart::BatchSizeCalc.Next();
-                                    umd::Cart::pCartridge->Identify(addr, umd::DataBuffer.data(), batchSize, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    umd::Cart::pCartridge->Identify(addr, umd::Array, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                     if(HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS)
                                     {
                                         currentTicks = HAL_GetTick();

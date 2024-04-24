@@ -3,11 +3,11 @@
 #include <vector>
 #include <memory>
 #include "cartridges/Cartridge.h"
+#include "cartridges/UmdArray.h"
 #include "services/CartridgeFactory.h"
 #include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
-#include "services/UmdArray.h"
 #include "services/BatchSizeCalculator.h"
 
 namespace umd
@@ -95,5 +95,5 @@ namespace umd
     // }DataBuffer;
     std::array<uint8_t, umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
 
-    UmdArray<Config::BUFFER_SIZE_BYTES> Array;
+    UmdArray Array;
 }

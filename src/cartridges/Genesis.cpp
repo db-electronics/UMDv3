@@ -1,4 +1,4 @@
-#include "cartridges/Genesis.h"
+#include "cartridges/Genesis/Genesis.h"
 
 // MARK: Constructor
 Genesis::Genesis(IChecksumCalculator& checksumCalculator)
@@ -110,6 +110,23 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
     switch(opt){
         case CHECKSUM_CALCULATOR:
             return mChecksumCalculator.Accumulate(reinterpret_cast<uint32_t*>(buffer), size/4);
+        default:
+            return 0;
+    }
+}
+
+uint32_t Genesis::Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt){
+
+    array.Next();
+
+    for(int i = 0; i < array.AvailableSize(); i+=2){
+        array.Word(i) = ReadPrgWord(address);
+        address += 2;
+    }
+
+    switch(opt){
+        case CHECKSUM_CALCULATOR:
+            return mChecksumCalculator.Accumulate(&array.Long(0), array.AvailableSize()/4);
         default:
             return 0;
     }
