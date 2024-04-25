@@ -1,7 +1,7 @@
 #include "cartridges/Genesis/Genesis.h"
 
 // MARK: Constructor
-Genesis::Genesis(IChecksumCalculator& checksumCalculator)
+cartridges::genesis::Cart::Cart(IChecksumCalculator& checksumCalculator)
     : Cartridge(checksumCalculator) {
 
     InitIO();
@@ -21,10 +21,10 @@ Genesis::Genesis(IChecksumCalculator& checksumCalculator)
 }
 
 // MARK: Destructor
-Genesis::~Genesis(){}
+cartridges::genesis::Cart::~Cart(){}
 
 // MARK: InitIO()
-void Genesis::InitIO(){
+void cartridges::genesis::Cart::InitIO(){
     setDefaults();
 
     // set pins to high
@@ -60,17 +60,17 @@ void Genesis::InitIO(){
 }
 
 // MARK: GetCartridgeName()
-const char* Genesis::GetCartridgeName(){
+const char* cartridges::genesis::Cart::GetCartridgeName(){
     ReadHeader();
     return mHeader.Printable.DomesticName;
 }
 
-uint32_t Genesis::GetCartridgeSize(){
+uint32_t cartridges::genesis::Cart::GetCartridgeSize(){
     ReadHeader();
     return mHeader.ROMEnd + 1;
 }
 
-FlashInfo Genesis::GetFlashInfo(uint8_t memTypeIndex){
+FlashInfo cartridges::genesis::Cart::GetFlashInfo(uint8_t memTypeIndex){
 
     // check if the memTypeIndex is valid
     if(!IsMemoryIndexValid(memTypeIndex)){
@@ -98,7 +98,7 @@ FlashInfo Genesis::GetFlashInfo(uint8_t memTypeIndex){
 }
 
 // MARK: Identify()
-uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
+uint32_t cartridges::genesis::Cart::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
     // fill the buffer, but don't modify its value because we may need it for checksum
     uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
     for(int i = 0; i < size; i+=2){
@@ -115,7 +115,7 @@ uint32_t Genesis::Identify(uint32_t address, uint8_t *buffer, uint16_t size, Rea
     }
 }
 
-uint32_t Genesis::Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt){
+uint32_t cartridges::genesis::Cart::Identify(uint32_t address, cartridges::Array& array, ReadOptions opt){
 
     array.Next();
 
@@ -133,7 +133,7 @@ uint32_t Genesis::Identify(uint32_t address, umd::UmdArray& array, ReadOptions o
 }
 
 // MARK: ReadMemory()
-uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt){
+uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt){
     
     uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
 
@@ -163,7 +163,7 @@ uint32_t Genesis::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, u
 }
 
 // MARK: EraseFlash()
-int Genesis::EraseFlash(uint8_t memTypeIndex){
+int cartridges::genesis::Cart::EraseFlash(uint8_t memTypeIndex){
     // check if the memTypeIndex is valid
     if(memTypeIndex >= mMemoryTypeIndexMap.size()){
         return 0;
@@ -185,11 +185,11 @@ int Genesis::EraseFlash(uint8_t memTypeIndex){
     return 0;
 }
 
-int Genesis::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+int cartridges::genesis::Cart::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
     return 0;
 }
 
-bool Genesis::flashIsBusy(uint8_t mem){
+bool cartridges::genesis::Cart::flashIsBusy(uint8_t mem){
     if((togglePrgBit(4) != 4)) 
         return false;
     
@@ -197,7 +197,7 @@ bool Genesis::flashIsBusy(uint8_t mem){
 }
 
 // MARK: ReadHeader
-void Genesis::ReadHeader(){
+void cartridges::genesis::Cart::ReadHeader(){
 
     for(int i = 0; i < HEADER_SIZE; i+=2){
         mHeader.words[i>>1] = ReadPrgWord(HEADER_START_ADDR + i);
@@ -212,7 +212,7 @@ void Genesis::ReadHeader(){
     mHeader.SRAMEnd = UMD_SWAP_BYTES_32(mHeader.SRAMEnd);
     mHeader.Checksum = UMD_SWAP_BYTES_16(mHeader.Checksum);
 
-    ExpectedChecksum = mHeader.Checksum;
+    // ExpectedChecksum = mHeader.Checksum;
 
     // check if the first 4 character of mHeader.SystemType are "SEGA"
     // if(mHeader.SystemType[0] != 'S' || mHeader.SystemType[1] != 'E' || mHeader.SystemType[2] != 'G' || mHeader.SystemType[3] != 'A'){
@@ -240,7 +240,7 @@ void Genesis::ReadHeader(){
     mMetadata.push_back(mHeader.Printable.SerialNumber);
 }
 
-uint8_t Genesis::togglePrgBit(uint8_t attempts){
+uint8_t cartridges::genesis::Cart::togglePrgBit(uint8_t attempts){
     uint8_t retValue = 0;
     uint8_t readValue;
     uint8_t oldValue;
@@ -262,143 +262,134 @@ uint8_t Genesis::togglePrgBit(uint8_t attempts){
     return retValue;
 }
 
-bool Genesis::calculateChecksum(uint32_t start, uint32_t end){
+bool cartridges::genesis::Cart::calculateChecksum(uint32_t start, uint32_t end){
     uint16_t checksum = 0;
     for(uint32_t i = start; i < end; i+=2){
         checksum += UMD_SWAP_BYTES_16(ReadPrgWord(i));
     }
     
-    ActualChecksum = checksum;
+    // ActualChecksum = checksum;
 
-    if(checksum == mHeader.Checksum){
-        return true;
-    }else{
-        return false;
-    }
+    // if(checksum == mHeader.Checksum){
+    //     return true;
+    // }else{
+    //     return false;
+    // }
 }
 
-CartridgeActionResult Genesis::act(CartridgeState state, uint16_t menuItemIndex)
-{
-    switch(menuItemIndex)
-    {
-        default: 
-            return CartridgeActionResult();
-    }
-} 
+// int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
+// {
+//     bool validRom, validChecksum;
+//     String romName;
+//     const char* romPath;
+//     uint16_t data;
+//     uint32_t romSize;
 
-int Genesis::doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp)
-{
-    bool validRom, validChecksum;
-    String romName;
-    const char* romPath;
-    uint16_t data;
-    uint32_t romSize;
+//     switch(menuIndex)
+//     {
+//         case 0: // Main menu
+//             switch(menuItemIndex)
+//             {
+//                 case 0: // READ
+//                     return 1; // index of READ menu
+//                 case 1: // Write
+//                     return 2;
+//                 case 2: // Checksum
+//                     return 3;
+//                 default: 
+//                     return 0;
+//             }
+//             break;
+//         case 1: // Read Menu
+//             switch(menuItemIndex)
+//             {
+//                 case 0: // ROM
 
-    switch(menuIndex)
-    {
-        case 0: // Main menu
-            switch(menuItemIndex)
-            {
-                case 0: // READ
-                    return 1; // index of READ menu
-                case 1: // Write
-                    return 2;
-                case 2: // Checksum
-                    return 3;
-                default: 
-                    return 0;
-            }
-            break;
-        case 1: // Read Menu
-            switch(menuItemIndex)
-            {
-                case 0: // ROM
+//                     ReadHeader();
+//                     romSize = mHeader.ROMEnd + 1;
+//                     validChecksum = calculateChecksum(0x200, romSize);
 
-                    ReadHeader();
-                    romSize = mHeader.ROMEnd + 1;
-                    validChecksum = calculateChecksum(0x200, romSize);
+//                     romName = "/UMD/Genesis/" + String(mHeader.Printable.SerialNumber) + ".bin";
+//                     romPath = romName.c_str();
+//                     romFile = sd.open(romPath, FILE_WRITE);
 
-                    romName = "/UMD/Genesis/" + String(mHeader.Printable.SerialNumber) + ".bin";
-                    romPath = romName.c_str();
-                    romFile = sd.open(romPath, FILE_WRITE);
+//                     // romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
 
-                    // romFile = sd.open("/UMD/Genesis/rom.bin", FILE_WRITE);
+//                     if(!romFile){
+//                         //disp.printf(1, 6, "Error opening file");
+//                         return -1; // stay in Read menu
+//                     }
 
-                    if(!romFile){
-                        //disp.printf(1, 6, "Error opening file");
-                        return -1; // stay in Read menu
-                    }
-
-                    for(int i = 0; i < romSize; i+=2){
+//                     for(int i = 0; i < romSize; i+=2){
                         
-                        // one by one works
-                        data = ReadPrgWord(i);
-                        romFile.write((uint8_t*)&data, 2);
+//                         // one by one works
+//                         data = ReadPrgWord(i);
+//                         romFile.write((uint8_t*)&data, 2);
                         
-                        // this times out
-                        // readPrgWords(i, _dataBuffer.word, 256);
-                        // romFile.write(_dataBuffer.byte, 512);
+//                         // this times out
+//                         // readPrgWords(i, _dataBuffer.word, 256);
+//                         // romFile.write(_dataBuffer.byte, 512);
 
-                        // mix it up, this also fails...
-                        // readPrgWords(i, _dataBuffer.word, 256);
-                        // for(int j = 0; j < 256; j++){
-                        //     romFile.write((uint8_t*)&_dataBuffer.word[j], 2);
-                        // }
-                        // romFile.flush();
-                    }
+//                         // mix it up, this also fails...
+//                         // readPrgWords(i, _dataBuffer.word, 256);
+//                         // for(int j = 0; j < 256; j++){
+//                         //     romFile.write((uint8_t*)&_dataBuffer.word[j], 2);
+//                         // }
+//                         // romFile.flush();
+//                     }
 
-                    romFile.close();
+//                     romFile.close();
 
-                    return 0; // index of Main menu
-                case 1: // RAM
-                    // test the SRAM latch
-                    enableSram(true);
-                    // read from SRAM range to test CE
-                    data = ReadPrgWord(0x200000);
-                    enableSram(false);
-                    // read again, should be from ROM now
-                    data = ReadPrgWord(0x200000);
-                    return 0; // index of Main menu
-                case 2: // Header
-                    return -1; // stay in Read menu
-                default:
-                    return 0;
-            }
-            break;
-        case 2: // Write Menu
-            switch(menuItemIndex)
-            {
-                case 0: // ROM
-                    return 0; // index of Main menu
-                case 1: // RAM
-                    return 0; // index of Main menu
-                default:
-                    return 0;
-            }
-            break;
-        case 3: // Checksum Menu
-            switch(menuItemIndex)
-            {
-                case 0: // Verify Checksum
-                    uint32_t romSize;
-                    ReadHeader();
-                    romSize = mHeader.ROMEnd + 1;
-                    validChecksum = calculateChecksum(0x200, romSize);
-                    // show results
-                    //disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);
-                    //disp.printf(1, 6, "Actual:   %04X", ActualChecksum);
-                    return -1; // stay in Checksum menu
-                default:
-                    return 0;
-            }
-            break;
-        default:
-            return 0;
-            break;
-    }
-}
+//                     return 0; // index of Main menu
+//                 case 1: // RAM
+//                     // test the SRAM latch
+//                     enableSram(true);
+//                     // read from SRAM range to test CE
+//                     data = ReadPrgWord(0x200000);
+//                     enableSram(false);
+//                     // read again, should be from ROM now
+//                     data = ReadPrgWord(0x200000);
+//                     return 0; // index of Main menu
+//                 case 2: // Header
+//                     return -1; // stay in Read menu
+//                 default:
+//                     return 0;
+//             }
+//             break;
+//         case 2: // Write Menu
+//             switch(menuItemIndex)
+//             {
+//                 case 0: // ROM
+//                     return 0; // index of Main menu
+//                 case 1: // RAM
+//                     return 0; // index of Main menu
+//                 default:
+//                     return 0;
+//             }
+//             break;
+//         case 3: // Checksum Menu
+//             switch(menuItemIndex)
+//             {
+//                 case 0: // Verify Checksum
+//                     uint32_t romSize;
+//                     ReadHeader();
+//                     romSize = mHeader.ROMEnd + 1;
+//                     validChecksum = calculateChecksum(0x200, romSize);
+//                     // show results
+//                     //disp.printf(1, 5, "Expected: %04X", ExpectedChecksum);
+//                     //disp.printf(1, 6, "Actual:   %04X", ActualChecksum);
+//                     return -1; // stay in Checksum menu
+//                 default:
+//                     return 0;
+//             }
+//             break;
+//         default:
+//             return 0;
+//             break;
+//     }
+// }
 
-void Genesis::enableSram(bool enable){
+void cartridges::genesis::Cart::enableSram(bool enable){
 
     addressWrite(TIME_CONFIG_ADDR);
     dataSetToOutputs();
@@ -423,7 +414,7 @@ void Genesis::enableSram(bool enable){
     dataSetToInputs(true);
 }
 
-uint8_t Genesis::readPrgByte(uint32_t address){
+uint8_t cartridges::genesis::Cart::readPrgByte(uint32_t address){
 
     uint8_t result;
     addressWrite(address);
@@ -436,7 +427,7 @@ uint8_t Genesis::readPrgByte(uint32_t address){
     return result;
 }
 
-void Genesis::writePrgByte(uint32_t address, uint8_t data){
+void cartridges::genesis::Cart::writePrgByte(uint32_t address, uint8_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWriteLow(data);
@@ -452,7 +443,7 @@ void Genesis::writePrgByte(uint32_t address, uint8_t data){
     dataSetToInputs(true);
 }
 
-uint16_t Genesis::ReadPrgWord(uint32_t address){
+uint16_t cartridges::genesis::Cart::ReadPrgWord(uint32_t address){
     uint16_t result;
     addressWrite(address);
     clearCE();
@@ -466,7 +457,7 @@ uint16_t Genesis::ReadPrgWord(uint32_t address){
     return result;
 }
 
-void Genesis::WritePrgWord(uint32_t address, uint16_t data){
+void cartridges::genesis::Cart::WritePrgWord(uint32_t address, uint16_t data){
     addressWrite(address);
     dataSetToOutputs();
     dataWriteSwapped(data);
@@ -482,7 +473,7 @@ void Genesis::WritePrgWord(uint32_t address, uint16_t data){
     dataSetToInputs(true);
 }
 
-void Genesis::readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size){
+void cartridges::genesis::Cart::readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size){
 
     for(int i = 0; i < size; i++){
         addressWrite(address);

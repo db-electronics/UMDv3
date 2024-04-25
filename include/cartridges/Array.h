@@ -4,18 +4,18 @@
 #include <cstdint>
 #include <cstddef>
 
-namespace umd{
+namespace cartridges{
 
-    /// @brief Array class to facilitate aligned byte, word and dword accesses for UMD data.
+    /// @brief Array class to facilitate aligned byte, word and dword accesses for cartridge data.
     /// It provides basic means to access the data in the array, and to keep track of the number 
     /// of bytes transferred being transferred per batch.
 
-    class UmdArray{
+    class Array{
     public:
 
-        /// @brief Configure the number of bytes to transfer in total (i.e. the ROM size)
+        /// @brief Set the number of bytes to transfer in total (i.e. the ROM size)
         /// @param bytesToTransfer 
-        void SetTransfer(size_t bytesToTransfer) { mBytesToTransfer = bytesToTransfer; }
+        void SetTransferSize(size_t bytesToTransfer) { mBytesToTransfer = bytesToTransfer; }
         
         /// @brief Determine the batch size of the next transfer
         size_t Next(){

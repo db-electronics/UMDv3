@@ -1,14 +1,20 @@
 
 #include "services/Debouncer.h"
 
-umd::Debouncer::Debouncer()
+umd::Debouncer::Debouncer(
+    uint8_t leftPinMask, 
+    uint8_t downPinMask, 
+    uint8_t upPinMask, 
+    uint8_t rightPinMask, 
+    uint8_t okPinMask, 
+    uint8_t backPinMask)
 {
-    KeyStates.push_back(KeyState(&Up, UMD_UP_PUSHBUTTON));
-    KeyStates.push_back(KeyState(&Down, UMD_DOWN_PUSHBUTTON));
-    KeyStates.push_back(KeyState(&Left, UMD_LEFT_PUSHBUTTON));
-    KeyStates.push_back(KeyState(&Right, UMD_RIGHT_PUSHBUTTON));
-    KeyStates.push_back(KeyState(&Ok, UMD_OK_PUSHBUTTON));
-    KeyStates.push_back(KeyState(&Back, UMD_BACK_PUSHBUTTON));
+    KeyStates.push_back(KeyState(&Up, upPinMask));
+    KeyStates.push_back(KeyState(&Down, downPinMask));
+    KeyStates.push_back(KeyState(&Left, leftPinMask));
+    KeyStates.push_back(KeyState(&Right, rightPinMask));
+    KeyStates.push_back(KeyState(&Ok, okPinMask));
+    KeyStates.push_back(KeyState(&Back, backPinMask));
 }
 
 void umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)

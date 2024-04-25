@@ -3,12 +3,11 @@
 #include <vector>
 #include <memory>
 #include "cartridges/Cartridge.h"
-#include "cartridges/UmdArray.h"
-#include "services/CartridgeFactory.h"
+#include "cartridges/Array.h"
+#include "cartridges/Factory.h"
 #include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
-#include "services/BatchSizeCalculator.h"
 
 namespace umd
 {
@@ -16,9 +15,20 @@ namespace umd
 
         const uint32_t DAS_REPEAT_RATE_MS = 75;
         const uint32_t PROGRESS_REFRESH_RATE_MS = 100;
-        const uint16_t BUFFER_SIZE_BYTES = 512;
         const uint8_t MCP23008_BOARD_ADDRESS = 0x27;
         const uint8_t MCP23008_ADAPTER_ADDRESS = 0x20;
+
+        using namespace i2cdevice;
+        const uint8_t MCP23008_LEFT_PIN = Mcp23008::Pins::GP0;
+        const uint8_t MCP23008_DOWN_PIN = Mcp23008::Pins::GP1;
+        const uint8_t MCP23008_UP_PIN = Mcp23008::Pins::GP2;
+        const uint8_t MCP23008_RIGHT_PIN = Mcp23008::Pins::GP3;
+        const uint8_t MCP23008_OK_PIN = Mcp23008::Pins::GP4;
+        const uint8_t MCP23008_BACK_PIN = Mcp23008::Pins::GP5;
+        const uint8_t MCP23008_LED_0 = Mcp23008::Pins::GP6;
+        const uint8_t MCP23008_LED_1 = Mcp23008::Pins::GP7;
+        const uint8_t MCP23008_PUSHBUTTONS = MCP23008_LEFT_PIN | MCP23008_DOWN_PIN | MCP23008_UP_PIN | MCP23008_RIGHT_PIN | MCP23008_OK_PIN | MCP23008_BACK_PIN;
+        const uint8_t MCP23008_LEDS = MCP23008_LED_0 | MCP23008_LED_1;
     }
 
     namespace Ux{
@@ -36,10 +46,16 @@ namespace umd
             UX_SELECT_MEMORY
         };
 
+        umd::Debouncer Keys = umd::Debouncer(
+            Config::MCP23008_LEFT_PIN, 
+            Config::MCP23008_DOWN_PIN, 
+            Config::MCP23008_UP_PIN, 
+            Config::MCP23008_RIGHT_PIN, 
+            Config::MCP23008_OK_PIN, 
+            Config::MCP23008_BACK_PIN);
+
         UxState State = UX_MAIN_MENU;
         UxUserInputState UserInputState = UX_INPUT_INIT;
-
-        umd::Debouncer Keys;
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
@@ -64,36 +80,25 @@ namespace umd
     };
 
     namespace Cart{
-        std::unique_ptr<Cartridge> pCartridge;
+        std::unique_ptr<cartridges::Cartridge> pCartridge;
         i2cdevice::Mcp23008 IoExpander;
         std::vector<const char *> MemoryNames;
         std::vector<const char *> Metadata;
-        CartridgeFactory Factory;
-        Cartridge::CartridgeState State = Cartridge::CartridgeState::IDLE;
-        CartridgeActionResult Result;        
+        cartridges::Factory Factory;
+        cartridges::Cartridge::CartridgeState State = cartridges::Cartridge::CartridgeState::IDLE;     
 
+        // TODO get rid of metadata
         void ClearMetadata(){
             for(auto item : Metadata){
                 free((void *)item);
             }
             Metadata.clear();
         }
-
-        umd::BatchSizeCalculator BatchSizeCalc;
     }
 
     i2cdevice::Mcp23008 IoExpander;
     uint32_t OperationStartTime;
     uint32_t OperationTotalTime;
 
-    
-    /// @brief Data buffer for the UMD, must be a multiple of 4 bytes
-    // union DataBuffer{
-    //     uint8_t bytes[BUFFER_SIZE_BYTES];
-    //     uint16_t words[BUFFER_SIZE_BYTES/2];
-    //     uint32_t dwords[BUFFER_SIZE_BYTES/4];
-    // }DataBuffer;
-    std::array<uint8_t, umd::Config::BUFFER_SIZE_BYTES> DataBuffer;
-
-    UmdArray Array;
+    cartridges::Array CartridgeData;
 }

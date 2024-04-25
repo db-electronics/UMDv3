@@ -1,46 +1,19 @@
 #pragma once
 
 #define DATA_BUFFER_SIZE_BYTES 512
-#define UMD_MAX_RESULT_LINES 8
-#define UMD_MAX_RESULT_LINE_LENGTH 32
 
-#include <tuple>
+#include <vector>
+#include <cstring>
 #include <map>
 
-#include <STM32SD.h>
-#include "UmdArray.h"
 #include "services/IChecksumCalculator.h"
-#include "services/UmdDisplay.h"
+#include "Array.h"
 #include "memory/FlashInfo.h"
 #include "UMDPortsV3.h"
 
-enum CartridgeResultCode: int{
-    FAIL = -1,
-    OK,
-    DISPLAYRESULT,
-    DISPLAYMEMORIES,
-    DISPLAYFILELIST,
-    LOADMENU,
-    WAITING
-};
+namespace cartridges{
 
-struct CartridgeActionResult{
-    CartridgeResultCode Code;
-    const char * ErrorMessage;
-    uint16_t ResultLines;
-    char Result[UMD_MAX_RESULT_LINES][UMD_MAX_RESULT_LINE_LENGTH+1];
-
-    CartridgeActionResult(){
-        Code = CartridgeResultCode::OK;
-        ErrorMessage = nullptr;
-        ResultLines = 0;
-        for(int i = 0; i < UMD_MAX_RESULT_LINES; i++){
-            Result[i][0] = '\0';
-        }
-    }
-};
-
-class Cartridge : public UMDPortsV3 {
+    class Cartridge : public UMDPortsV3 {
     public:
 
         Cartridge(IChecksumCalculator& checksumCalculator);
@@ -97,14 +70,13 @@ class Cartridge : public UMDPortsV3 {
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
 
-        virtual uint32_t Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt) = 0;
+        virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) = 0;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) = 0;
 
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
     
         virtual bool flashIsBusy(uint8_t mem) = 0;
-
 
     protected:
 
@@ -119,13 +91,5 @@ class Cartridge : public UMDPortsV3 {
             }
             return true;
         }
-
-        File romFile;
-        union {
-            uint8_t byte[DATA_BUFFER_SIZE_BYTES];
-            uint16_t word[DATA_BUFFER_SIZE_BYTES/2];
-        } _dataBuffer;
-
-        uint16_t ExpectedChecksum;
-        uint16_t ActualChecksum;
-};
+    };
+}

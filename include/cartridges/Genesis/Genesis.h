@@ -1,7 +1,8 @@
 #pragma once
 
 #include "../Cartridge.h"
-#include "../UmdArray.h"
+#include "../Array.h"
+#include "services/IChecksumCalculator.h"
 #include "Header.h"
 #include <string>
 
@@ -14,11 +15,12 @@
 #define GENESIS_HEADER_SIZE_OF_INTERNATIONAL_NAME 48
 #define GENESIS_HEADER_SIZE_OF_SERIAL_NUMBER 14
 
-class Genesis : public Cartridge {
+namespace cartridges::genesis{
+    class Cart : public cartridges::Cartridge {
     public:
 
-        Genesis(IChecksumCalculator& checksumCalculator);
-        virtual ~Genesis();
+        Cart(IChecksumCalculator& checksumCalculator);
+        virtual ~Cart();
 
         virtual void InitIO() override;
         virtual const std::string& GetSystemName() const {return mSystemName;};
@@ -28,32 +30,24 @@ class Genesis : public Cartridge {
         virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) override;
         virtual int EraseFlash(uint8_t memTypeIndex) override;
         virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
-        virtual uint32_t Identify(uint32_t address, umd::UmdArray& array, ReadOptions opt) override;
+        virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) override;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) override;
 
-        // TODO REMOVE THIS METHOD
-        int doAction(uint16_t menuIndex, uint16_t menuItemIndex, const SDClass& sd, UMDDisplay& disp);
-
-        virtual CartridgeActionResult act(CartridgeState menuIndex, uint16_t menuItemIndex);
 
         virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
         virtual bool flashIsBusy(uint8_t mem);
-
         virtual uint8_t togglePrgBit(uint8_t attempts);
-
         virtual uint8_t readPrgByte(uint32_t address);
         virtual void writePrgByte(uint32_t address, uint8_t data);
-
         virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
 
     protected:
-
         virtual bool calculateChecksum(uint32_t start, uint32_t end);
         
     private:
 
-        genesis::Header mHeader;
+        Header mHeader;
         const std::string mSystemName = "MD";
         const uint32_t HEADER_START_ADDR = 0x00000100;
         const uint32_t HEADER_SIZE = 256;
@@ -93,5 +87,5 @@ class Genesis : public Cartridge {
 
         // MRES on IO8
         __attribute__((always_inline)) void readMRES() { ioRead(8); }
-
-};
+    };
+}

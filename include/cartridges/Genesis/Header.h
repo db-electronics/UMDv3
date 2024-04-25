@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace genesis{
+namespace cartridges::genesis{
 
     constexpr size_t SYSTEM_TYPE_SIZE = 16;
     constexpr size_t COPYRIGHT_SIZE = 16;

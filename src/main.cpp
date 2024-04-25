@@ -17,6 +17,7 @@
 #include "services/Crc32Calculator.h"
 
 using umd::Key;
+using cartridges::Cartridge;
 
 #ifndef SD_DETECT_PIN
 #define SD_DETECT_PIN PD0
@@ -101,12 +102,12 @@ void setup()
         while (1);
     }
 
-    umd::IoExpander.pinMode(UMD_BOARD_LEDS, OUTPUT);
-    umd::IoExpander.setPullUpResistors(UMD_BOARD_PUSHBUTTONS, true);
-    umd::IoExpander.setInterruptOnChange(UMD_BOARD_PUSHBUTTONS, true);
-    umd::IoExpander.setInterruptControl(UMD_BOARD_PUSHBUTTONS, umd::IoExpander.PREVIOUS);
-    umd::IoExpander.setInterruptEnable(UMD_BOARD_PUSHBUTTONS, true);
-    umd::IoExpander.digitalWrite(UMD_BOARD_LEDS, LOW);
+    umd::IoExpander.pinMode(umd::Config::MCP23008_LEDS, OUTPUT);
+    umd::IoExpander.setPullUpResistors(umd::Config::MCP23008_PUSHBUTTONS, true);
+    umd::IoExpander.setInterruptOnChange(umd::Config::MCP23008_PUSHBUTTONS, true);
+    umd::IoExpander.setInterruptControl(umd::Config::MCP23008_PUSHBUTTONS, umd::IoExpander.PREVIOUS);
+    umd::IoExpander.setInterruptEnable(umd::Config::MCP23008_PUSHBUTTONS, true);
+    umd::IoExpander.digitalWrite(umd::Config::MCP23008_LEDS, LOW);
 
     // setup adapter mcp23008, read adapter id
     umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-mcp23008 adapter"));
@@ -121,7 +122,7 @@ void setup()
     // get the adapter id, use it to determine the cartridge type
     umd::Cart::IoExpander.pinMode(0xFF, INPUT);
     uint8_t adapterId = umd::Cart::IoExpander.readGPIO();
-    umd::Cart::pCartridge = umd::Cart::Factory.GetCart(adapterId);
+    umd::Cart::pCartridge = umd::Cart::Factory.MakeCartridge(adapterId);
     if (umd::Cart::pCartridge == nullptr)
     {
         umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: unknown adapter"));
@@ -164,7 +165,7 @@ void setup()
     umd::Ux::UserInputState = umd::Ux::UX_INPUT_INIT;
     umd::Cart::State = Cartridge::IDLE;
 
-    std::fill(std::begin(umd::Array), std::end(umd::Array), 0xAA);
+    std::fill(std::begin(umd::CartridgeData), std::end(umd::CartridgeData), 0xAA);
 }
 
 //MARK: Main loop
@@ -184,7 +185,7 @@ void loop()
     // process inputs
     uint8_t inputs = umd::IoExpander.readGPIO();
     umd::Ux::Keys.Process(inputs, currentTicks);
-
+    
     switch(umd::Ux::UserInputState)
     {
         case umd::Ux::UX_INPUT_WAIT_FOR_PRESSED:
@@ -246,13 +247,13 @@ void loop()
 
                                 totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
 
-                                umd::Array.SetTransfer(totalBytes);
+                                umd::CartridgeData.SetTransferSize(totalBytes);
 
                                 currentTicks = HAL_GetTick();
                                 umd::Ux::Display.SetProgressBarVisibility(true);
-                                for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
+                                for(int addr = 0; addr < totalBytes; addr += umd::CartridgeData.Size())
                                 {
-                                    umd::Cart::pCartridge->Identify(addr, umd::Array, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                    umd::Cart::pCartridge->Identify(addr, umd::CartridgeData, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
                                     if(HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS)
                                     {
                                         currentTicks = HAL_GetTick();
@@ -311,16 +312,16 @@ void loop()
                                 // TODO need a filename
                                 
                                 // selected index indicates the memory to read from
-                                umd::OperationStartTime = HAL_GetTick();
-                                totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
-                                umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
+                                // umd::OperationStartTime = HAL_GetTick();
+                                // totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
+                                // umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
 
-                                // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
-                                for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
-                                {
-                                    batchSize = umd::Cart::BatchSizeCalc.Next();
-                                    umd::Cart::pCartridge->ReadMemory(addr, umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
-                                }
+                                // // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
+                                // for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
+                                // {
+                                //     batchSize = umd::Cart::BatchSizeCalc.Next();
+                                //     umd::Cart::pCartridge->ReadMemory(addr, umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+                                // }
 
                                 umd::OperationTotalTime = HAL_GetTick() - umd::OperationStartTime;
 

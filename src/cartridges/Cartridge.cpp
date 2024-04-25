@@ -1,14 +1,14 @@
 #include "cartridges/Cartridge.h"
 
-Cartridge::Cartridge(IChecksumCalculator& checksumCalculator)
+cartridges::Cartridge::Cartridge(IChecksumCalculator& checksumCalculator)
     : mChecksumCalculator(checksumCalculator) {
     setDefaults();
 }
 
-Cartridge::~Cartridge(){
+cartridges::Cartridge::~Cartridge(){
 }
 
-void Cartridge::TestWait(void){
+void cartridges::Cartridge::TestWait(void){
     clearCE0();
     wait100ns();
     setCE0();
@@ -23,6 +23,6 @@ void Cartridge::TestWait(void){
     setCE0();
 }
 
-void Cartridge::ResetChecksumCalculator(){
+void cartridges::Cartridge::ResetChecksumCalculator(){
     mChecksumCalculator.Reset();
 }
