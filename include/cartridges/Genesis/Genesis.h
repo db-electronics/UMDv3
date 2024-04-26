@@ -29,7 +29,6 @@ namespace cartridges::genesis{
 
         virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) override;
         virtual int EraseFlash(uint8_t memTypeIndex) override;
-        virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) override;
         virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) override;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) override;

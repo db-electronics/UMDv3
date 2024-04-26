@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <cstdint>
 #include "cartridges/Cartridge.h"
 #include "cartridges/Array.h"
 #include "cartridges/Factory.h"
@@ -80,20 +81,22 @@ namespace umd
     };
 
     namespace Cart{
+
+        // this enum needs to match exactly with the order of MAIN_MENU_ITEMS
+        enum CartState : int8_t{
+            IDLE = -1,
+            IDENTIFY,
+            READ,
+            WRITE
+        };
+
+        CartState State = CartState::IDLE;
+
         std::unique_ptr<cartridges::Cartridge> pCartridge;
         i2cdevice::Mcp23008 IoExpander;
         std::vector<const char *> MemoryNames;
         std::vector<const char *> Metadata;
-        cartridges::Factory Factory;
-        cartridges::Cartridge::CartridgeState State = cartridges::Cartridge::CartridgeState::IDLE;     
-
-        // TODO get rid of metadata
-        void ClearMetadata(){
-            for(auto item : Metadata){
-                free((void *)item);
-            }
-            Metadata.clear();
-        }
+        cartridges::Factory Factory;   
     }
 
     i2cdevice::Mcp23008 IoExpander;

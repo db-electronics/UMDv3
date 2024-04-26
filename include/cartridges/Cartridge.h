@@ -3,6 +3,7 @@
 #define DATA_BUFFER_SIZE_BYTES 512
 
 #include <vector>
+#include <string>
 #include <cstring>
 #include <map>
 
@@ -26,13 +27,6 @@ namespace cartridges{
             RAM0, RAM1,
             BRAM,
             EXT0, EXT1
-        };
-
-        enum CartridgeState : int8_t{
-            IDLE=-1,
-            IDENTIFY=0,
-            READ,
-            WRITE
         };
 
         /// @brief Options for reading the ROM
@@ -68,8 +62,6 @@ namespace cartridges{
         /// @param size The number of bytes to read
         /// @param opt The options for reading
         /// @return The accumulated checksum
-        virtual uint32_t Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt) = 0;
-
         virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) = 0;
 
         virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) = 0;

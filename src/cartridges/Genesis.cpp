@@ -70,7 +70,7 @@ uint32_t cartridges::genesis::Cart::GetCartridgeSize(){
     return mHeader.ROMEnd + 1;
 }
 
-FlashInfo cartridges::genesis::Cart::GetFlashInfo(uint8_t memTypeIndex){
+cartridges::FlashInfo cartridges::genesis::Cart::GetFlashInfo(uint8_t memTypeIndex){
 
     // check if the memTypeIndex is valid
     if(!IsMemoryIndexValid(memTypeIndex)){
@@ -98,23 +98,6 @@ FlashInfo cartridges::genesis::Cart::GetFlashInfo(uint8_t memTypeIndex){
 }
 
 // MARK: Identify()
-uint32_t cartridges::genesis::Cart::Identify(uint32_t address, uint8_t *buffer, uint16_t size, ReadOptions opt){
-    // fill the buffer, but don't modify its value because we may need it for checksum
-    uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
-    for(int i = 0; i < size; i+=2){
-        //*(uint16_t*)(buffer + i) = ReadPrgWord(address);
-        *(buf16++) = ReadPrgWord(address);
-        address += 2;
-    }
-
-    switch(opt){
-        case CHECKSUM_CALCULATOR:
-            return mChecksumCalculator.Accumulate(reinterpret_cast<uint32_t*>(buffer), size/4);
-        default:
-            return 0;
-    }
-}
-
 uint32_t cartridges::genesis::Cart::Identify(uint32_t address, cartridges::Array& array, ReadOptions opt){
 
     array.Next();

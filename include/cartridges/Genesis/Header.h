@@ -51,4 +51,9 @@ namespace cartridges::genesis{
             char SerialNumber[SERIAL_NUMBER_SIZE+1];
         } Printable;
     };
+
+    class BetterHeader{
+    public:
+        BetterHeader();
+    };
 }

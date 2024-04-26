@@ -1,8 +1,7 @@
 #pragma once
 
-#include <Arduino.h>
 #include <vector>
-#include "config/UMDBoardDefinitions.h"
+#include <cstdint>
 
 namespace umd {
 

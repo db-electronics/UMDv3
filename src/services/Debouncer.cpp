@@ -19,13 +19,10 @@ umd::Debouncer::Debouncer(
 
 void umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)
 {
-    // for (auto& btn : KeyStates)
-    // {
-    //     SetButtonState(inputs, currentTicks, btn);
-    // }
-    std::for_each(KeyStates.begin(), KeyStates.end(), [&](auto& btn) {
+    for (auto& btn : KeyStates)
+    {
         SetButtonState(inputs, currentTicks, btn);
-    });
+    }
 }
 
 void umd::Debouncer::SetButtonState(uint8_t inputs, uint32_t currentTicks, KeyState& keyState)
