@@ -64,11 +64,11 @@ namespace cartridges{
         /// @return The accumulated checksum
         virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) = 0;
 
-        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) = 0;
+        virtual uint32_t ReadMemory(uint32_t address, cartridges::Array& array, uint8_t memTypeIndex, ReadOptions opt) = 0;
 
-        virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem) = 0;
+        virtual int ProgramFlash(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex) = 0;
     
-        virtual bool flashIsBusy(uint8_t mem) = 0;
+        virtual bool IsFlashBusy(uint8_t memTypeIndex) = 0;
 
     protected:
 
@@ -78,10 +78,7 @@ namespace cartridges{
         std::vector<const char *> mMetadata;
 
         bool IsMemoryIndexValid(uint8_t memTypeIndex) const {
-            if(memTypeIndex >= mMemoryNames.size()){
-                return false;
-            }
-            return true;
+            return memTypeIndex < mMemoryNames.size();
         }
     };
 }

@@ -31,18 +31,10 @@ namespace cartridges::genesis{
         virtual int EraseFlash(uint8_t memTypeIndex) override;
         virtual uint32_t Identify(uint32_t address, cartridges::Array& array, ReadOptions opt) override;
 
-        virtual uint32_t ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt) override;
+        virtual uint32_t ReadMemory(uint32_t address, cartridges::Array& array, uint8_t memTypeIndex, ReadOptions opt) override;
 
-
-        virtual int flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem);
-        virtual bool flashIsBusy(uint8_t mem);
-        virtual uint8_t togglePrgBit(uint8_t attempts);
-        virtual uint8_t readPrgByte(uint32_t address);
-        virtual void writePrgByte(uint32_t address, uint8_t data);
-        virtual void readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size);
-
-    protected:
-        virtual bool calculateChecksum(uint32_t start, uint32_t end);
+        virtual int ProgramFlash(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex) override;
+        virtual bool IsFlashBusy(uint8_t memTypeIndex) override;
         
     private:
 
@@ -53,8 +45,16 @@ namespace cartridges::genesis{
         const uint32_t TIME_CONFIG_ADDR = 0xA130F1;
 
         void ReadHeader();
+        bool calculateChecksum(uint32_t start, uint32_t end);
+        
+        // PRG
         uint16_t ReadPrgWord(uint32_t address);
         void WritePrgWord(uint32_t address, uint16_t data);
+        uint8_t TogglePrgBit(uint8_t attempts);
+
+        uint8_t readPrgByte(uint32_t address);
+        void writePrgByte(uint32_t address, uint8_t data);
+
         
         void enableSram(bool enable);
 

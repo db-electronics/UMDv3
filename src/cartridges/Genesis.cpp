@@ -116,9 +116,9 @@ uint32_t cartridges::genesis::Cart::Identify(uint32_t address, cartridges::Array
 }
 
 // MARK: ReadMemory()
-uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t memTypeIndex, ReadOptions opt){
+uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, cartridges::Array& array, uint8_t memTypeIndex, ReadOptions opt){
     
-    uint16_t *buf16 = reinterpret_cast<uint16_t*>(buffer);
+    array.Next();
 
     // check if the memTypeIndex is valid
     if(!IsMemoryIndexValid(memTypeIndex)){
@@ -129,8 +129,8 @@ uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, uint8_t *buffer
 
     switch(mem){
         case MemoryType::PRG0:
-            for(int i = 0; i < size; i+=2){
-                *(buf16++) = ReadPrgWord(address);
+            for(int i = 0; i < array.AvailableSize(); i+=2){
+                array.Word(i) = ReadPrgWord(address);
                 address += 2;
             }
             break;
@@ -139,7 +139,7 @@ uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, uint8_t *buffer
     }
     switch(opt){
         case CHECKSUM_CALCULATOR:
-            return mChecksumCalculator.Accumulate(reinterpret_cast<uint32_t*>(buffer), size/4);
+            return mChecksumCalculator.Accumulate(&array.Long(0), array.AvailableSize()/4);
         default:
             return 0;
     }
@@ -148,11 +148,12 @@ uint32_t cartridges::genesis::Cart::ReadMemory(uint32_t address, uint8_t *buffer
 // MARK: EraseFlash()
 int cartridges::genesis::Cart::EraseFlash(uint8_t memTypeIndex){
     // check if the memTypeIndex is valid
-    if(memTypeIndex >= mMemoryTypeIndexMap.size()){
+    if(!IsMemoryIndexValid(memTypeIndex)){
         return 0;
     }
 
     MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
+    
     switch(mem){
         case MemoryType::PRG0:
             WritePrgWord(0x00000555 < 1, 0xAA00);
@@ -168,12 +169,12 @@ int cartridges::genesis::Cart::EraseFlash(uint8_t memTypeIndex){
     return 0;
 }
 
-int cartridges::genesis::Cart::flashProgram(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
+int cartridges::genesis::Cart::ProgramFlash(uint32_t address, uint8_t *buffer, uint16_t size, uint8_t mem){
     return 0;
 }
 
-bool cartridges::genesis::Cart::flashIsBusy(uint8_t mem){
-    if((togglePrgBit(4) != 4)) 
+bool cartridges::genesis::Cart::IsFlashBusy(uint8_t mem){
+    if((TogglePrgBit(4) != 4)) 
         return false;
     
     return true;
@@ -223,7 +224,7 @@ void cartridges::genesis::Cart::ReadHeader(){
     mMetadata.push_back(mHeader.Printable.SerialNumber);
 }
 
-uint8_t cartridges::genesis::Cart::togglePrgBit(uint8_t attempts){
+uint8_t cartridges::genesis::Cart::TogglePrgBit(uint8_t attempts){
     uint8_t retValue = 0;
     uint8_t readValue;
     uint8_t oldValue;
@@ -456,18 +457,3 @@ void cartridges::genesis::Cart::WritePrgWord(uint32_t address, uint16_t data){
     dataSetToInputs(true);
 }
 
-void cartridges::genesis::Cart::readPrgWords(uint32_t address, uint16_t *buffer, uint16_t size){
-
-    for(int i = 0; i < size; i++){
-        addressWrite(address);
-        clearCE();
-        clearAS();
-        clearRD();
-        wait200ns();
-        *(buffer++) = dataReadWordSwapped();
-        setRD();
-        setAS();
-        setCE();
-        address += 2;
-    }
-}
