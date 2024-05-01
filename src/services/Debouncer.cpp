@@ -19,9 +19,9 @@ umd::Debouncer::Debouncer(
 
 void umd::Debouncer::Process(uint8_t inputs, uint32_t currentTicks)
 {
-    for (auto& btn : KeyStates)
+    for (auto& keyState : KeyStates)
     {
-        SetButtonState(inputs, currentTicks, btn);
+        SetButtonState(inputs, currentTicks, keyState);
     }
 }
 

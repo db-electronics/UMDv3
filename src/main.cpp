@@ -9,6 +9,8 @@
 #include <stm32f4xx_hal_crc.h>
 #include <stm32f4xx_hal_gpio.h>
 
+#include <sstream>
+
 #include "Umd.h"
 #include "cartridges/Cartridge.h"
 #include "config/RemapPins.h"
@@ -30,15 +32,14 @@ File sdFile;
 SerialCommand SCmd;
 
 // SD stuff
-int verifySdCard(int& line);
-int verifySdCardSystemSetup(int& line, const char* systemName);
+int verifySdCard();
+int verifySdCardSystemSetup(const char* systemName);
 
 void scmdScanI2C(void);
 
 // MARK: Setup
 void setup()
 {
-    int line = 0;
     // setup USB serial
     // https://primalcortex.wordpress.com/2020/10/11/stm32-blue-pill-board-arduino-core-and-usb-serial-output-on-platformio/
     SerialUSB.begin(460800); // no need for a parameter here maybe?
@@ -81,9 +82,9 @@ void setup()
 
     // reduce the SDIO clock, seems more stable like this
     SDIO->CLKCR |= SD_CLK_DIV; 
-    
+
     // check that the SD cart is properly formatted for UMDv3
-    int sdVerify = verifySdCard(line);
+    int sdVerify = verifySdCard();
     if(sdVerify != 0)
     {
         umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no UMD folder"));
@@ -135,14 +136,23 @@ void setup()
     umd::Ux::Display.Printf(UMDDisplay::ZONE_WINDOW, F("-%s"), systemName.c_str());
     umd::Ux::Display.Redraw();
 
-    // check if the sdcard has a _db.txt file containing rom checksums for this system
-    sdVerify = verifySdCardSystemSetup(line, systemName.c_str());
-    if(sdVerify != 0)
+    // Init game identifier
+    if(!umd::Ux::GameId.Init(umd::Cart::pCartridge->GetSystemBaseFilePath()))
     {
         umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
         umd::Ux::Display.Redraw();
         while (1);
-    }
+    
+    };
+
+    // check if the sdcard has a _db.txt file containing rom checksums for this system
+    // sdVerify = verifySdCardSystemSetup(systemName.c_str());
+    // if(sdVerify != 0)
+    // {
+    //     umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
+    //     umd::Ux::Display.Redraw();
+    //     while (1);
+    // }
 
     // register callbacks for SerialCommand related to the cartridge
     SCmd.addCommand("scani2c", scmdScanI2C);
@@ -268,8 +278,11 @@ void loop()
                                 umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
                                 umd::Ux::Display.Printf(F("CRC  : %08X"), umd::Cart::pCartridge->GetAccumulatedChecksum());
                                 
-                                // TODO search for this crc32 in the database
-                                
+                                // TODO search for this crc32 in the database on the sd card
+                                // if found, display the title and system name
+                                // std::stringstream ss;
+                                // ss << std::hex << umd::Cart::pCartridge->GetAccumulatedChecksum();
+                                // std::string filePath = umd::Cart::pCartridge->GetSystemBaseFilePath() + ss.str() + ".txt";
 
                                 // all done, return to main menu
                                 umd::Cart::State = CartState::IDLE;
@@ -426,7 +439,7 @@ void scmdScanI2C(void)
 }
 
 //MARK: SD card functions
-int verifySdCard(int& line)
+int verifySdCard()
 {
     sdFile = SD.open("/UMD");
     //File file = SD.open("/UMD/Genesis/_db.txt");
@@ -443,7 +456,7 @@ int verifySdCard(int& line)
     return 0;
 }
 
-int verifySdCardSystemSetup(int& line, const char* systemName)
+int verifySdCardSystemSetup(const char* systemName)
 {
     String systemStr = systemName;
     String filePath = "/UMD/" + systemStr + "/_db.txt";
@@ -454,10 +467,6 @@ int verifySdCardSystemSetup(int& line, const char* systemName)
     {
         return 1;
     }
-
-    auto fileName = sdFile.fullname();
-    // umd::Ux::Display.printf(0, line++, F("  %s"), fileName);
-    // umd::Ux::Display.redraw();
 
     // test read file contents
     char c[16];

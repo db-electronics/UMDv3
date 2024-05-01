@@ -24,6 +24,7 @@ namespace cartridges::genesis{
 
         virtual void InitIO() override;
         virtual const std::string& GetSystemName() const {return mSystemName;};
+        virtual const std::string& GetSystemBaseFilePath() const {return mSystemBaseFilePath;};
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
 
@@ -40,6 +41,7 @@ namespace cartridges::genesis{
 
         Header mHeader;
         const std::string mSystemName = "MD";
+        const std::string mSystemBaseFilePath = "/UMD/MD/";
         const uint32_t HEADER_START_ADDR = 0x00000100;
         const uint32_t HEADER_SIZE = 256;
         const uint32_t TIME_CONFIG_ADDR = 0xA130F1;
