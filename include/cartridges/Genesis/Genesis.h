@@ -5,6 +5,7 @@
 #include "services/IChecksumCalculator.h"
 #include "Header.h"
 #include <string>
+#include <sstream>
 
 #define GENESIS_HEADER_ROM_START_ADDR   0x000001A0
 #define GENESIS_HEADER_ROM_END_ADDR     0x000001A4
@@ -23,8 +24,9 @@ namespace cartridges::genesis{
         virtual ~Cart();
 
         virtual void InitIO() override;
-        virtual const std::string& GetSystemName() const {return mSystemName;};
-        virtual const std::string& GetSystemBaseFilePath() const {return mSystemBaseFilePath;};
+        virtual const std::string& GetSystemName() const override {return mSystemName;};
+        virtual const std::string& GetSystemBaseFilePath() const override {return mSystemBaseFilePath;};
+        virtual std::string GetGameUniqueId() override;
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
 

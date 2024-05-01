@@ -137,7 +137,7 @@ void setup()
     umd::Ux::Display.Redraw();
 
     // Init game identifier
-    if(!umd::Ux::GameId.Init(umd::Cart::pCartridge->GetSystemBaseFilePath()))
+    if(!umd::pGameIdentifier->Init(umd::Cart::pCartridge->GetSystemBaseFilePath()))
     {
         umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: no sys db file"));
         umd::Ux::Display.Redraw();
@@ -277,18 +277,22 @@ void loop()
                                 umd::Ux::Display.NewWindow(umd::Cart::Metadata);
                                 umd::Ux::Display.Printf(F("Size : %08X"), totalBytes);
                                 umd::Ux::Display.Printf(F("CRC  : %08X"), umd::Cart::pCartridge->GetAccumulatedChecksum());
-                                
-                                // TODO search for this crc32 in the database on the sd card
-                                // if found, display the title and system name
-                                // std::stringstream ss;
-                                // ss << std::hex << umd::Cart::pCartridge->GetAccumulatedChecksum();
-                                // std::string filePath = umd::Cart::pCartridge->GetSystemBaseFilePath() + ss.str() + ".txt";
+                                                                
+                                // search for this game id in the database
+                                umd::StringStream.clear();
+                                umd::StringStream << std::hex << umd::Cart::pCartridge->GetAccumulatedChecksum();
+                                if(umd::pGameIdentifier->GameExists(umd::StringStream.str())){
+                                    // std::string gameName = umd::pGameIdentifier->GetGameName(ss.str());
+                                    umd::Ux::Display.Printf(F("Game : %s"), umd::pGameIdentifier->GetGameName(umd::StringStream.str()).c_str());
+                                    umd::Ux::Display.Redraw();
+                                }
 
                                 // all done, return to main menu
                                 umd::Cart::State = CartState::IDLE;
                                 umd::Ux::State = umd::Ux::UX_MAIN_MENU;
                                 umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
+                            // MARK: Select Read
                             case CartState::READ: 
                                 // update state to READ and offer choice of memory to read from
                                 umd::Cart::State = CartState::READ;
@@ -297,6 +301,7 @@ void loop()
                                 umd::Ux::State = umd::Ux::UX_SELECT_MEMORY;
                                 umd::Ux::UserInputState = umd::Ux::UX_INPUT_WAIT_FOR_RELEASED;
                                 break;
+                            // MARK: Select Write
                             case CartState::WRITE:
                                 // update state to WRITE and offer choice of memory to write to
                                 umd::Cart::State = CartState::WRITE;

@@ -70,6 +70,12 @@ uint32_t cartridges::genesis::Cart::GetCartridgeSize(){
     return mHeader.ROMEnd + 1;
 }
 
+std::string cartridges::genesis::Cart::GetGameUniqueId() {
+    std::stringstream ss;
+    ss << std::hex << GetAccumulatedChecksum();
+    return ss.str();
+}
+
 cartridges::FlashInfo cartridges::genesis::Cart::GetFlashInfo(uint8_t memTypeIndex){
 
     // check if the memTypeIndex is valid

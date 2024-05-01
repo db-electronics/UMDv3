@@ -50,6 +50,9 @@ namespace cartridges{
         /// @brief Get the base file path for the system on the SD Card
         virtual const std::string& GetSystemBaseFilePath() const = 0;
 
+        /// @brief Get the unique ID of the game, used to identify the game in the database
+        virtual std::string GetGameUniqueId() = 0;
+
         /// @brief Get the name of the cartridge currently connected, if it is knowable via the header
         virtual const char* GetCartridgeName() = 0;
 

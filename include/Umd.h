@@ -3,13 +3,15 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <sstream>
 #include "cartridges/Cartridge.h"
 #include "cartridges/Array.h"
 #include "cartridges/Factory.h"
 #include "services/Debouncer.h"
 #include "services/UmdDisplay.h"
 #include "services/Mcp23008.h"
-#include "services/GameIdentifier.h"
+#include "services/IGameIdentifier.h"
+#include "services/SdFileGameIdentifier.h"
 
 namespace umd
 {
@@ -56,9 +58,9 @@ namespace umd
             Config::MCP23008_OK_PIN, 
             Config::MCP23008_BACK_PIN);
 
+
         UxState State = UX_MAIN_MENU;
         UxUserInputState UserInputState = UX_INPUT_INIT;
-        GameIdentifier GameId = GameIdentifier();
 
         std::unique_ptr<Adafruit_SSD1306> pSSD1306 = std::make_unique<Adafruit_SSD1306>(OLED_SCREEN_WIDTH, OLED_SCREEN_HEIGHT, &Wire, OLED_RESET);
         UMDDisplay Display = UMDDisplay(std::move(pSSD1306));
@@ -100,6 +102,9 @@ namespace umd
         std::vector<const char *> Metadata;
         cartridges::Factory Factory;   
     }
+
+    std::stringstream StringStream;
+    std::unique_ptr<IGameIdentifier> pGameIdentifier = std::make_unique<umd::SdFileGameIdentifier>();
 
     i2cdevice::Mcp23008 IoExpander;
     uint32_t OperationStartTime;

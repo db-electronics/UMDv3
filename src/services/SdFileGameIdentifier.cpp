@@ -1,17 +1,9 @@
-#include "services/GameIdentifier.h"
-
-umd::GameIdentifier::GameIdentifier()
-{
-}
-
-umd::GameIdentifier::~GameIdentifier()
-{
-}
+#include "services/SdFileGameIdentifier.h"
 
 /// @brief Init checks if a file named _db.txt exists in the base path i.e /UMD/MD/_db.txt
 /// @param basePath 
 /// @return 
-bool umd::GameIdentifier::Init(const std::string& basePath)
+bool umd::SdFileGameIdentifier::Init(const std::string& basePath)
 {
     mBasePath = basePath;
     std::string filePath = mBasePath + "_db.txt";
@@ -21,7 +13,7 @@ bool umd::GameIdentifier::Init(const std::string& basePath)
 /// @brief This implementation assumes the game ID is a file path on the SD card.
 /// @param gameId 
 /// @return 
-bool umd::GameIdentifier::GameExists(const std::string& gameId)
+bool umd::SdFileGameIdentifier::GameExists(const std::string& gameId)
 {
     std::string filePath = mBasePath + gameId + ".txt";
     return FileExists(filePath);
@@ -31,7 +23,7 @@ bool umd::GameIdentifier::GameExists(const std::string& gameId)
 /// Call GameExists before calling this function.
 /// @param gameId 
 /// @return 
-std::string umd::GameIdentifier::GetGameName(const std::string& gameId)
+std::string umd::SdFileGameIdentifier::GetGameName(const std::string& gameId)
 {
     // open the file and return the first line of text as the game name
     std::array <char, 256> buffer;
@@ -50,7 +42,7 @@ std::string umd::GameIdentifier::GetGameName(const std::string& gameId)
     return std::string(buffer.data());
 }
 
-inline bool umd::GameIdentifier::FileExists(const std::string& filePath)
+inline bool umd::SdFileGameIdentifier::FileExists(const std::string& filePath)
 {
     if(SD.exists(filePath.c_str()))
     {
