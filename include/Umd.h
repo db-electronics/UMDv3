@@ -15,6 +15,15 @@
 
 namespace umd
 {
+    std::stringstream StringStream;
+    std::unique_ptr<IGameIdentifier> pGameIdentifier = std::make_unique<umd::SdFileGameIdentifier>();
+
+    i2cdevice::Mcp23008 IoExpander;
+    uint32_t OperationStartTime;
+    uint32_t OperationTotalTime;
+
+    cartridges::Array CartridgeData;
+
     namespace Config{
 
         const uint32_t DAS_REPEAT_RATE_MS = 75;
@@ -94,21 +103,59 @@ namespace umd
             WRITE
         };
 
-        CartState State = CartState::IDLE;
-
         std::unique_ptr<cartridges::Cartridge> pCartridge;
+        cartridges::Factory Factory;
+
+        CartState State = CartState::IDLE;
+        std::string Name = "";
+        bool IsIdentified = false;
+        
         i2cdevice::Mcp23008 IoExpander;
         std::vector<const char *> MemoryNames;
         std::vector<const char *> Metadata;
-        cartridges::Factory Factory;   
+        
+        bool Identify(bool updateUi);
+    }
+}
+
+
+bool umd::Cart::Identify(bool updateUi = false){
+    uint32_t currentTicks;
+    uint32_t totalBytes;
+    uint32_t startTicks;
+    std::stringstream ss;
+
+    currentTicks = HAL_GetTick();
+    startTicks = currentTicks;
+    pCartridge->ResetChecksumCalculator();
+    totalBytes = pCartridge->GetCartridgeSize();
+    CartridgeData.SetTransferSize(totalBytes);
+
+    if(updateUi){
+        umd::Ux::Display.SetProgressBarVisibility(true);
+    }
+    
+    for(int addr = 0; addr < totalBytes; addr += CartridgeData.Size())
+    {
+        umd::Cart::pCartridge->Identify(addr, CartridgeData, cartridges::Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
+        if(updateUi && (HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS))
+        {
+            currentTicks = HAL_GetTick();
+            umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
+            umd::Ux::Display.Redraw();
+        }
     }
 
-    std::stringstream StringStream;
-    std::unique_ptr<IGameIdentifier> pGameIdentifier = std::make_unique<umd::SdFileGameIdentifier>();
-
-    i2cdevice::Mcp23008 IoExpander;
-    uint32_t OperationStartTime;
-    uint32_t OperationTotalTime;
-
-    cartridges::Array CartridgeData;
+    OperationTotalTime = HAL_GetTick() - startTicks;
+    if(updateUi){
+        umd::Ux::Display.SetProgressBarComplete(OperationTotalTime);
+    }
+    
+    ss << std::hex << umd::Cart::pCartridge->GetAccumulatedChecksum();
+    if(pGameIdentifier->GameExists(ss.str())){
+        umd::Cart::IsIdentified = true;
+        umd::Cart::Name = pGameIdentifier->GetGameName(ss.str());
+        return true;
+    }
+    return false;
 }
