@@ -338,18 +338,7 @@ void loop()
                                     break;
                                 }
                                 // selected index indicates the memory to read from
-                                // umd::OperationStartTime = HAL_GetTick();
-                                // totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
-                                // umd::Cart::BatchSizeCalc.Init(umd::Cart::pCartridge->GetCartridgeSize(), umd::Config::BUFFER_SIZE_BYTES);
-
-                                // // TODO show some progress here, Sonic 3D Blast takes 1473ms to identify
-                                // for(int addr = 0; addr < totalBytes; addr += umd::Config::BUFFER_SIZE_BYTES)
-                                // {
-                                //     batchSize = umd::Cart::BatchSizeCalc.Next();
-                                //     umd::Cart::pCartridge->ReadMemory(addr, umd::DataBuffer.data(), batchSize, selectedItemIndex, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
-                                // }
-
-                                umd::OperationTotalTime = HAL_GetTick() - umd::OperationStartTime;
+                                umd::Cart::DumpToFile(selectedItemIndex, "rom.bin", true);
 
                                 // all done, return to main menu
                                 umd::Cart::State = CartState::IDLE;

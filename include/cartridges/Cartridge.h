@@ -59,6 +59,8 @@ namespace cartridges{
         /// @brief Get the size of the cartridge currently connected, if it is knowable via the header
         virtual uint32_t GetCartridgeSize() = 0;
 
+        virtual uint32_t GetMemorySize(uint8_t memTypeIndex) = 0;
+
         virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) = 0;
         virtual int EraseFlash(uint8_t memTypeIndexm) = 0;
 

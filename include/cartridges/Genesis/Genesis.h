@@ -29,6 +29,7 @@ namespace cartridges::genesis{
         virtual std::string GetGameUniqueId() override;
         virtual const char* GetCartridgeName() override;
         virtual uint32_t GetCartridgeSize() override;
+        virtual uint32_t GetMemorySize(uint8_t memTypeIndex) override;
 
         virtual FlashInfo GetFlashInfo(uint8_t memTypeIndex) override;
         virtual int EraseFlash(uint8_t memTypeIndex) override;
@@ -44,6 +45,19 @@ namespace cartridges::genesis{
         Header mHeader;
         const std::string mSystemName = "MD";
         const std::string mSystemBaseFilePath = "/UMD/MD/";
+
+        std::map<int, MemoryType> mMemoryTypeIndexMap = {
+            {0, MemoryType::PRG0},
+            {1, MemoryType::RAM0},
+            {2, MemoryType::BRAM}
+        };
+
+        std::vector<std::string> mMemoryNames = {
+            "ROM",
+            "Save RAM",
+            "SCD Backup RAM"
+        };
+
         const uint32_t HEADER_START_ADDR = 0x00000100;
         const uint32_t HEADER_SIZE = 256;
         const uint32_t TIME_CONFIG_ADDR = 0xA130F1;

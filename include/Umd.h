@@ -115,19 +115,19 @@ namespace umd
         std::vector<const char *> Metadata;
         
         bool Identify(bool updateUi);
-        bool DumpToFile(bool updateUi);
+        bool DumpToFile(uint8_t memTypeIndex, const std::string& filename, bool updateUi);
 
     }
 }
 
-bool umd::Cart::DumpToFile(uint8_t memTypeIndex, bool updateUi = false){
+bool umd::Cart::DumpToFile(uint8_t memTypeIndex, const std::string& filename, bool updateUi = false){
     uint32_t currentTicks;
     uint32_t totalBytes;
     uint32_t startTicks;
 
     currentTicks = HAL_GetTick();
     startTicks = currentTicks;
-    totalBytes = pCartridge->GetCartridgeSize();
+    totalBytes = pCartridge->GetMemorySize(memTypeIndex);
     CartridgeData.SetTransferSize(totalBytes);
 
     if(updateUi){
@@ -136,7 +136,7 @@ bool umd::Cart::DumpToFile(uint8_t memTypeIndex, bool updateUi = false){
 
     for(int addr = 0; addr < totalBytes; addr += CartridgeData.Size())
     {
-        umd::Cart::pCartridge->ReadMemory(addr, CartridgeData);
+        umd::Cart::pCartridge->ReadMemory(addr, CartridgeData, memTypeIndex, cartridges::Cartridge::ReadOptions::NONE);
         if(updateUi && (HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS))
         {
             currentTicks = HAL_GetTick();
@@ -144,6 +144,8 @@ bool umd::Cart::DumpToFile(uint8_t memTypeIndex, bool updateUi = false){
             umd::Ux::Display.Redraw();
         }
     }
+
+    return true;
 }
 
 

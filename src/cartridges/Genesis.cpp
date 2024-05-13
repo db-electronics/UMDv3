@@ -8,14 +8,14 @@ cartridges::genesis::Cart::Cart(IChecksumCalculator& checksumCalculator)
 
     // display will show these memory names in order
     // so here we store an index to the memory enum
-    mMemoryTypeIndexMap[0] = MemoryType::PRG0;
-    mMemoryNames.push_back("ROM");
+    // mMemoryTypeIndexMap[0] = MemoryType::PRG0;
+    // mMemoryNames.push_back("ROM");
 
-    mMemoryTypeIndexMap[1] = MemoryType::RAM0;
-    mMemoryNames.push_back("Save RAM");
+    // mMemoryTypeIndexMap[1] = MemoryType::RAM0;
+    // mMemoryNames.push_back("Save RAM");
 
-    mMemoryTypeIndexMap[2] = MemoryType::BRAM;
-    mMemoryNames.push_back("SCD Backup RAM");
+    // mMemoryTypeIndexMap[2] = MemoryType::BRAM;
+    // mMemoryNames.push_back("SCD Backup RAM");
 
     mMetadata.clear();
 }
@@ -66,8 +66,24 @@ const char* cartridges::genesis::Cart::GetCartridgeName(){
 }
 
 uint32_t cartridges::genesis::Cart::GetCartridgeSize(){
-    ReadHeader();
-    return mHeader.ROMEnd + 1;
+    return GetMemorySize(0);
+}
+
+uint32_t cartridges::genesis::Cart::GetMemorySize(uint8_t memTypeIndex){
+    // check if the memTypeIndex is valid
+    if(!IsMemoryIndexValid(memTypeIndex)){
+        return 0;
+    }
+
+    MemoryType mem = mMemoryTypeIndexMap[memTypeIndex];
+
+    switch(mem){
+        case MemoryType::PRG0:
+            ReadHeader();
+            return mHeader.ROMEnd + 1;
+        default:
+            return 0;
+    }
 }
 
 std::string cartridges::genesis::Cart::GetGameUniqueId() {
