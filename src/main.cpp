@@ -251,30 +251,11 @@ void loop()
                                 umd::Ux::Display.Printf(UMDDisplay::ZONE_TITLE, F("UMDv3/%s/%s"), umd::Cart::pCartridge->GetSystemName().c_str(), "Id");
 
                                 if(umd::Cart::Identify(true)){
-                                    umd::Cart::IsIdentified = true;
                                     umd::Ux::Display.Printf(F("Game : %s"), umd::Cart::Name.c_str());
                                     umd::Ux::Display.Printf(F("Size : %08X"), umd::Cart::pCartridge->GetCartridgeSize());
+                                }else{
+                                    // TODO could identify
                                 }
-
-                                // currentTicks = HAL_GetTick();
-                                // umd::OperationStartTime = currentTicks;
-                                // umd::Cart::pCartridge->ResetChecksumCalculator();
-                                // totalBytes = umd::Cart::pCartridge->GetCartridgeSize();
-                                // umd::CartridgeData.SetTransferSize(totalBytes);
-                                // umd::Ux::Display.SetProgressBarVisibility(true);
-
-                                // for(int addr = 0; addr < totalBytes; addr += umd::CartridgeData.Size())
-                                // {
-                                //     umd::Cart::pCartridge->Identify(addr, umd::CartridgeData, Cartridge::ReadOptions::CHECKSUM_CALCULATOR);
-                                //     if(HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS)
-                                //     {
-                                //         currentTicks = HAL_GetTick();
-                                //         umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
-                                //         umd::Ux::Display.Redraw(); 
-                                //     }
-                                // }
-                                // umd::OperationTotalTime = HAL_GetTick() - umd::OperationStartTime;
-                                // umd::Ux::Display.SetProgressBarComplete(umd::OperationTotalTime);
 
                                 // TODO get rid of metadata from cartridge and get the title instead
                                 // seems better from an encapsulation perspective
@@ -330,15 +311,14 @@ void loop()
                         switch(umd::Cart::State)
                         {
                             case CartState::READ:
-                                // TODO need a filename
+                                // check if the cartridge has been identified
                                 if(!umd::Cart::IsIdentified)
                                 {
-                                    umd::Ux::Display.Printf(UMDDisplay::ZONE_STATUS, F("err: not identified"));
-                                    umd::Ux::Display.Redraw();
-                                    break;
+                                    umd::Cart::Identify(true);
                                 }
+
                                 // selected index indicates the memory to read from
-                                umd::Cart::DumpToFile(selectedItemIndex, "rom.bin", true);
+                                umd::Cart::DumpToFile(selectedItemIndex, umd::Cart::Name + ".bin", true);
 
                                 // all done, return to main menu
                                 umd::Cart::State = CartState::IDLE;

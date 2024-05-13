@@ -23,6 +23,7 @@ namespace umd
     uint32_t OperationTotalTime;
 
     cartridges::Array CartridgeData;
+    File sdFile;
 
     namespace Config{
 
@@ -134,9 +135,18 @@ bool umd::Cart::DumpToFile(uint8_t memTypeIndex, const std::string& filename, bo
         umd::Ux::Display.SetProgressBarVisibility(true);
     }
 
+    std::string filePath = umd::Cart::pCartridge->GetSystemBaseFilePath() + filename;
+    sdFile = SD.open(filePath.c_str(), FILE_WRITE);
+
+    if(!sdFile){
+        return false;
+    }
+
     for(int addr = 0; addr < totalBytes; addr += CartridgeData.Size())
     {
         umd::Cart::pCartridge->ReadMemory(addr, CartridgeData, memTypeIndex, cartridges::Cartridge::ReadOptions::NONE);
+        sdFile.write(CartridgeData.Data(), CartridgeData.AvailableSize());
+
         if(updateUi && (HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS))
         {
             currentTicks = HAL_GetTick();
@@ -145,10 +155,13 @@ bool umd::Cart::DumpToFile(uint8_t memTypeIndex, const std::string& filename, bo
         }
     }
 
+    sdFile.close();
     return true;
 }
 
-
+/// @brief Identify the cartridge and set the Name property, if the cartridge is identified the Name property will be set to the game name, otherwise it will be set to the checksum
+/// @param updateUi 
+/// @return 
 bool umd::Cart::Identify(bool updateUi = false){
     uint32_t currentTicks;
     uint32_t totalBytes;
@@ -182,15 +195,14 @@ bool umd::Cart::Identify(bool updateUi = false){
     }
     
     ss << std::hex << umd::Cart::pCartridge->GetAccumulatedChecksum();
+
+    // search the db for the checksum
     if(pGameIdentifier->GameExists(ss.str())){
-        umd::Cart::IsIdentified = true;
         umd::Cart::Name = pGameIdentifier->GetGameName(ss.str());
-        return true;
     }else{
-        umd::Cart::IsIdentified = false;
-        umd::Cart::Name = "";
-        return false;
+        umd::Cart::Name = ss.str();
     }
 
-    return false;
+    umd::Cart::IsIdentified = true;
+    return true;
 }
