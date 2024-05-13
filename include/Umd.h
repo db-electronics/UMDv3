@@ -115,6 +115,34 @@ namespace umd
         std::vector<const char *> Metadata;
         
         bool Identify(bool updateUi);
+        bool DumpToFile(bool updateUi);
+
+    }
+}
+
+bool umd::Cart::DumpToFile(uint8_t memTypeIndex, bool updateUi = false){
+    uint32_t currentTicks;
+    uint32_t totalBytes;
+    uint32_t startTicks;
+
+    currentTicks = HAL_GetTick();
+    startTicks = currentTicks;
+    totalBytes = pCartridge->GetCartridgeSize();
+    CartridgeData.SetTransferSize(totalBytes);
+
+    if(updateUi){
+        umd::Ux::Display.SetProgressBarVisibility(true);
+    }
+
+    for(int addr = 0; addr < totalBytes; addr += CartridgeData.Size())
+    {
+        umd::Cart::pCartridge->ReadMemory(addr, CartridgeData);
+        if(updateUi && (HAL_GetTick() > currentTicks + umd::Config::PROGRESS_REFRESH_RATE_MS))
+        {
+            currentTicks = HAL_GetTick();
+            umd::Ux::Display.UpdateProgressBar(addr, totalBytes);
+            umd::Ux::Display.Redraw();
+        }
     }
 }
 
@@ -156,6 +184,11 @@ bool umd::Cart::Identify(bool updateUi = false){
         umd::Cart::IsIdentified = true;
         umd::Cart::Name = pGameIdentifier->GetGameName(ss.str());
         return true;
+    }else{
+        umd::Cart::IsIdentified = false;
+        umd::Cart::Name = "";
+        return false;
     }
+
     return false;
 }

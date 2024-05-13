@@ -257,7 +257,8 @@ bool cartridges::genesis::Cart::calculateChecksum(uint32_t start, uint32_t end){
     for(uint32_t i = start; i < end; i+=2){
         checksum += UMD_SWAP_BYTES_16(ReadPrgWord(i));
     }
-    
+    // TODO something meaningful here
+    return true;
     // ActualChecksum = checksum;
 
     // if(checksum == mHeader.Checksum){

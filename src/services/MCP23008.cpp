@@ -81,7 +81,7 @@ uint8_t i2cdevice::Mcp23008::ReadRegister(uint8_t registerAddress)
     pWire->beginTransmission(mDeviceAddress);
     pWire->write(registerAddress);
     pWire->endTransmission(false);
-    pWire->requestFrom(mDeviceAddress, 1, true);
+    pWire->requestFrom(mDeviceAddress, 1, 1);
     readValue = pWire->read();
     mError = pWire->endTransmission();
     return readValue;
